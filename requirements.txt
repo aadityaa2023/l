@@ -5,7 +5,8 @@ djangorestframework==3.14.0
 # Database
 # Use pure-Python mysql-connector-python on shared hosting to avoid
 # C extension compilation issues with mysqlclient
-mysql-connector-python==8.1.0
+# Version 8.0.33 is more stable with Django 4.2
+mysql-connector-python==8.0.33
 
 # Authentication
 django-allauth==0.57.0
