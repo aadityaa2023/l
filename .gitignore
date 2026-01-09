@@ -23,3 +23,6 @@ dist/
 build/
 *.egg-info/
 celerybeat-schedule
+
+# Environment files (production/staging)
+.env.production

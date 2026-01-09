@@ -1,12 +1,14 @@
-# Apache configuration for Django on shared hosting
+# Apache configuration for Django on shared hosting (Domainz)
 # This file configures Apache to serve your Django app via Passenger
 
-# Enable Passenger (Python WSGI)
+# Enable Python/WSGI application
 PassengerEnabled on
-PassengerAppRoot /home/yourusername/public_html/leq
 
-# Point to the Python interpreter (update path as per Domainz)
-PassengerPython /home/yourusername/.virtualenvs/leq/bin/python
+# Set the startup file
+PassengerStartupFile passenger_wsgi.py
+
+# Force application restart on every request (disable in production after testing)
+# PassengerAppEnv development
 
 # Set environment to production
 SetEnv DJANGO_SETTINGS_MODULE leq.settings
@@ -16,16 +18,21 @@ SetEnv PYTHON_ENV production
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Serve static files
-    RewriteRule ^static/(.*)$ /home/yourusername/public_html/leq/staticfiles/$1 [L]
+    # Don't show directory listings
+    Options -Indexes
     
-    # Serve media files
-    RewriteRule ^media/(.*)$ /home/yourusername/public_html/leq/media/$1 [L]
+    # Serve static files directly
+    RewriteCond %{REQUEST_URI} ^/static/ [NC]
+    RewriteRule ^(.*)$ $1 [L]
     
-    # Pass all other requests to Passenger
+    # Serve media files directly
+    RewriteCond %{REQUEST_URI} ^/media/ [NC]
+    RewriteRule ^(.*)$ $1 [L]
+    
+    # Pass all other requests to Passenger/Django
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . - [L]
+    RewriteRule ^(.*)$ passenger_wsgi.py [QSA,L]
 </IfModule>
 
 # Security headers
@@ -35,9 +42,6 @@ SetEnv PYTHON_ENV production
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
-
-# Disable directory listing
-Options -Indexes
 
 # Protect sensitive files
 <FilesMatch "^(\.env|\.git|\.htaccess|passenger_wsgi\.py|manage\.py|db\.sqlite3|requirements\.txt)$">
