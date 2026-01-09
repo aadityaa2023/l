@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Request Refund - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card-custom p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <a href="{% url 'payments:my_payments' %}" class="btn btn-outline-secondary me-3">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <h4 class="fw-bold mb-0">Request Refund</h4>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Important:</strong> Please read our refund policy before submitting your request.
+                    </div>
+
+                    <div class="card-custom bg-light p-3 mb-4">
+                        <h6 class="fw-bold mb-3">Payment Details</h6>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 text-muted">Course:</div>
+                            <div class="col-sm-8 fw-semibold">{{ payment.course.title }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 text-muted">Amount Paid:</div>
+                            <div class="col-sm-8 fw-semibold">₹{{ payment.amount }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-4 text-muted">Payment ID:</div>
+                            <div class="col-sm-8 fw-semibold text-break">{{ payment.razorpay_payment_id }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-4 text-muted">Date:</div>
+                            <div class="col-sm-8 fw-semibold">{{ payment.created_at|date:"d M, Y h:i A" }}</div>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="reason" class="form-label fw-semibold">
+                                Reason for Refund <span class="text-danger">*</span>
+                            </label>
+                            <textarea 
+                                name="reason" 
+                                id="reason" 
+                                class="form-control" 
+                                rows="5" 
+                                placeholder="Please provide a detailed reason for requesting a refund..."
+                                required
+                            ></textarea>
+                            <small class="text-muted">
+                                Please provide specific details to help us process your request faster.
+                            </small>
+                        </div>
+
+                        <div class="card-custom bg-light p-3 mb-4">
+                            <h6 class="fw-bold mb-2">Refund Policy</h6>
+                            <ul class="small mb-0">
+                                <li>Refunds are processed within 5-7 business days</li>
+                                <li>Refund amount will be credited to the original payment method</li>
+                                <li>Course access will be revoked upon refund approval</li>
+                                <li>Partial refunds may apply based on course completion percentage</li>
+                            </ul>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                            <label class="form-check-label" for="agreeTerms">
+                                I understand and agree to the refund policy terms
+                            </label>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger flex-fill">
+                                <i class="fas fa-undo me-2"></i>Submit Refund Request
+                            </button>
+                            <a href="{% url 'payments:my_payments' %}" class="btn btn-outline-secondary flex-fill">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card-custom p-4 mt-4">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-question-circle me-2"></i>Frequently Asked Questions
+                    </h6>
+                    
+                    <div class="accordion" id="refundFAQ">
+                        <div class="accordion-item border-0 mb-2">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    How long does the refund process take?
+                                </button>
+                            </h2>
+                            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#refundFAQ">
+                                <div class="accordion-body">
+                                    Refunds are typically processed within 5-7 business days. The amount will be credited back to your original payment method.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item border-0 mb-2">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    Will I lose access to the course immediately?
+                                </button>
+                            </h2>
+                            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#refundFAQ">
+                                <div class="accordion-body">
+                                    Your access will remain active until the refund is approved and processed. Once approved, you will lose access to the course content.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item border-0">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    Can I get a partial refund?
+                                </button>
+                            </h2>
+                            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#refundFAQ">
+                                <div class="accordion-body">
+                                    Partial refunds may be offered based on your course progress. Courses with more than 50% completion may not be eligible for a full refund.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

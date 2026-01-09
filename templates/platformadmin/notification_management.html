@@ -1,0 +1,162 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-bell"></i> Notification Management</h2>
+    <a href="{% url 'platformadmin:send_bulk_notification' %}" class="btn btn-primary">
+        <i class="fas fa-paper-plane"></i> Send Bulk Notification
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_sent }}</div>
+            <div class="stat-label">Total Sent</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <div class="stat-value">{{ stats.delivered }}</div>
+            <div class="stat-label">Delivered</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <div class="stat-value">{{ stats.read }}</div>
+            <div class="stat-label">Read</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <div class="stat-value">{{ stats.pending }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <select name="type" class="form-control form-control-sm">
+                    <option value="">All Types</option>
+                    <option value="announcement" {% if type_filter == 'announcement' %}selected{% endif %}>Announcement</option>
+                    <option value="course_update" {% if type_filter == 'course_update' %}selected{% endif %}>Course Update</option>
+                    <option value="payment" {% if type_filter == 'payment' %}selected{% endif %}>Payment</option>
+                    <option value="system" {% if type_filter == 'system' %}selected{% endif %}>System</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-control form-control-sm">
+                    <option value="">All Status</option>
+                    <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <input type="text" name="search" placeholder="Search notifications..." 
+                       class="form-control form-control-sm" value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Notifications Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Type</th>
+                    <th>Recipients</th>
+                    <th>Sent</th>
+                    <th>Delivered</th>
+                    <th>Read</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notification in notifications %}
+                <tr>
+                    <td>
+                        <strong>{{ notification.title }}</strong>
+                        <br><small class="text-muted">{{ notification.message|truncatewords:10 }}</small>
+                    </td>
+                    <td>
+                        {% if notification.notification_type == 'announcement' %}
+                            <span class="badge bg-primary">Announcement</span>
+                        {% elif notification.notification_type == 'course_update' %}
+                            <span class="badge bg-info">Course Update</span>
+                        {% elif notification.notification_type == 'payment' %}
+                            <span class="badge bg-success">Payment</span>
+                        {% else %}
+                            <span class="badge bg-secondary">System</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ notification.recipient_count|default:0|intcomma }}</td>
+                    <td>{{ notification.sent_count|default:0|intcomma }}</td>
+                    <td>{{ notification.delivered_count|default:0|intcomma }}</td>
+                    <td>{{ notification.read_count|default:0|intcomma }}</td>
+                    <td>
+                        {% if notification.status == 'sent' %}
+                            <span class="badge bg-success">Sent</span>
+                        {% elif notification.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% else %}
+                            <span class="badge bg-danger">Failed</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ notification.created_at|date:"M d, Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        No notifications found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="pagination-custom mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                    Next
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Compose Message - Teacher Panel{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'notifications:messages_inbox' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Inbox
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Compose New Message</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="recipient_id" class="form-label">To (Student) *</label>
+                        <select name="recipient_id" id="recipient_id" class="form-select" required {% if recipient %}disabled{% endif %}>
+                            {% if recipient %}
+                            <option value="{{ recipient.id }}" selected>
+                                {{ recipient.get_full_name|default:recipient.email }} ({{ recipient.email }})
+                            </option>
+                            {% else %}
+                            <option value="">Select a student...</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">
+                                {{ student.get_full_name|default:student.email }} ({{ student.email }})
+                            </option>
+                            {% endfor %}
+                            {% endif %}
+                        </select>
+                        {% if recipient %}
+                        <input type="hidden" name="recipient_id" value="{{ recipient.id }}">
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">Related Course (Optional)</label>
+                        <select name="course_id" id="course_id" class="form-select">
+                            <option value="">No specific course</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">Subject *</label>
+                        <input type="text" name="subject" id="subject" class="form-control" placeholder="Enter message subject" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="body" class="form-label">Message *</label>
+                        <textarea name="body" id="body" class="form-control" rows="8" placeholder="Type your message here..." required></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i>Send Message
+                        </button>
+                        <a href="{% url 'notifications:messages_inbox' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

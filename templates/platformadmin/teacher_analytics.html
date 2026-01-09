@@ -1,0 +1,324 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Teacher Analytics - Platform Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .teacher-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .teacher-card h3 {
+        margin-top: 0;
+        color: #333;
+        border-bottom: 2px solid #673AB7;
+        padding-bottom: 10px;
+    }
+    .teacher-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+    .stat-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        text-align: center;
+    }
+    .stat-item .label {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
+    .stat-item .value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #673AB7;
+    }
+    .teacher-table {
+        width: 100%;
+        margin-top: 20px;
+    }
+    .teacher-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #673AB7;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    .teacher-info {
+        display: flex;
+        align-items: center;
+    }
+    .badge-performance {
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .badge-excellent { background: #28a745; color: white; }
+    .badge-good { background: #17a2b8; color: white; }
+    .badge-average { background: #ffc107; color: black; }
+    .badge-poor { background: #dc3545; color: white; }
+    .filter-section {
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1><i class="fas fa-chalkboard-teacher"></i> Teacher Performance Analytics</h1>
+            <p class="text-muted">Monitor and analyze teacher performance metrics</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <form method="get" class="form-inline">
+            <label class="mr-2">Filter:</label>
+            <select name="sort_by" class="form-control mr-2">
+                <option value="revenue" {% if sort_by == 'revenue' %}selected{% endif %}>Revenue</option>
+                <option value="enrollments" {% if sort_by == 'enrollments' %}selected{% endif %}>Enrollments</option>
+                <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Rating</option>
+                <option value="courses" {% if sort_by == 'courses' %}selected{% endif %}>Courses</option>
+            </select>
+            <select name="period" class="form-control mr-2">
+                <option value="all" {% if period == 'all' %}selected{% endif %}>All Time</option>
+                <option value="month" {% if period == 'month' %}selected{% endif %}>This Month</option>
+                <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>This Quarter</option>
+                <option value="year" {% if period == 'year' %}selected{% endif %}>This Year</option>
+            </select>
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{% url 'platformadmin:teacher_analytics' %}" class="btn btn-secondary ml-2">Reset</a>
+            <a href="?export=csv" class="btn btn-success ml-auto">
+                <i class="fas fa-download"></i> Export CSV
+            </a>
+        </form>
+    </div>
+
+    <!-- Overall Statistics -->
+    <div class="teacher-card">
+        <h3><i class="fas fa-chart-bar"></i> Overall Teacher Statistics</h3>
+        <div class="teacher-stats">
+            <div class="stat-item">
+                <div class="label">Total Teachers</div>
+                <div class="value">{{ total_teachers|default:"0" }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">Active Teachers</div>
+                <div class="value">{{ active_teachers|default:"0" }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">Verified Teachers</div>
+                <div class="value">{{ verified_teachers|default:"0" }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">Total Courses</div>
+                <div class="value">{{ total_courses|default:"0" }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">Total Revenue</div>
+                <div class="value">₹{{ total_revenue|default:"0" }}</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">Avg Rating</div>
+                <div class="value">{{ avg_rating|default:"0" }} ⭐</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Performing Teachers -->
+    <div class="teacher-card">
+        <h3><i class="fas fa-trophy"></i> Top Performing Teachers</h3>
+        <div class="table-responsive">
+            <table class="table table-hover teacher-table">
+                <thead>
+                    <tr>
+                        <th>Teacher</th>
+                        <th>Courses</th>
+                        <th>Enrollments</th>
+                        <th>Revenue</th>
+                        <th>Avg Rating</th>
+                        <th>Performance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for teacher in teachers %}
+                    <tr>
+                        <td>
+                            <div class="teacher-info">
+                                <div class="teacher-avatar">
+                                    {{ teacher.first_name|first|upper }}{{ teacher.last_name|first|upper }}
+                                </div>
+                                <div>
+                                    <strong>{{ teacher.get_full_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ teacher.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ teacher.course_count|default:"0" }}</td>
+                        <td>{{ teacher.total_enrollments|default:"0" }}</td>
+                        <td>₹{{ teacher.total_revenue|default:"0" }}</td>
+                        <td>
+                            <span class="badge badge-primary">
+                                {{ teacher.avg_rating|default:"N/A" }} ⭐
+                            </span>
+                        </td>
+                        <td>
+                            {% if teacher.performance_score >= 80 %}
+                                <span class="badge-performance badge-excellent">Excellent</span>
+                            {% elif teacher.performance_score >= 60 %}
+                                <span class="badge-performance badge-good">Good</span>
+                            {% elif teacher.performance_score >= 40 %}
+                                <span class="badge-performance badge-average">Average</span>
+                            {% else %}
+                                <span class="badge-performance badge-poor">Needs Improvement</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'platformadmin:user_detail' teacher.id %}" 
+                               class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No teachers found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Performance Distribution -->
+    <div class="teacher-card">
+        <h3><i class="fas fa-chart-pie"></i> Performance Distribution</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <canvas id="performanceChart"></canvas>
+            </div>
+            <div class="col-md-6">
+                <canvas id="revenueDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Teacher Activities -->
+    <div class="teacher-card">
+        <h3><i class="fas fa-history"></i> Recent Teacher Activities</h3>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Teacher</th>
+                        <th>Activity</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in recent_activities %}
+                    <tr>
+                        <td>{{ activity.created_at|date:"M d, Y" }}</td>
+                        <td>{{ activity.teacher.get_full_name }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ activity.activity_type }}</span>
+                        </td>
+                        <td>{{ activity.description }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No recent activities</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    /* Django Template Variables */
+    const performanceDistribution = {{ performance_distribution|safe|default:"[0,0,0,0]" }};
+    const topEarnerNames = {{ top_earner_names|safe|default:"[]" }};
+    const topEarnerRevenue = {{ top_earner_revenue|safe|default:"[]" }};
+    
+    // Performance Distribution Chart
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    
+    new Chart(performanceCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Excellent', 'Good', 'Average', 'Poor'],
+            datasets: [{
+                data: performanceDistribution,
+                backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Teacher Performance Distribution'
+                }
+            }
+        }
+    });
+
+    // Revenue Distribution Chart
+    const revenueCtx = document.getElementById('revenueDistributionChart').getContext('2d');
+    
+    new Chart(revenueCtx, {
+        type: 'pie',
+        data: {
+            labels: topEarnerNames,
+            datasets: [{
+                data: topEarnerRevenue,
+                backgroundColor: [
+                    '#673AB7', '#9C27B0', '#E91E63', '#F44336', '#FF9800'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                title: {
+                    display: true,
+                    text: 'Top 5 Revenue Contributors'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

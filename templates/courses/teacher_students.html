@@ -1,0 +1,182 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Students - Teacher Panel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Students Management</h2>
+    <a href="{% url 'courses:teacher_export_students' %}" class="btn btn-success">
+        <i class="fas fa-download me-2"></i>Export CSV
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total Enrollments</h6>
+                <h3 class="mb-0">{{ stats.total }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Active Students</h6>
+                <h3 class="mb-0 text-success">{{ stats.active }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Completed</h6>
+                <h3 class="mb-0 text-primary">{{ stats.completed }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Unique Students</h6>
+                <h3 class="mb-0 text-info">{{ stats.unique_students }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="Search students..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="course" class="form-select">
+                    <option value="">All Courses</option>
+                    {% for course in teacher_courses %}
+                    <option value="{{ course.id }}" {% if course_filter == course.id|stringformat:"s" %}selected{% endif %}>
+                        {{ course.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Students Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Course</th>
+                        <th>Enrolled</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary text-white rounded me-2 d-flex align-items-center justify-content-center">
+                                    {{ enrollment.student.first_name.0|default:enrollment.student.email.0|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ enrollment.student.get_full_name|default:enrollment.student.email }}</div>
+                                    <small class="text-muted">{{ enrollment.student.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ enrollment.course.title|truncatewords:5 }}</td>
+                        <td>{{ enrollment.enrolled_at|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" data-width="{{ enrollment.progress_percentage }}"></div>
+                            </div>
+                            <small>{{ enrollment.progress_percentage|floatformat:0 }}%</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if enrollment.status == 'active' %}success{% elif enrollment.status == 'completed' %}primary{% else %}secondary{% endif %}">
+                                {{ enrollment.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'courses:teacher_student_detail' enrollment.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'notifications:message_compose_to' enrollment.student.id %}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-envelope"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No students found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if enrollments.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if enrollments.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ enrollments.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if course_filter %}&course={{ course_filter }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">Page {{ enrollments.number }} of {{ enrollments.paginator.num_pages }}</span>
+                </li>
+                
+                {% if enrollments.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ enrollments.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if course_filter %}&course={{ course_filter }}{% endif %}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set progress bar widths from data attributes
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.progress-bar[data-width]').forEach(function(bar) {
+        bar.style.width = bar.dataset.width + '%';
+    });
+});
+</script>
+{% endblock %}

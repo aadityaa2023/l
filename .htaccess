@@ -1,0 +1,79 @@
+# Apache configuration for Django on shared hosting
+# This file configures Apache to serve your Django app via Passenger
+
+# Enable Passenger (Python WSGI)
+PassengerEnabled on
+PassengerAppRoot /home/yourusername/public_html/leq
+
+# Point to the Python interpreter (update path as per Domainz)
+PassengerPython /home/yourusername/.virtualenvs/leq/bin/python
+
+# Set environment to production
+SetEnv DJANGO_SETTINGS_MODULE leq.settings
+SetEnv PYTHON_ENV production
+
+# Serve static files directly (bypass Django)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Serve static files
+    RewriteRule ^static/(.*)$ /home/yourusername/public_html/leq/staticfiles/$1 [L]
+    
+    # Serve media files
+    RewriteRule ^media/(.*)$ /home/yourusername/public_html/leq/media/$1 [L]
+    
+    # Pass all other requests to Passenger
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . - [L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Disable directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^(\.env|\.git|\.htaccess|passenger_wsgi\.py|manage\.py|db\.sqlite3|requirements\.txt)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Allow access to static and media files
+<FilesMatch "\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|pdf|mp3|m4a|wav)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Set proper MIME types
+<IfModule mod_mime.c>
+    AddType audio/mpeg .mp3
+    AddType audio/mp4 .m4a
+    AddType audio/wav .wav
+    AddType audio/aac .aac
+</IfModule>
+
+# Compression for better performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Browser caching for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType audio/mpeg "access plus 1 year"
+    ExpiresByType audio/mp4 "access plus 1 year"
+</IfModule>

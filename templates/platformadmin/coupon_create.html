@@ -1,0 +1,146 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-plus-circle"></i> Create New Coupon</h2>
+    <a href="{% url 'platformadmin:coupon_management' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Coupons
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Coupon Code *</label>
+                            <input type="text" name="code" class="form-control" 
+                                   placeholder="SUMMER2024" required
+                                   style="text-transform: uppercase;">
+                            <small class="text-muted">Use uppercase letters and numbers</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Discount Type *</label>
+                            <select name="discount_type" class="form-control" required id="discountType">
+                                <option value="percentage">Percentage</option>
+                                <option value="fixed">Fixed Amount</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Discount Value *</label>
+                            <input type="number" name="discount_value" class="form-control" 
+                                   step="0.01" min="0" required>
+                            <small class="text-muted" id="discountHelp">Enter percentage (e.g., 10 for 10%)</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3" id="maxDiscountDiv">
+                            <label class="form-label">Max Discount Amount</label>
+                            <input type="number" name="max_discount_amount" class="form-control" 
+                                   step="0.01" min="0">
+                            <small class="text-muted">For percentage coupons only</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Minimum Purchase Amount</label>
+                            <input type="number" name="min_purchase_amount" class="form-control" 
+                                   step="0.01" min="0" value="0">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Max Uses Per User</label>
+                            <input type="number" name="max_uses_per_user" class="form-control" 
+                                   min="1" value="1" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Valid From *</label>
+                            <input type="datetime-local" name="valid_from" class="form-control" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Valid Until *</label>
+                            <input type="datetime-local" name="valid_until" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Max Total Uses</label>
+                        <input type="number" name="max_uses" class="form-control" min="1">
+                        <small class="text-muted">Leave empty for unlimited uses</small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Coupon
+                        </button>
+                        <a href="{% url 'platformadmin:coupon_management' %}" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Tips</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success"></i> 
+                        Use memorable codes like SUMMER2024
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success"></i> 
+                        Set max discount for percentage coupons
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success"></i> 
+                        Limit uses to prevent abuse
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success"></i> 
+                        Set validity period carefully
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('discountType').addEventListener('change', function() {
+    const maxDiscountDiv = document.getElementById('maxDiscountDiv');
+    const discountHelp = document.getElementById('discountHelp');
+    
+    if (this.value === 'percentage') {
+        maxDiscountDiv.style.display = 'block';
+        discountHelp.textContent = 'Enter percentage (e.g., 10 for 10%)';
+    } else {
+        maxDiscountDiv.style.display = 'none';
+        discountHelp.textContent = 'Enter fixed amount in rupees';
+    }
+});
+</script>
+
+{% endblock %}

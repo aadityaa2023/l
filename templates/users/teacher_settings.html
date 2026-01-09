@@ -1,0 +1,177 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Teacher Settings - LeQ{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Teacher Settings</h2>
+
+<!-- Quick Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total Courses</h6>
+                <h3 class="mb-0">{{ stats.total_courses }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Published</h6>
+                <h3 class="mb-0 text-success">{{ stats.published_courses }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total Students</h6>
+                <h3 class="mb-0 text-primary">{{ stats.total_students }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <!-- Settings Navigation -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                        <i class="fas fa-user me-2"></i>Profile Settings
+                    </a>
+                    <a href="#preferences" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                        <i class="fas fa-cog me-2"></i>Preferences
+                    </a>
+                    <a href="#social" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                        <i class="fas fa-share-alt me-2"></i>Social Links
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="tab-content">
+            <!-- Profile Settings -->
+            <div class="tab-pane fade show active" id="profile">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="mb-4">Profile Information</h5>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_profile">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Bio</label>
+                                <textarea name="bio" class="form-control" rows="4" placeholder="Tell students about yourself...">{{ teacher_profile.bio }}</textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Expertise</label>
+                                <textarea name="expertise" class="form-control" rows="3" placeholder="Your areas of expertise...">{{ teacher_profile.expertise }}</textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Profile
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences -->
+            <div class="tab-pane fade" id="preferences">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="mb-4">Account Preferences</h5>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_preferences">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                                <small class="text-muted">Email cannot be changed from here</small>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Preferences
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            <div class="tab-pane fade" id="social">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="mb-4">Social Media Links</h5>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_profile">
+                            <input type="hidden" name="bio" value="{{ teacher_profile.bio }}">
+                            <input type="hidden" name="expertise" value="{{ teacher_profile.expertise }}">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fab fa-linkedin text-primary me-2"></i>LinkedIn Profile
+                                </label>
+                                <input type="url" name="social_linkedin" class="form-control" 
+                                       placeholder="https://linkedin.com/in/username" 
+                                       value="{{ teacher_profile.social_linkedin }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fab fa-twitter text-info me-2"></i>Twitter/X Profile
+                                </label>
+                                <input type="url" name="social_twitter" class="form-control" 
+                                       placeholder="https://twitter.com/username" 
+                                       value="{{ teacher_profile.social_twitter }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fab fa-youtube text-danger me-2"></i>YouTube Channel
+                                </label>
+                                <input type="url" name="social_youtube" class="form-control" 
+                                       placeholder="https://youtube.com/@channel" 
+                                       value="{{ teacher_profile.social_youtube }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-globe text-success me-2"></i>Website
+                                </label>
+                                <input type="url" name="social_website" class="form-control" 
+                                       placeholder="https://yourwebsite.com" 
+                                       value="{{ teacher_profile.social_website }}">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Social Links
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

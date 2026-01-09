@@ -1,0 +1,347 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}System Health - Platform Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .health-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .health-status {
+        display: flex;
+        align-items: center;
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+    .status-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 24px;
+    }
+    .status-healthy { background: #28a745; color: white; }
+    .status-warning { background: #ffc107; color: black; }
+    .status-critical { background: #dc3545; color: white; }
+    .check-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        align-items: center;
+    }
+    .check-item:last-child {
+        border-bottom: none;
+    }
+    .check-name {
+        font-weight: 500;
+    }
+    .check-status {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+    }
+    .check-ok { background: #d4edda; color: #155724; }
+    .check-warn { background: #fff3cd; color: #856404; }
+    .check-error { background: #f8d7da; color: #721c24; }
+    .alert-box {
+        padding: 15px;
+        border-left: 4px solid;
+        margin: 10px 0;
+        border-radius: 4px;
+    }
+    .alert-warning {
+        background: #fff3cd;
+        border-color: #ffc107;
+    }
+    .alert-danger {
+        background: #f8d7da;
+        border-color: #dc3545;
+    }
+    .alert-info {
+        background: #d1ecf1;
+        border-color: #17a2b8;
+    }
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+    }
+    .metric-item {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        text-align: center;
+    }
+    .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    .metric-label {
+        color: #666;
+        font-size: 14px;
+    }
+    .action-buttons {
+        margin-top: 20px;
+        text-align: right;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1><i class="fas fa-heartbeat"></i> System Health Monitor</h1>
+            <p class="text-muted">Real-time platform health status and diagnostics</p>
+        </div>
+    </div>
+
+    <!-- Overall Health Status -->
+    <div class="health-card">
+        <div class="health-status">
+            {% if health_status == 'healthy' %}
+                <div class="status-icon status-healthy">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">System Healthy</h3>
+                    <small class="text-muted">All systems operational</small>
+                </div>
+            {% elif health_status == 'warning' %}
+                <div class="status-icon status-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">Warning</h3>
+                    <small class="text-muted">Some issues detected</small>
+                </div>
+            {% else %}
+                <div class="status-icon status-critical">
+                    <i class="fas fa-times"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">Critical</h3>
+                    <small class="text-muted">Immediate attention required</small>
+                </div>
+            {% endif %}
+            <div class="ml-auto">
+                <small class="text-muted">Last checked: {{ last_check|date:"M d, Y H:i" }}</small>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <form method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" name="refresh" class="btn btn-primary">
+                    <i class="fas fa-sync"></i> Refresh Status
+                </button>
+            </form>
+            <a href="{% url 'platformadmin:clear_cache' %}" class="btn btn-warning">
+                <i class="fas fa-broom"></i> Clear Cache
+            </a>
+        </div>
+    </div>
+
+    <!-- System Checks -->
+    <div class="health-card">
+        <h3><i class="fas fa-tasks"></i> System Checks</h3>
+        
+        <div class="check-item">
+            <div class="check-name">
+                <i class="fas fa-database"></i> Database Connection
+            </div>
+            <span class="check-status check-ok">OK</span>
+        </div>
+
+        <div class="check-item">
+            <div class="check-name">
+                <i class="fas fa-server"></i> Cache Server
+            </div>
+            <span class="check-status {% if checks.cache == 'ok' %}check-ok{% else %}check-error{% endif %}">
+                {{ checks.cache|upper }}
+            </span>
+        </div>
+
+        <div class="check-item">
+            <div class="check-name">
+                <i class="fas fa-cogs"></i> Celery Workers
+            </div>
+            <span class="check-status {% if checks.celery == 'ok' %}check-ok{% else %}check-warn{% endif %}">
+                {{ checks.celery|upper }}
+            </span>
+        </div>
+
+        <div class="check-item">
+            <div class="check-name">
+                <i class="fas fa-credit-card"></i> Payment Gateway
+            </div>
+            <span class="check-status {% if checks.payment_gateway == 'ok' %}check-ok{% else %}check-error{% endif %}">
+                {{ checks.payment_gateway|upper }}
+            </span>
+        </div>
+
+        <div class="check-item">
+            <div class="check-name">
+                <i class="fas fa-envelope"></i> Email Service
+            </div>
+            <span class="check-status {% if checks.email == 'ok' %}check-ok{% else %}check-warn{% endif %}">
+                {{ checks.email|upper }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    {% if alerts %}
+    <div class="health-card">
+        <h3><i class="fas fa-bell"></i> Active Alerts</h3>
+        {% for alert in alerts %}
+        <div class="alert-box {% if alert.severity == 'critical' %}alert-danger{% elif alert.severity == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+            <strong>{{ alert.severity|upper }}:</strong> {{ alert.message }}
+            {% if alert.count %}
+                <span class="badge badge-dark ml-2">{{ alert.count }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Key Metrics -->
+    <div class="health-card">
+        <h3><i class="fas fa-chart-line"></i> System Metrics</h3>
+        <div class="metric-grid">
+            <div class="metric-item">
+                <div class="metric-label">Pending Payments (>24h)</div>
+                <div class="metric-value" style="color: {% if stats.pending_payments_old > 5 %}#dc3545{% else %}#28a745{% endif %}">
+                    {{ stats.pending_payments_old|default:"0" }}
+                </div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Failed Payments (24h)</div>
+                <div class="metric-value" style="color: {% if stats.failed_payments_24h > 10 %}#dc3545{% else %}#28a745{% endif %}">
+                    {{ stats.failed_payments_24h|default:"0" }}
+                </div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Pending Refunds</div>
+                <div class="metric-value" style="color: {% if stats.pending_refund_requests > 5 %}#ffc107{% else %}#28a745{% endif %}">
+                    {{ stats.pending_refund_requests|default:"0" }}
+                </div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Active Sessions</div>
+                <div class="metric-value" style="color: #17a2b8;">
+                    {{ stats.active_sessions|default:"0" }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Issues -->
+    <div class="health-card">
+        <h3><i class="fas fa-exclamation-circle"></i> Recent Issues</h3>
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in recent_issues %}
+                    <tr>
+                        <td>{{ issue.timestamp|date:"M d, H:i" }}</td>
+                        <td>
+                            <span class="badge {% if issue.type == 'error' %}badge-danger{% elif issue.type == 'warning' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ issue.type|upper }}
+                            </span>
+                        </td>
+                        <td>{{ issue.description }}</td>
+                        <td>
+                            {% if issue.resolved %}
+                                <span class="badge badge-success">Resolved</span>
+                            {% else %}
+                                <span class="badge badge-danger">Open</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No recent issues</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="health-card">
+        <h3><i class="fas fa-tachometer-alt"></i> Performance Metrics</h3>
+        <div class="metric-grid">
+            <div class="metric-item">
+                <div class="metric-label">Avg Response Time</div>
+                <div class="metric-value" style="color: {% if performance.avg_response_time > 1000 %}#dc3545{% else %}#28a745{% endif %}">
+                    {{ performance.avg_response_time|default:"0" }}ms
+                </div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Requests/Min</div>
+                <div class="metric-value" style="color: #673AB7;">
+                    {{ performance.requests_per_minute|default:"0" }}
+                </div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Error Rate</div>
+                <div class="metric-value" style="color: {% if performance.error_rate > 5 %}#dc3545{% else %}#28a745{% endif %}">
+                    {{ performance.error_rate|default:"0" }}%
+                </div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-label">Uptime</div>
+                <div class="metric-value" style="color: #28a745;">
+                    {{ performance.uptime|default:"99.9" }}%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    {% if recommendations %}
+    <div class="health-card">
+        <h3><i class="fas fa-lightbulb"></i> Recommendations</h3>
+        <ul class="list-group">
+            {% for recommendation in recommendations %}
+            <li class="list-group-item">
+                <i class="fas fa-check-circle text-success mr-2"></i>
+                {{ recommendation }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh every 60 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 60000);
+</script>
+{% endblock %}

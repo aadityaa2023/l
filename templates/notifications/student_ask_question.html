@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ask a Question - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="mb-4">
+                    <a href="{% url 'notifications:student_questions' %}" class="text-decoration-none">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Questions
+                    </a>
+                </div>
+
+                <div class="card-custom p-5">
+                    <h3 class="fw-bold mb-4">Ask a Question</h3>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="course_id" class="form-label">Select Course *</label>
+                            <select name="course_id" id="course_id" class="form-select" required {% if lesson %}disabled{% endif %}>
+                                {% if lesson %}
+                                <option value="{{ lesson.course.id }}" selected>{{ lesson.course.title }}</option>
+                                {% else %}
+                                <option value="">Choose a course...</option>
+                                {% for course in enrolled_courses %}
+                                <option value="{{ course.id }}">{{ course.title }}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                            {% if lesson %}
+                            <input type="hidden" name="course_id" value="{{ lesson.course.id }}">
+                            <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                            <small class="text-muted">Question about: {{ lesson.title }}</small>
+                            {% endif %}
+                        </div>
+
+                        {% if not lesson %}
+                        <div class="mb-4">
+                            <label for="lesson_id" class="form-label">Related to Lesson (Optional)</label>
+                            <input type="text" name="lesson_id" id="lesson_id" class="form-control" placeholder="Leave blank for general course question">
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label for="title" class="form-label">Question Title *</label>
+                            <input type="text" name="title" id="title" class="form-control" 
+                                   placeholder="Brief summary of your question" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="question" class="form-label">Question Details *</label>
+                            <textarea name="question" id="question" class="form-control" rows="6" 
+                                      placeholder="Provide detailed information about your question..." required></textarea>
+                            <small class="text-muted">Be specific to get better answers</small>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary-custom">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Question
+                            </button>
+                            <a href="{% url 'notifications:student_questions' %}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

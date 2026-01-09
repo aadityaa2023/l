@@ -1,0 +1,359 @@
+{# Banner Carousel Component #}
+{# Include this in your templates where you want to display banners #}
+{# Usage: {% include 'components/banner_carousel.html' with banner_type='home' %} #}
+
+{% with banner_type|default:'home' as banner_type_value %}
+<div class="banner-carousel-wrapper mb-4" id="bannerCarousel" data-banner-type="{{ banner_type_value }}">
+    <!-- Carousel will be loaded here via JavaScript -->
+</div>
+{% endwith %}
+
+<style>
+.banner-carousel-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.banner-slide {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background-size: cover;
+    background-position: center;
+    display: none;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.banner-slide.active {
+    display: block;
+}
+
+.banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.4) 50%,
+        rgba(0, 0, 0, 0.1) 100%
+    );
+    display: flex;
+    align-items: center;
+    padding: 40px;
+}
+
+.banner-content {
+    max-width: 600px;
+    color: white;
+}
+
+.banner-content h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.banner-content p {
+    font-size: 1.1rem;
+    margin-bottom: 24px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    line-height: 1.6;
+}
+
+.banner-cta {
+    display: inline-block;
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.banner-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    color: white;
+}
+
+/* Carousel Controls */
+.carousel-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+.carousel-control-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-control-btn:hover {
+    background: white;
+    transform: scale(1.1);
+}
+
+.carousel-control-btn i {
+    color: #333;
+}
+
+/* Carousel Indicators */
+.carousel-indicators {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.carousel-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-indicator.active {
+    background: white;
+    width: 30px;
+    border-radius: 6px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .banner-slide {
+        height: 300px;
+    }
+
+    .banner-content h2 {
+        font-size: 1.8rem;
+    }
+
+    .banner-content p {
+        font-size: 1rem;
+    }
+
+    .banner-overlay {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .banner-slide {
+        height: 250px;
+    }
+
+    .banner-content h2 {
+        font-size: 1.5rem;
+    }
+
+    .banner-content p {
+        font-size: 0.9rem;
+        margin-bottom: 16px;
+    }
+
+    .banner-cta {
+        padding: 10px 24px;
+        font-size: 0.9rem;
+    }
+}
+
+.no-banners-message {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+}
+</style>
+
+<script>
+class BannerCarousel {
+    constructor(containerId, bannerType = 'home') {
+        this.container = document.getElementById(containerId);
+        this.bannerType = bannerType;
+        this.currentSlide = 0;
+        this.banners = [];
+        this.autoPlayInterval = null;
+        this.init();
+    }
+
+    async init() {
+        await this.fetchBanners();
+        if (this.banners.length > 0) {
+            this.render();
+            this.startAutoPlay();
+        } else {
+            this.renderNoBanners();
+        }
+    }
+
+    async fetchBanners() {
+        try {
+                const response = await fetch(`/api/v1/banners/by-type/${this.bannerType}/`);
+            const data = await response.json();
+            this.banners = data.results || [];
+        } catch (error) {
+            console.error('Error fetching banners:', error);
+            this.banners = [];
+        }
+    }
+
+    render() {
+        const carouselHTML = `
+            ${this.banners.map((banner, index) => `
+                <div class="banner-slide ${index === 0 ? 'active' : ''}" 
+                     style="background-image: url('${banner.image_url}');">
+                    <div class="banner-overlay">
+                        <div class="banner-content">
+                            <h2>${banner.title}</h2>
+                            <p>${banner.description}</p>
+                            ${banner.button_text && banner.button_link ? 
+                                `<a href="${banner.button_link}" class="banner-cta">
+                                    ${banner.button_text}
+                                </a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+            
+            ${this.banners.length > 1 ? `
+                <div class="carousel-indicators">
+                    ${this.banners.map((_, index) => `
+                        <div class="carousel-indicator ${index === 0 ? 'active' : ''}" 
+                             data-slide="${index}"></div>
+                    `).join('')}
+                </div>
+                
+                <div class="carousel-controls">
+                    <button class="carousel-control-btn" id="prevBtn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="carousel-control-btn" id="nextBtn">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            ` : ''}
+        `;
+
+        this.container.innerHTML = carouselHTML;
+        this.attachEventListeners();
+    }
+
+    renderNoBanners() {
+        this.container.innerHTML = `
+            <div class="no-banners-message">
+                <i class="fas fa-images fa-3x mb-3"></i>
+                <h3>No banners available at the moment</h3>
+                <p>Check back soon for exciting updates and offers!</p>
+            </div>
+        `;
+    }
+
+    attachEventListeners() {
+        // Navigation buttons
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        
+        if (prevBtn) prevBtn.addEventListener('click', () => this.prevSlide());
+        if (nextBtn) nextBtn.addEventListener('click', () => this.nextSlide());
+
+        // Indicators
+        document.querySelectorAll('.carousel-indicator').forEach(indicator => {
+            indicator.addEventListener('click', (e) => {
+                this.goToSlide(parseInt(e.target.dataset.slide));
+            });
+        });
+
+        // Pause on hover
+        this.container.addEventListener('mouseenter', () => this.stopAutoPlay());
+        this.container.addEventListener('mouseleave', () => this.startAutoPlay());
+    }
+
+    nextSlide() {
+        this.currentSlide = (this.currentSlide + 1) % this.banners.length;
+        this.updateSlide();
+    }
+
+    prevSlide() {
+        this.currentSlide = (this.currentSlide - 1 + this.banners.length) % this.banners.length;
+        this.updateSlide();
+    }
+
+    goToSlide(index) {
+        this.currentSlide = index;
+        this.updateSlide();
+    }
+
+    updateSlide() {
+        // Update slides
+        document.querySelectorAll('.banner-slide').forEach((slide, index) => {
+            slide.classList.toggle('active', index === this.currentSlide);
+        });
+
+        // Update indicators
+        document.querySelectorAll('.carousel-indicator').forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === this.currentSlide);
+        });
+    }
+
+    startAutoPlay() {
+        if (this.banners.length > 1) {
+            this.autoPlayInterval = setInterval(() => this.nextSlide(), 5000);
+        }
+    }
+
+    stopAutoPlay() {
+        if (this.autoPlayInterval) {
+            clearInterval(this.autoPlayInterval);
+            this.autoPlayInterval = null;
+        }
+    }
+}
+
+// Initialize carousel when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Get banner type from data attribute or default to 'home'
+    const carouselElement = document.getElementById('bannerCarousel');
+    const bannerType = carouselElement?.dataset.bannerType || 'home';
+    
+    if (carouselElement) {
+        new BannerCarousel('bannerCarousel', bannerType);
+    }
+});
+</script>

@@ -1,0 +1,328 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-bullhorn"></i> Announcements</h2>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAnnouncementModal">
+        <i class="fas fa-plus"></i> Create Announcement
+    </button>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_announcements }}</div>
+            <div class="stat-label">Total Announcements</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <div class="stat-value">{{ stats.active_announcements }}</div>
+            <div class="stat-label">Active</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <div class="stat-value">{{ stats.scheduled_announcements }}</div>
+            <div class="stat-label">Scheduled</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <div class="stat-value">{{ stats.draft_announcements }}</div>
+            <div class="stat-label">Drafts</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <select name="target" class="form-control form-control-sm">
+                    <option value="">All Targets</option>
+                    <option value="all" {% if target_filter == 'all' %}selected{% endif %}>All Users</option>
+                    <option value="students" {% if target_filter == 'students' %}selected{% endif %}>Students</option>
+                    <option value="teachers" {% if target_filter == 'teachers' %}selected{% endif %}>Teachers</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-control form-control-sm">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="scheduled" {% if status_filter == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                    <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <input type="text" name="search" placeholder="Search announcements..." 
+                       class="form-control form-control-sm" value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Announcements Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Target Audience</th>
+                    <th>Priority</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for announcement in announcements %}
+                <tr>
+                    <td>
+                        <strong>{{ announcement.title }}</strong>
+                        <br><small class="text-muted">{{ announcement.message|truncatewords:10 }}</small>
+                    </td>
+                    <td>
+                        {% if announcement.target_audience == 'all' %}
+                            <span class="badge bg-primary">All Users</span>
+                        {% elif announcement.target_audience == 'students' %}
+                            <span class="badge bg-info">Students</span>
+                        {% elif announcement.target_audience == 'teachers' %}
+                            <span class="badge bg-success">Teachers</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if announcement.priority == 'high' %}
+                            <span class="badge bg-danger">High</span>
+                        {% elif announcement.priority == 'medium' %}
+                            <span class="badge bg-warning">Medium</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Low</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ announcement.start_date|date:"M d, Y" }}</td>
+                    <td>
+                        {% if announcement.end_date %}
+                            {{ announcement.end_date|date:"M d, Y" }}
+                        {% else %}
+                            No end date
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if announcement.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% elif announcement.start_date > today %}
+                            <span class="badge bg-info">Scheduled</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                data-bs-toggle="modal" data-bs-target="#editModal{{ announcement.id }}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                data-bs-toggle="modal" data-bs-target="#deleteModal{{ announcement.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                
+                <!-- Edit Modal -->
+                <div class="modal fade" id="editModal{{ announcement.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <form method="post" action="{% url 'platformadmin:announcement_edit' announcement.id %}">
+                                {% csrf_token %}
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Edit Announcement</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Title</label>
+                                        <input type="text" name="title" class="form-control" value="{{ announcement.title }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Message</label>
+                                        <textarea name="message" class="form-control" rows="4" required>{{ announcement.message }}</textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Target Audience</label>
+                                            <select name="target_audience" class="form-control" required>
+                                                <option value="all" {% if announcement.target_audience == 'all' %}selected{% endif %}>All Users</option>
+                                                <option value="students" {% if announcement.target_audience == 'students' %}selected{% endif %}>Students</option>
+                                                <option value="teachers" {% if announcement.target_audience == 'teachers' %}selected{% endif %}>Teachers</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Priority</label>
+                                            <select name="priority" class="form-control" required>
+                                                <option value="low" {% if announcement.priority == 'low' %}selected{% endif %}>Low</option>
+                                                <option value="medium" {% if announcement.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                                <option value="high" {% if announcement.priority == 'high' %}selected{% endif %}>High</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Start Date</label>
+                                            <input type="date" name="start_date" class="form-control" value="{{ announcement.start_date|date:'Y-m-d' }}" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">End Date (Optional)</label>
+                                            <input type="date" name="end_date" class="form-control" value="{% if announcement.end_date %}{{ announcement.end_date|date:'Y-m-d' }}{% endif %}">
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="is_active" class="form-check-input" id="is_active{{ announcement.id }}" {% if announcement.is_active %}checked{% endif %}>
+                                            <label class="form-check-label" for="is_active{{ announcement.id }}">Active</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delete Modal -->
+                <div class="modal fade" id="deleteModal{{ announcement.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delete Announcement</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to delete <strong>{{ announcement.title }}</strong>?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form method="post" action="{% url 'platformadmin:announcement_delete' announcement.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        No announcements found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Announcement Modal -->
+<div class="modal fade" id="createAnnouncementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'platformadmin:announcement_create' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Announcement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea name="message" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Target Audience</label>
+                            <select name="target_audience" class="form-control" required>
+                                <option value="all">All Users</option>
+                                <option value="students">Students</option>
+                                <option value="teachers">Teachers</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Priority</label>
+                            <select name="priority" class="form-control" required>
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" name="start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date (Optional)</label>
+                            <input type="date" name="end_date" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="is_active_new" checked>
+                            <label class="form-check-label" for="is_active_new">Active</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Announcement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="pagination-custom mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if target_filter %}&target={{ target_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if target_filter %}&target={{ target_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                    Next
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

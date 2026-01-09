@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Browse Courses - LeQ{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container text-white">
+        <div class="row align-items-center">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-4 fw-bold mb-3">Explore Audio Courses</h1>
+                <p class="lead mb-4">Learn from expert instructors with our premium audio courses</p>
+                
+                <!-- Search Bar -->
+                <form method="get" class="mb-4">
+                    <div class="input-group input-group-lg shadow">
+                        <input type="text" name="search" class="form-control" placeholder="Search for courses..." value="{{ request.GET.search }}">
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filters & Courses -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar Filters -->
+            <div class="col-lg-3 mb-4">
+                <div class="card-custom p-4 sticky-top" style="top: 100px;">
+                    <h5 class="fw-bold mb-4"><i class="fas fa-filter me-2"></i>Filters</h5>
+                    
+                    <!-- Categories -->
+                    <div class="mb-4">
+                        <h6 class="fw-semibold mb-3">Categories</h6>
+                        <div class="list-group list-group-flush">
+                            <a href="?{{ request.GET.urlencode }}" class="list-group-item list-group-item-action border-0 {% if not request.GET.category %}active{% endif %}">
+                                All Categories
+                            </a>
+                            {% for category in categories %}
+                            <a href="?category={{ category.slug }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                               class="list-group-item list-group-item-action border-0 {% if request.GET.category == category.slug %}active{% endif %}">
+                                <i class="{{ category.icon|default:'fas fa-folder' }} me-2"></i>{{ category.name }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Level Filter -->
+                    <div class="mb-4">
+                        <h6 class="fw-semibold mb-3">Level</h6>
+                        <select name="level" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Levels</option>
+                            <option value="beginner" {% if request.GET.level == 'beginner' %}selected{% endif %}>Beginner</option>
+                            <option value="intermediate" {% if request.GET.level == 'intermediate' %}selected{% endif %}>Intermediate</option>
+                            <option value="advanced" {% if request.GET.level == 'advanced' %}selected{% endif %}>Advanced</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Price Filter -->
+                    <div class="mb-4">
+                        <h6 class="fw-semibold mb-3">Price</h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="free">
+                            <label class="form-check-label" for="free">Free Courses</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="paid">
+                            <label class="form-check-label" for="paid">Paid Courses</label>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-outline-danger w-100" onclick="window.location.href='{% url 'courses:course_list' %}'">
+                        <i class="fas fa-redo me-2"></i>Clear Filters
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Courses Grid -->
+            <div class="col-lg-9">
+                <!-- Sort Options -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0">{{ page_obj.paginator.count }} Courses Found</h5>
+                    <div class="d-flex gap-2">
+                        <select class="form-select form-select-sm" name="sort" style="width: auto;" onchange="window.location.href='?sort=' + this.value">
+                            <option value="-created_at" {% if request.GET.sort == '-created_at' or not request.GET.sort %}selected{% endif %}>Latest</option>
+                            <option value="popular" {% if request.GET.sort == 'popular' %}selected{% endif %}>Most Popular</option>
+                            <option value="rating" {% if request.GET.sort == 'rating' %}selected{% endif %}>Highest Rated</option>
+                            <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                            <option value="price_high" {% if request.GET.sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Courses Grid -->
+                <div class="row g-4">
+                    {% for course in courses %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card-custom h-100">
+                            <!-- Course Thumbnail -->
+                            <div class="position-relative">
+                                {% if course.thumbnail %}
+                                    <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}" style="height: 200px; object-fit: cover; border-radius: 12px 12px 0 0;">
+                                {% else %}
+                                    <div class="bg-gradient text-white d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;">
+                                        <i class="fas fa-headphones fa-4x opacity-50"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if course.is_free %}
+                                <span class="badge bg-success position-absolute top-0 start-0 m-3">FREE</span>
+                                {% elif course.discount_price %}
+                                <span class="badge bg-danger position-absolute top-0 start-0 m-3">SALE</span>
+                                {% endif %}
+                                
+                                <span class="badge bg-dark position-absolute top-0 end-0 m-3">
+                                    {{ course.level|title }}
+                                </span>
+                            </div>
+                            
+                            <div class="card-body">
+                                <!-- Course Category -->
+                                {% if course.category %}
+                                <span class="badge bg-light text-primary mb-2">
+                                    <i class="{{ course.category.icon|default:'fas fa-tag' }} me-1"></i>{{ course.category.name }}
+                                </span>
+                                {% endif %}
+                                
+                                <!-- Course Title -->
+                                <h5 class="card-title fw-bold mb-2">
+                                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none text-dark">
+                                        {{ course.title }}
+                                    </a>
+                                </h5>
+                                
+                                <!-- Short Description -->
+                                <p class="card-text text-muted small mb-3">
+                                    {{ course.short_description|truncatewords:15 }}
+                                </p>
+                                
+                                <!-- Teacher Info -->
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                        {{ course.teacher.first_name.0|default:course.teacher.email.0|upper }}
+                                    </div>
+                                    <small class="text-muted">{{ course.teacher.get_full_name|default:course.teacher.email }}</small>
+                                </div>
+                                
+                                <!-- Course Stats -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="small text-muted">
+                                        <i class="fas fa-users me-1"></i>{{ course.student_count|default:0 }} students
+                                    </div>
+                                    <div class="small">
+                                        {% if course.avg_rating %}
+                                        <i class="fas fa-star text-warning me-1"></i>{{ course.avg_rating|floatformat:1 }}
+                                        {% else %}
+                                        <i class="far fa-star text-muted me-1"></i>No ratings
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Price & CTA -->
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% if course.is_free or course.price == 0 %}
+                                            <span class="fw-bold text-success fs-5">FREE</span>
+                                        {% elif course.discount_price %}
+                                            <div>
+                                                <span class="fw-bold fs-5" style="color: var(--primary-color);">₹{{ course.discount_price }}</span>
+                                                <small class="text-muted text-decoration-line-through ms-1">₹{{ course.price }}</small>
+                                            </div>
+                                        {% else %}
+                                            <span class="fw-bold fs-5" style="color: var(--primary-color);">₹{{ course.price }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-sm btn-primary-custom">
+                                        View Course
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                            <h4>No courses found</h4>
+                            <p class="text-muted">Try adjusting your filters or search query</p>
+                            <a href="{% url 'courses:course_list' %}" class="btn btn-primary-custom">View All Courses</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">Last</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Messages - Teacher Panel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Messages</h2>
+    <a href="{% url 'notifications:message_compose' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Compose Message
+    </a>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total Messages</h6>
+                <h3 class="mb-0">{{ stats.total }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Unread Messages</h6>
+                <h3 class="mb-0 text-danger">{{ stats.unread }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="btn-group" role="group">
+            <a href="?unread=false" class="btn btn-{% if not unread_only %}primary{% else %}outline-primary{% endif %}">
+                All Messages
+            </a>
+            <a href="?unread=true" class="btn btn-{% if unread_only %}primary{% else %}outline-primary{% endif %}">
+                Unread Only
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Messages List -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for message in messages %}
+            <a href="{% url 'notifications:message_detail' message.id %}" 
+               class="list-group-item list-group-item-action {% if not message.is_read %}bg-light{% endif %}">
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="d-flex">
+                        <div class="avatar-sm bg-primary text-white rounded me-3 d-flex align-items-center justify-content-center">
+                            {{ message.sender.first_name.0|default:message.sender.email.0|upper }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0 {% if not message.is_read %}fw-bold{% endif %}">
+                                    {{ message.sender.get_full_name|default:message.sender.email }}
+                                </h6>
+                                <small class="text-muted">{{ message.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-1 {% if not message.is_read %}fw-semibold{% endif %}">{{ message.subject }}</p>
+                            <p class="mb-1 text-muted">{{ message.body|truncatewords:15 }}</p>
+                            {% if message.course %}
+                            <small class="text-primary">
+                                <i class="fas fa-book me-1"></i>{{ message.course.title|truncatewords:5 }}
+                            </small>
+                            {% endif %}
+                            {% if message.replies.count > 0 %}
+                            <small class="text-muted ms-3">
+                                <i class="fas fa-reply me-1"></i>{{ message.replies.count }} repl{{ message.replies.count|pluralize:"y,ies" }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if not message.is_read %}
+                    <span class="badge bg-primary">New</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% empty %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No messages found</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if messages.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if messages.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ messages.previous_page_number }}{% if unread_only %}&unread=true{% endif %}">Previous</a>
+        </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ messages.number }} of {{ messages.paginator.num_pages }}</span>
+        </li>
+        
+        {% if messages.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ messages.next_page_number }}{% if unread_only %}&unread=true{% endif %}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

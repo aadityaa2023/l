@@ -1,0 +1,125 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-edit"></i> Edit Coupon: {{ coupon.code }}</h2>
+    <a href="{% url 'platformadmin:coupon_management' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Coupons
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Coupon Details</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Coupon Code</label>
+                        <input type="text" class="form-control" value="{{ coupon.code }}" disabled>
+                        <small class="text-muted">Code cannot be changed</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3">{{ coupon.description }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-control">
+                            <option value="active" {% if coupon.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if coupon.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            <option value="expired" {% if coupon.status == 'expired' %}selected{% endif %}>Expired</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Discount Value</label>
+                        <input type="number" name="discount_value" class="form-control" 
+                               step="0.01" value="{{ coupon.discount_value }}">
+                        <small class="text-muted">
+                            Type: {{ coupon.get_discount_type_display }}
+                        </small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Coupon
+                        </button>
+                        <a href="{% url 'platformadmin:coupon_management' %}" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Usage Statistics -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Usage Statistics</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Total Uses:</span>
+                        <strong>{{ usage_stats.total_uses }}</strong>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Unique Users:</span>
+                        <strong>{{ usage_stats.unique_users }}</strong>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Total Discount:</span>
+                        <strong>₹{{ usage_stats.total_discount|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Coupon Info -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Coupon Information</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-6">Discount Type:</dt>
+                    <dd class="col-sm-6">{{ coupon.get_discount_type_display }}</dd>
+                    
+                    <dt class="col-sm-6">Valid From:</dt>
+                    <dd class="col-sm-6">{{ coupon.valid_from|date:"M d, Y H:i" }}</dd>
+                    
+                    <dt class="col-sm-6">Valid Until:</dt>
+                    <dd class="col-sm-6">{{ coupon.valid_until|date:"M d, Y H:i" }}</dd>
+                    
+                    <dt class="col-sm-6">Max Uses:</dt>
+                    <dd class="col-sm-6">
+                        {% if coupon.max_uses %}
+                            {{ coupon.max_uses }}
+                        {% else %}
+                            Unlimited
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-6">Current Uses:</dt>
+                    <dd class="col-sm-6">{{ coupon.current_uses }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

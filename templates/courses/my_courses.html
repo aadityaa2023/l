@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}My Courses - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <h2 class="fw-bold mb-4">My Learning</h2>
+        
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link active">All Courses</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link">In Progress</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link">Completed</a>
+            </li>
+        </ul>
+
+        <div class="row g-4">
+            {% for enrollment in enrollments %}
+            <div class="col-md-4">
+                <div class="card-custom h-100">
+                    {% if enrollment.course.thumbnail %}
+                    <img src="{{ enrollment.course.thumbnail.url }}" class="card-img-top" alt="{{ enrollment.course.title }}" style="height: 200px; object-fit: cover; border-radius: 12px 12px 0 0;">
+                    {% else %}
+                    <div class="bg-gradient text-white d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;">
+                        <i class="fas fa-headphones fa-4x opacity-50"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-2">{{ enrollment.course.title }}</h5>
+                        <p class="small text-muted mb-3">{{ enrollment.course.teacher.get_full_name }}</p>
+                        
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar" style="width: {{ enrollment.progress_percentage }}%; background-color: var(--primary-color);"></div>
+                        </div>
+                        <p class="small text-muted mb-3">{{ enrollment.progress_percentage }}% complete</p>
+                        
+                        <a href="{% url 'courses:course_learn' enrollment.course.id %}" class="btn btn-primary-custom w-100">
+                            {% if enrollment.progress_percentage > 0 %}Continue Learning{% else %}Start Course{% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+                    <h4>No enrolled courses</h4>
+                    <p class="text-muted">Browse courses to start learning</p>
+                    <a href="{% url 'courses:course_list' %}" class="btn btn-primary-custom">Explore Courses</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

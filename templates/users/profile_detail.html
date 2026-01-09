@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 mb-4">
+                <div class="card-custom p-4 text-center">
+                    <div class="mb-3">
+                        {% if user.is_student and user.student_profile.profile_picture %}
+                        <img src="{{ user.student_profile.profile_picture.url }}" class="rounded-circle" width="120" height="120" alt="Profile">
+                        {% elif user.is_teacher and user.teacher_profile.profile_picture %}
+                        <img src="{{ user.teacher_profile.profile_picture.url }}" class="rounded-circle" width="120" height="120" alt="Profile">
+                        {% else %}
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px; font-size: 3rem;">
+                            {{ user.first_name.0|default:user.email.0|upper }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h4 class="fw-bold mb-1">{{ user.get_full_name|default:user.email }}</h4>
+                    <p class="text-muted mb-3">{{ user.role|title }}</p>
+                    <a href="{% url 'users:profile_update' %}" class="btn btn-outline-custom w-100">
+                        <i class="fas fa-edit me-2"></i>Edit Profile
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-bold mb-4">Personal Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Email</label>
+                            <p class="fw-semibold">{{ user.email }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Phone</label>
+                            <p class="fw-semibold">{{ user.phone|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Member Since</label>
+                            <p class="fw-semibold">{{ user.date_joined|date:"F Y" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Role</label>
+                            <p class="fw-semibold">{{ user.role|title }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if user.is_student %}
+                <div class="card-custom p-4">
+                    <h5 class="fw-bold mb-4">Learning Stats</h5>
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <h3 class="fw-bold" style="color: var(--primary-color);">0</h3>
+                            <p class="text-muted">Courses Enrolled</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="fw-bold text-success">0</h3>
+                            <p class="text-muted">Completed</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h3 class="fw-bold" style="color: var(--secondary-color);">0h</h3>
+                            <p class="text-muted">Learning Time</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

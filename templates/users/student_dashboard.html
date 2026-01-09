@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard - LeQ{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<section class="py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="text-white fw-bold mb-2">Welcome back, {{ user.get_short_name|default:user.email }}!</h2>
+                <p class="text-white-50 mb-0">Continue your learning journey</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'courses:course_list' %}" class="btn btn-light">
+                    <i class="fas fa-search me-2"></i>Explore Courses
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Dashboard Content -->
+<section class="py-5">
+    <div class="container">
+        <!-- Stats Cards -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 60px; height: 60px; background: rgba(91, 81, 216, 0.1);">
+                        <i class="fas fa-book-open fa-2x" style="color: var(--primary-color);"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ enrollments.count }}</h3>
+                    <p class="text-muted mb-0">Enrolled Courses</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 60px; height: 60px; background: rgba(40, 199, 111, 0.1);">
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ analytics.completed_courses|default:0 }}</h3>
+                    <p class="text-muted mb-0">Completed</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 60px; height: 60px; background: rgba(255, 107, 53, 0.1);">
+                        <i class="fas fa-clock fa-2x" style="color: var(--secondary-color);"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ analytics.total_listening_hours|default:0|floatformat:1 }}</h3>
+                    <p class="text-muted mb-0">Hours Listened</p>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 60px; height: 60px; background: rgba(0, 207, 232, 0.1);">
+                        <i class="fas fa-fire fa-2x" style="color: var(--info-color);"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ analytics.current_streak|default:0 }}</h3>
+                    <p class="text-muted mb-0">Day Streak</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8 mb-4">
+                <!-- Continue Learning -->
+                <div class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="fw-bold mb-0">Continue Learning</h4>
+                        <a href="{% url 'courses:my_courses' %}" class="text-decoration-none">View All</a>
+                    </div>
+                    
+                    {% if enrollments %}
+                    <div class="row g-4">
+                        {% for enrollment in enrollments %}
+                        <div class="col-md-6">
+                            <div class="card-custom h-100">
+                                <div class="row g-0 h-100">
+                                    <div class="col-4">
+                                        {% if enrollment.course.thumbnail %}
+                                            <img src="{{ enrollment.course.thumbnail.url }}" class="img-fluid h-100 w-100" 
+                                                 alt="{{ enrollment.course.title }}" style="object-fit: cover; border-radius: 12px 0 0 12px;">
+                                        {% else %}
+                                            <div class="h-100 d-flex align-items-center justify-content-center" 
+                                                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 0 0 12px;">
+                                                <i class="fas fa-headphones fa-2x text-white opacity-50"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-8">
+                                        <div class="card-body">
+                                            <h6 class="fw-bold mb-2">{{ enrollment.course.title|truncatewords:6 }}</h6>
+                                            <p class="small text-muted mb-2">{{ enrollment.course.teacher.get_full_name }}</p>
+                                            
+                                            <div class="progress mb-2" style="height: 6px;">
+                                                <div class="progress-bar" style="width: {{ enrollment.progress_percentage }}%; background-color: var(--primary-color);"></div>
+                                            </div>
+                                            <p class="small text-muted mb-3">{{ enrollment.progress_percentage }}% complete</p>
+                                            
+                                            <a href="{% url 'courses:course_learn' enrollment.course.id %}" class="btn btn-sm btn-primary-custom w-100">
+                                                Continue
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="card-custom p-5 text-center">
+                        <i class="fas fa-book-reader fa-4x text-muted mb-3"></i>
+                        <h5 class="mb-2">No courses yet</h5>
+                        <p class="text-muted mb-3">Start your learning journey by enrolling in a course</p>
+                        <a href="{% url 'courses:course_list' %}" class="btn btn-primary-custom">Browse Courses</a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Recent Activity -->
+                <div>
+                    <h4 class="fw-bold mb-4">Recent Activity</h4>
+                    
+                    {% if recent_sessions %}
+                    <div class="card-custom">
+                        <div class="list-group list-group-flush">
+                            {% for session in recent_sessions %}
+                            <div class="list-group-item">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ session.lesson.title }}</h6>
+                                        <small class="text-muted">{{ session.lesson.module.course.title }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted d-block">{{ session.started_at|timesince }} ago</small>
+                                        <small class="text-muted">{{ session.duration_minutes|default:0 }} min</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card-custom p-4 text-center">
+                        <p class="text-muted mb-0">No recent activity</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Learning Goals -->
+                <div class="card-custom p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold mb-0">Weekly Goal</h5>
+                        <a href="{% url 'users:student_learning_goals' %}" class="text-decoration-none small">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                    </div>
+                    <div class="text-center mb-3">
+                        <div class="position-relative d-inline-block">
+                            <svg width="120" height="120">
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="#E5E7EB" stroke-width="10"/>
+                                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--primary-color)" stroke-width="10" 
+                                        stroke-dasharray="{{ weekly_goal_progress|default:0 }} 314" 
+                                        stroke-linecap="round" transform="rotate(-90 60 60)"/>
+                            </svg>
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <h3 class="fw-bold mb-0">{{ weekly_goal_progress|default:0|floatformat:0 }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-center text-muted mb-2">
+                        {% if weekly_goal_progress >= 100 %}
+                        🎉 Goal achieved! Amazing work!
+                        {% elif weekly_goal_progress >= 50 %}
+                        Keep it up! You're halfway there
+                        {% else %}
+                        You can do it! Keep learning
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'users:student_learning_goals' %}" class="btn btn-sm btn-outline-custom w-100">
+                        View Details
+                    </a>
+                </div>
+                
+                <!-- Active Subscriptions -->
+                {% if active_subscriptions %}
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-bold mb-3">Active Subscriptions</h5>
+                    {% for sub in active_subscriptions %}
+                    <div class="d-flex align-items-center mb-3 p-3 rounded" style="background-color: rgba(40, 199, 111, 0.1);">
+                        <i class="fas fa-check-circle fa-2x me-3 text-success"></i>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">{{ sub.plan.name }}</h6>
+                            <small class="text-muted">Expires {{ sub.end_date|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <a href="{% url 'users:student_billing' %}" class="btn btn-sm btn-outline-custom w-100">
+                        View Billing
+                    </a>
+                </div>
+                {% endif %}
+                
+                <!-- Quick Actions -->
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-bold mb-3">Quick Actions</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'notifications:student_questions' %}" class="btn btn-outline-custom text-start">
+                            <i class="fas fa-question-circle me-2"></i>My Questions
+                            {% if unread_questions %}
+                            <span class="badge bg-warning float-end">{{ unread_questions }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'notifications:student_messages' %}" class="btn btn-outline-custom text-start">
+                            <i class="fas fa-envelope me-2"></i>Messages
+                            {% if unread_messages %}
+                            <span class="badge bg-danger float-end">{{ unread_messages }}</span>
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'users:student_achievements' %}" class="btn btn-outline-custom text-start">
+                            <i class="fas fa-trophy me-2"></i>Achievements
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Recommended -->
+                <div class="card-custom p-4">
+                    <h5 class="fw-bold mb-4">Recommended for You</h5>
+                    {% if recommendations %}
+                    {% for course in recommendations|slice:":3" %}
+                    <div class="mb-3 {% if not forloop.last %}pb-3 border-bottom{% endif %}">
+                        <div class="d-flex align-items-start">
+                            {% if course.thumbnail %}
+                            <img src="{{ course.thumbnail.url }}" class="rounded me-3" 
+                                 style="width: 60px; height: 60px; object-fit: cover;" alt="{{ course.title }}">
+                            {% else %}
+                            <div class="rounded me-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ course.title|truncatewords:4 }}</h6>
+                                <small class="text-muted d-block mb-2">by {{ course.teacher.get_full_name }}</small>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-star text-warning me-1"></i>{{ course.average_rating|floatformat:1 }}
+                                    </small>
+                                    <span class="fw-bold" style="color: var(--primary-color);">₹{{ course.price }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted text-center mb-3">Start enrolling in courses to get personalized recommendations</p>
+                    {% endif %}
+                    <a href="{% url 'courses:course_list' %}" class="btn btn-outline-custom w-100">
+                        View More Courses
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

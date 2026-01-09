@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border: 1px solid #e0e0e0; }
+        .course-box { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #667eea; }
+        .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; padding: 20px; color: #888; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Course Enrollment Confirmed!</h1>
+    </div>
+    <div class="content">
+        <h2>Congratulations {{ user.first_name|default:"Student" }}!</h2>
+        <p>You've successfully enrolled in:</p>
+        
+        <div class="course-box">
+            <h3>{{ course.title|default:"Advanced Python Programming" }}</h3>
+            <p>{{ course.description|default:"Master Python programming with hands-on projects and real-world applications." }}</p>
+            <p><strong>Instructor:</strong> {{ course.teacher.get_full_name|default:"Expert Instructor" }}</p>
+        </div>
+        
+        <p>You can now:</p>
+        <ul>
+            <li>Access all course materials immediately</li>
+            <li>Watch video lectures at your own pace</li>
+            <li>Download course resources</li>
+            <li>Participate in discussions</li>
+            <li>Earn a certificate upon completion</li>
+        </ul>
+        
+        <a href="#" class="button">Start Learning Now</a>
+        
+        <p>Happy learning!</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 LeQ. All rights reserved.</p>
+    </div>
+</body>
+</html>

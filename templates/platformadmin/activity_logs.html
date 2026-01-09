@@ -1,0 +1,125 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<h2>Activity Logs</h2>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <select name="admin" class="form-control form-control-sm">
+                    <option value="">All Admins</option>
+                    {% for admin in admins %}
+                    <option value="{{ admin.id }}" {% if request.GET.admin == admin.id|stringformat:'s' %}selected{% endif %}>
+                        {{ admin.email }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="action" class="form-control form-control-sm">
+                    <option value="">All Actions</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                    <option value="approve">Approve</option>
+                    <option value="reject">Reject</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Admin</th>
+                    <th>Action</th>
+                    <th>Object Type</th>
+                    <th>Object</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.created_at|date:"M d, Y H:i:s" }}</td>
+                    <td>{{ log.admin.email }}</td>
+                    <td>
+                        {% if log.action == 'create' %}
+                            <span class="badge bg-success">{{ log.get_action_display }}</span>
+                        {% elif log.action == 'delete' %}
+                            <span class="badge bg-danger">{{ log.get_action_display }}</span>
+                        {% elif log.action == 'approve' %}
+                            <span class="badge bg-success">{{ log.get_action_display }}</span>
+                        {% elif log.action == 'reject' %}
+                            <span class="badge bg-danger">{{ log.get_action_display }}</span>
+                        {% else %}
+                            <span class="badge bg-info">{{ log.get_action_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ log.content_type }}</td>
+                    <td>{{ log.object_repr|truncatewords:5 }}</td>
+                    <td>
+                        {% if log.reason %}
+                            <small class="text-muted">{{ log.reason|truncatewords:5 }}</small>
+                        {% else %}
+                            <small class="text-muted">-</small>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No logs found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="pagination-custom">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">First</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

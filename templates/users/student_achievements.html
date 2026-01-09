@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Achievements - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <h2 class="text-white fw-bold mb-2">Achievements</h2>
+        <p class="text-white-50 mb-0">Track your learning milestones</p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <!-- Overall Stats -->
+        <div class="row g-3 mb-5">
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Total Achievements</h6>
+                    <h2 class="mb-0 text-primary">{{ stats.total_achievements }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Unlocked</h6>
+                    <h2 class="mb-0 text-success">{{ stats.unlocked }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Locked</h6>
+                    <h2 class="mb-0 text-warning">{{ stats.locked }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Completion</h6>
+                    <h2 class="mb-0">{{ stats.completion_percentage|floatformat:0 }}%</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievement Categories -->
+        {% for category, items in achievements.items %}
+        <div class="mb-5">
+            <h4 class="fw-bold mb-4">
+                <i class="fas fa-{{ category.icon }} me-2"></i>{{ category.name }}
+            </h4>
+            <div class="row g-4">
+                {% for achievement in items %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="achievement-card card-custom p-4 text-center {% if achievement.unlocked %}unlocked{% else %}locked{% endif %}">
+                        <div class="achievement-icon mb-3">
+                            <i class="fas fa-{{ achievement.icon }} fa-4x"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">{{ achievement.title }}</h5>
+                        <p class="text-muted mb-3">{{ achievement.description }}</p>
+                        
+                        {% if achievement.unlocked %}
+                        <div class="badge bg-success mb-2">
+                            <i class="fas fa-check me-1"></i>Unlocked
+                        </div>
+                        <small class="text-muted d-block">
+                            Achieved on {{ achievement.unlocked_date|date:"M d, Y" }}
+                        </small>
+                        {% else %}
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar bg-gradient" 
+                                 style="width: {{ achievement.progress }}%; background: linear-gradient(90deg, #667eea, #764ba2);"
+                                 data-progress="{{ achievement.progress }}">
+                                {{ achievement.current }} / {{ achievement.target }}
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ achievement.progress|floatformat:0 }}% Complete</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<style>
+.achievement-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.achievement-card.unlocked {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+.achievement-card.locked {
+    opacity: 0.6;
+    filter: grayscale(100%);
+}
+
+.achievement-card.unlocked:hover {
+    transform: translateY(-5px);
+    border-color: #667eea;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+}
+
+.achievement-icon {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.achievement-card.locked .achievement-icon {
+    background: #e9ecef;
+    color: #6c757d;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate progress bars
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const progress = bar.getAttribute('data-progress');
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.transition = 'width 1s ease-in-out';
+            bar.style.width = progress + '%';
+        }, 100);
+    });
+
+    // Add entrance animations
+    const cards = document.querySelectorAll('.achievement-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 50);
+    });
+});
+</script>
+{% endblock %}

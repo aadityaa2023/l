@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Billing & Payments - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <h2 class="text-white fw-bold mb-2">Billing & Payments</h2>
+        <p class="text-white-50 mb-0">View your payment history and subscriptions</p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Total Spent</h6>
+                    <h3 class="mb-0 text-primary">₹{{ stats.total_spent|floatformat:2 }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Total Payments</h6>
+                    <h3 class="mb-0">{{ stats.total_payments }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Active Subscriptions</h6>
+                    <h3 class="mb-0 text-success">{{ stats.active_subscriptions }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <h6 class="text-muted mb-2">Courses Owned</h6>
+                    <h3 class="mb-0">{{ stats.courses_owned }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card-custom p-3 mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="btn-group" role="group">
+                        <a href="?type=all{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+                           class="btn btn-sm btn-{% if not type_filter or type_filter == 'all' %}primary{% else %}outline-primary{% endif %}">
+                            All
+                        </a>
+                        <a href="?type=payment{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+                           class="btn btn-sm btn-{% if type_filter == 'payment' %}primary{% else %}outline-primary{% endif %}">
+                            Payments
+                        </a>
+                        <a href="?type=subscription{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+                           class="btn btn-sm btn-{% if type_filter == 'subscription' %}primary{% else %}outline-primary{% endif %}">
+                            Subscriptions
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="btn-group float-end" role="group">
+                        <a href="?status=all{% if type_filter %}&type={{ type_filter }}{% endif %}" 
+                           class="btn btn-sm btn-{% if not status_filter or status_filter == 'all' %}primary{% else %}outline-primary{% endif %}">
+                            All Status
+                        </a>
+                        <a href="?status=completed{% if type_filter %}&type={{ type_filter }}{% endif %}" 
+                           class="btn btn-sm btn-{% if status_filter == 'completed' %}primary{% else %}outline-primary{% endif %}">
+                            Completed
+                        </a>
+                        <a href="?status=pending{% if type_filter %}&type={{ type_filter }}{% endif %}" 
+                           class="btn btn-sm btn-{% if status_filter == 'pending' %}primary{% else %}outline-primary{% endif %}">
+                            Pending
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions List -->
+        {% for item in transactions %}
+        <div class="card-custom mb-3">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="icon-box bg-{% if item.type == 'payment' %}primary{% else %}success{% endif %} text-white">
+                                <i class="fas fa-{% if item.type == 'payment' %}rupee-sign{% else %}sync{% endif %}"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">
+                                    {% if item.type == 'payment' %}
+                                    {{ item.course.title }}
+                                    {% else %}
+                                    {{ item.plan.name }} Subscription
+                                    {% endif %}
+                                </h5>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>{{ item.created_at|date:"M d, Y" }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-{% if item.type == 'payment' %}file-invoice{% else %}clock{% endif %} me-1"></i>
+                                        {% if item.type == 'payment' %}
+                                        Order: {{ item.order_id }}
+                                        {% else %}
+                                        {% if item.is_active %}Active{% else %}Expired{% endif %}
+                                        {% endif %}
+                                    </small>
+                                    {% if item.type == 'subscription' and item.is_active %}
+                                    <small class="text-success">
+                                        <i class="fas fa-calendar-check me-1"></i>Expires: {{ item.end_date|date:"M d, Y" }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <h4 class="mb-2 text-primary">₹{{ item.amount|floatformat:2 }}</h4>
+                        <span class="badge bg-{% if item.status == 'completed' or item.status == 'active' %}success{% elif item.status == 'pending' %}warning{% else %}danger{% endif %}">
+                            {% if item.type == 'payment' %}
+                            {{ item.get_status_display }}
+                            {% else %}
+                            {% if item.is_active %}Active{% else %}Expired{% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card-custom p-5 text-center">
+            <i class="fas fa-receipt fa-4x text-muted mb-3"></i>
+            <h5 class="mb-2">No transactions yet</h5>
+            <p class="text-muted mb-3">Your payment history will appear here</p>
+            <a href="{% url 'home' %}" class="btn btn-primary-custom">
+                <i class="fas fa-shopping-cart me-2"></i>Browse Courses
+            </a>
+        </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if transactions.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if transactions.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ transactions.previous_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+                </li>
+                
+                {% if transactions.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ transactions.next_page_number }}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<div class="mb-4">
+    <h2>Payment Details</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Payment Information -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Transaction Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Payment ID:</strong>
+                        <code>{{ payment.id }}</code>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Razorpay Order ID:</strong>
+                        <code>{{ payment.razorpay_order_id|default:'-' }}</code>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Amount:</strong> ₹{{ payment.amount }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Currency:</strong> {{ payment.currency }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Status:</strong>
+                        {% if payment.status == 'completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif payment.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% elif payment.status == 'failed' %}
+                            <span class="badge bg-danger">Failed</span>
+                        {% elif payment.status == 'refunded' %}
+                            <span class="badge bg-secondary">Refunded</span>
+                        {% else %}
+                            <span class="badge bg-info">{{ payment.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Payment Method:</strong> {{ payment.get_payment_method_display|default:'-' }}
+                    </div>
+                </div>
+                {% if payment.failure_reason %}
+                <div class="alert alert-danger">
+                    <strong>Failure Reason:</strong> {{ payment.failure_reason }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- User Information -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Customer Information</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <strong>Email:</strong> {{ payment.user.email }}<br>
+                    <strong>Name:</strong> {{ payment.user.get_full_name|default:"N/A" }}<br>
+                    <strong>Phone:</strong> {{ payment.user.phone|default:"N/A" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Course Information -->
+        {% if payment.course %}
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Course Information</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <strong>Course:</strong> {{ payment.course.title }}<br>
+                    <strong>Teacher:</strong> {{ payment.course.teacher.email }}<br>
+                    <strong>Price:</strong> ₹{{ payment.course.price }}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Timestamps -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Timeline</h5>
+            </div>
+            <div class="card-body small">
+                <p class="mb-2">
+                    <strong>Created:</strong> {{ payment.created_at|date:"M d, Y H:i:s" }}
+                </p>
+                <p class="mb-2">
+                    <strong>Updated:</strong> {{ payment.updated_at|date:"M d, Y H:i:s" }}
+                </p>
+                {% if payment.completed_at %}
+                <p class="mb-0">
+                    <strong>Completed:</strong> {{ payment.completed_at|date:"M d, Y H:i:s" }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Actions -->
+        {% if payment.status == 'completed' %}
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" onsubmit="return confirm('Are you sure you want to refund this payment?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="refund">
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="fas fa-undo"></i> Refund Payment
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Additional Info -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Additional Info</h5>
+            </div>
+            <div class="card-body small">
+                {% if payment.ip_address %}
+                <p class="mb-2">
+                    <strong>IP Address:</strong> {{ payment.ip_address }}
+                </p>
+                {% endif %}
+                {% if payment.user_agent %}
+                <p class="mb-0">
+                    <strong>User Agent:</strong><br>
+                    <code style="font-size: 10px;">{{ payment.user_agent|truncatewords:10 }}</code>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <a href="{% url 'platformadmin:payment_management' %}" class="btn btn-secondary w-100 mt-4">
+            <i class="fas fa-arrow-left"></i> Back to Payments
+        </a>
+    </div>
+</div>
+{% endblock %}

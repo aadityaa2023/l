@@ -1,0 +1,167 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Analytics - Teacher Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-card {
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+    .chart-container {
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="fw-bold mb-1">Analytics Dashboard</h2>
+    <p class="text-muted mb-0">Detailed insights about your teaching performance</p>
+</div>
+
+<!-- Revenue Overview -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="analytics-card">
+            <h5 class="fw-bold mb-3">Total Revenue</h5>
+            <h2 class="fw-bold text-primary mb-2">₹{{ total_revenue|floatformat:0|default:"0" }}</h2>
+            <p class="text-muted mb-0">All time earnings</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="analytics-card">
+            <h5 class="fw-bold mb-3">Total Students</h5>
+            <h2 class="fw-bold text-success mb-2">{% if analytics %}{{ analytics.total_students }}{% else %}0{% endif %}</h2>
+            <p class="text-muted mb-0">Across all courses</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="analytics-card">
+            <h5 class="fw-bold mb-3">Total Courses</h5>
+            <h2 class="fw-bold text-info mb-2">{% if analytics %}{{ analytics.total_courses }}{% else %}0{% endif %}</h2>
+            <p class="text-muted mb-0">Published courses</p>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Revenue Chart -->
+<div class="analytics-card">
+    <h4 class="fw-bold mb-4">Revenue Trend (Last 6 Months)</h4>
+    {% if monthly_revenue %}
+    <div class="chart-container">
+        <canvas id="revenueChart"></canvas>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+        <p class="text-muted">No revenue data available yet</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Course Performance -->
+<div class="analytics-card">
+    <h4 class="fw-bold mb-4">Course Performance</h4>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Students</th>
+                    <th>Rating</th>
+                    <th>Revenue</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ course.title }}</div>
+                    </td>
+                    <td>{{ course.student_count|default:0 }}</td>
+                    <td>
+                        <i class="fas fa-star text-warning"></i> {{ course.avg_rating|default:0|floatformat:1 }}
+                    </td>
+                    <td>₹{{ course.total_revenue|default:0|floatformat:0 }}</td>
+                    <td>
+                        <span class="badge {% if course.status == 'published' %}bg-success{% elif course.status == 'draft' %}bg-warning{% else %}bg-secondary{% endif %}">{{ course.status|title }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">No courses available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Revenue Chart
+    const ctx = document.getElementById('revenueChart');
+    if (ctx) {
+        const monthlyData = [
+            {% for month in monthly_revenue %}
+            { month: '{{ month.month|escapejs }}', revenue: {{ month.revenue|default:0 }} }
+            {% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Only create chart if we have data
+        if (monthlyData.length > 0) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyData.map(d => d.month),
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: monthlyData.map(d => d.revenue),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '₹' + context.parsed.y.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

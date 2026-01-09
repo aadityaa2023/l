@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Verify OTP - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="card-custom p-5">
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <i class="bi bi-shield-lock fs-1 text-primary"></i>
+                        </div>
+                        <h2 class="fw-bold mb-2">{{ page_title|default:"Verify OTP" }}</h2>
+                        <p class="text-muted">
+                            We've sent a 6-digit verification code to<br>
+                            <strong>{{ email }}</strong>
+                        </p>
+                    </div>
+
+                    {% if messages %}
+                    <div class="mb-3">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" id="otp-form">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label class="form-label">Enter Verification Code</label>
+                            <input type="text" 
+                                   name="otp_code" 
+                                   class="form-control form-control-lg text-center"
+                                   style="letter-spacing: 0.5em; font-size: 1.5rem; font-weight: bold;"
+                                   placeholder="000000"
+                                   maxlength="6"
+                                   pattern="[0-9]{6}"
+                                   autocomplete="one-time-code"
+                                   inputmode="numeric"
+                                   required
+                                   autofocus>
+                            {% if form.otp_code.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.otp_code.errors }}
+                            </div>
+                            {% endif %}
+                            <small class="text-muted">Code expires in 5 minutes</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 py-3 mb-3">
+                            <i class="bi bi-check-circle me-2"></i>Verify Code
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="text-muted mb-2">Didn't receive the code?</p>
+                        <form method="post" action="{% url 'users:otp_resend' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-link p-0 text-decoration-none" id="resend-btn">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
+                            </button>
+                        </form>
+                        <p class="text-muted small mt-2" id="resend-timer"></p>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'account_login' %}" class="text-muted text-decoration-none">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit when 6 digits are entered
+    const otpInput = document.querySelector('input[name="otp_code"]');
+    const form = document.getElementById('otp-form');
+    
+    if (otpInput) {
+        otpInput.addEventListener('input', function(e) {
+            // Remove non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Auto-submit when 6 digits
+            if (this.value.length === 6) {
+                // Small delay to allow user to see the input
+                setTimeout(() => form.submit(), 300);
+            }
+        });
+    }
+    
+    // Resend cooldown timer (if applicable)
+    const resendBtn = document.getElementById('resend-btn');
+    const timerDisplay = document.getElementById('resend-timer');
+    let cooldown = {{ resend_cooldown|default:0 }};
+    
+    if (cooldown > 0 && resendBtn && timerDisplay) {
+        resendBtn.disabled = true;
+        resendBtn.classList.add('disabled');
+        
+        const countdown = setInterval(function() {
+            cooldown--;
+            timerDisplay.textContent = `You can resend in ${cooldown} seconds`;
+            
+            if (cooldown <= 0) {
+                clearInterval(countdown);
+                resendBtn.disabled = false;
+                resendBtn.classList.remove('disabled');
+                timerDisplay.textContent = '';
+            }
+        }, 1000);
+    }
+});
+</script>
+{% endblock %}

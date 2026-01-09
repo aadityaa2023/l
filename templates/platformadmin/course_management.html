@@ -1,0 +1,142 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Course Management</h2>
+    <a href="{% url 'platformadmin:course_management' %}" class="btn btn-primary">
+        <i class="fas fa-sync"></i> Reset Filters
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                {{ form.status }}
+            </div>
+            <div class="col-md-2">
+                {{ form.approval_status }}
+            </div>
+            <div class="col-md-2">
+                {{ form.category }}
+            </div>
+            <div class="col-md-4">
+                {{ form.search }}
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Courses Table -->
+<div class="card">
+    <div class="card-header bg-light">
+        <h6 class="mb-0">Total Courses: <strong>{{ total_courses }}</strong></h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Teacher</th>
+                    <th>Status</th>
+                    <th>Approval</th>
+                    <th>Students</th>
+                    <th>Price</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>
+                        <strong>{{ course.title|truncatewords:5 }}</strong>
+                    </td>
+                    <td>{{ course.teacher.email|truncatewords:2 }}</td>
+                    <td>
+                        {% if course.status == 'published' %}
+                            <span class="badge bg-success">Published</span>
+                        {% elif course.status == 'draft' %}
+                            <span class="badge bg-warning">Draft</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ course.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if course.approval %}
+                            {% if course.approval.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                            {% elif course.approval.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% else %}
+                                <span class="badge bg-danger">{{ course.approval.get_status_display }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ course.total_enrollments }}</td>
+                    <td>
+                        {% if course.is_free %}
+                            <span class="badge bg-info">Free</span>
+                        {% else %}
+                            ₹{{ course.price }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'platformadmin:course_approval' course.id %}" 
+                           class="btn btn-sm btn-primary btn-sm-custom">
+                            <i class="fas fa-check"></i> Review
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No courses found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="pagination-custom">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">First</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Reviews - Teacher Panel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Course Reviews</h2>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total Reviews</h6>
+                <h3 class="mb-0">{{ stats.total }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Average Rating</h6>
+                <h3 class="mb-0 text-warning">
+                    <i class="fas fa-star"></i> {{ stats.avg_rating|floatformat:1 }}
+                </h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Pending Approval</h6>
+                <h3 class="mb-0 text-danger">{{ stats.pending }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rating Distribution -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="mb-3">Rating Distribution</h5>
+        <div class="row">
+            {% for rating, count in rating_distribution.items %}
+            <div class="col">
+                <div class="text-center">
+                    <div class="text-warning mb-2">
+                        {% for i in "12345"|make_list %}
+                            {% if forloop.counter <= rating %}
+                                <i class="fas fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <h4 class="mb-0">{{ count }}</h4>
+                    <small class="text-muted">{{ rating }} star{{ rating|pluralize }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="Search reviews..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="rating" class="form-select">
+                    <option value="">All Ratings</option>
+                    {% for i in "54321"|make_list %}
+                    <option value="{{ i }}" {% if rating_filter == i %}selected{% endif %}>{{ i }} Stars</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="approved" class="form-select">
+                    <option value="">All Reviews</option>
+                    <option value="approved" {% if approval_filter == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="pending" {% if approval_filter == 'pending' %}selected{% endif %}>Pending</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reviews List -->
+<div class="row">
+    {% for review in reviews %}
+    <div class="col-12 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="d-flex">
+                        <div class="avatar-sm bg-primary text-white rounded me-3 d-flex align-items-center justify-content-center">
+                            {{ review.student.first_name.0|default:review.student.email.0|upper }}
+                        </div>
+                        <div>
+                            <h6 class="mb-1">{{ review.student.get_full_name|default:review.student.email }}</h6>
+                            <div class="text-warning mb-2">
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= review.rating %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <p class="text-muted mb-0"><small>Course: {{ review.course.title }}</small></p>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted d-block mb-2">{{ review.created_at|date:"M d, Y" }}</small>
+                        <button class="btn btn-sm btn-{% if review.is_approved %}success{% else %}warning{% endif %} toggle-approval" 
+                                data-review-id="{{ review.id }}">
+                            <i class="fas fa-{% if review.is_approved %}check{% else %}clock{% endif %}"></i>
+                            {% if review.is_approved %}Approved{% else %}Pending{% endif %}
+                        </button>
+                    </div>
+                </div>
+                
+                {% if review.title %}
+                <h6>{{ review.title }}</h6>
+                {% endif %}
+                
+                {% if review.comment %}
+                <p class="mb-0">{{ review.comment }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No reviews found</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if reviews.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if reviews.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ reviews.previous_page_number }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ reviews.number }} of {{ reviews.paginator.num_pages }}</span>
+        </li>
+        
+        {% if reviews.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ reviews.next_page_number }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-approval')) {
+            const button = e.target.closest('.toggle-approval');
+            const reviewId = button.dataset.reviewId;
+            
+            fetch(`/courses/teacher/reviews/${reviewId}/toggle-approval/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.is_approved) {
+                        button.className = 'btn btn-sm btn-success toggle-approval';
+                        button.innerHTML = '<i class="fas fa-check"></i> Approved';
+                    } else {
+                        button.className = 'btn btn-sm btn-warning toggle-approval';
+                        button.innerHTML = '<i class="fas fa-clock"></i> Pending';
+                    }
+                    button.dataset.reviewId = reviewId;
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

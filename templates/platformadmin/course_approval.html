@@ -1,0 +1,172 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<div class="mb-4">
+    <h2>{{ course.title }}</h2>
+    <p class="text-muted">by {{ course.teacher.get_full_name|default:course.teacher.email }}</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Course Details -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Course Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Description:</strong>
+                        <p>{{ course.description|truncatewords:30 }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Category:</strong> {{ course.category.name }}<br>
+                        <strong>Level:</strong> {{ course.get_level_display }}<br>
+                        <strong>Language:</strong> {{ course.language }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Price:</strong>
+                        {% if course.is_free %}
+                            Free
+                        {% else %}
+                            ₹{{ course.price }}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Duration:</strong> {{ course.duration_hours }} hours
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Total Lessons:</strong> {{ course.total_lessons }}
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Enrollments:</strong> {{ course.total_enrollments }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Approval Status -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Current Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Course Status:</strong>
+                        {% if course.status == 'published' %}
+                            <span class="badge bg-success">Published</span>
+                        {% elif course.status == 'draft' %}
+                            <span class="badge bg-warning">Draft</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ course.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Approval Status:</strong>
+                        {% if approval.status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif approval.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% elif approval.status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge bg-info">{{ approval.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if approval.reviewed_by %}
+                <p>
+                    <strong>Reviewed by:</strong> {{ approval.reviewed_by.email }}<br>
+                    <strong>Reviewed at:</strong> {{ approval.reviewed_at|date:"M d, Y H:i" }}
+                </p>
+                {% endif %}
+                {% if approval.review_comments %}
+                <p>
+                    <strong>Review Comments:</strong><br>
+                    {{ approval.review_comments }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Approval Form -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Approval Action</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        {{ form.status }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Comments</label>
+                        {{ form.review_comments }}
+                    </div>
+
+                    <div class="mb-3" id="rejection-reason" style="display: none;">
+                        <label class="form-label">Rejection Reason</label>
+                        {{ form.rejection_reason }}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-check"></i> Submit Decision
+                    </button>
+                    <a href="{% url 'platformadmin:course_management' %}" class="btn btn-secondary w-100 mt-2">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Statistics</h5>
+            </div>
+            <div class="card-body small">
+                <p class="mb-2">
+                    <strong>Rating:</strong> ⭐ {{ course.average_rating }}/5
+                </p>
+                <p class="mb-2">
+                    <strong>Reviews:</strong> {{ course.total_reviews }}
+                </p>
+                <p class="mb-2">
+                    <strong>Featured:</strong>
+                    {% if course.is_featured %}
+                        <span class="badge bg-success">Yes</span>
+                    {% else %}
+                        <span class="badge bg-secondary">No</span>
+                    {% endif %}
+                </p>
+                <p class="mb-0">
+                    <strong>Created:</strong> {{ course.created_at|date:"M d, Y" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('id_status').addEventListener('change', function() {
+        const rejectionReason = document.getElementById('rejection-reason');
+        if (this.value === 'rejected') {
+            rejectionReason.style.display = 'block';
+            document.getElementById('id_rejection_reason').required = true;
+        } else {
+            rejectionReason.style.display = 'none';
+            document.getElementById('id_rejection_reason').required = false;
+        }
+    });
+    document.getElementById('id_status').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

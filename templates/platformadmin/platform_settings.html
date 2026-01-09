@@ -1,0 +1,102 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<h2>Platform Settings</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Configuration Settings</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <h6>Pricing Settings</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Commission %</label>
+                                {{ form.commission_percentage }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Min Course Price</label>
+                                {{ form.min_course_price }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Max Course Price</label>
+                                {{ form.max_course_price }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Teacher Settings</h6>
+                        <div class="form-check mb-2">
+                            {{ form.enable_new_teachers }}
+                            <label class="form-check-label" for="id_enable_new_teachers">
+                                Enable New Teacher Registrations
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            {{ form.require_teacher_verification }}
+                            <label class="form-check-label" for="id_require_teacher_verification">
+                                Require Teacher Verification
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Course Settings</h6>
+                        <div class="form-check mb-2">
+                            {{ form.require_course_approval }}
+                            <label class="form-check-label" for="id_require_course_approval">
+                                Require Course Approval Before Publishing
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Current Settings</h5>
+            </div>
+            <div class="card-body">
+                {% if settings %}
+                    <div class="list-group list-group-flush">
+                        {% for setting in settings %}
+                        <div class="list-group-item px-0">
+                            <small class="text-muted">{{ setting.key }}</small><br>
+                            <strong>{{ setting.value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No settings configured yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Help</h5>
+            </div>
+            <div class="card-body small">
+                <p><strong>Commission %:</strong> Platform commission on each course sale.</p>
+                <p><strong>Min/Max Course Price:</strong> Price restrictions for courses.</p>
+                <p><strong>Teacher Verification:</strong> Require admin approval before teachers can publish courses.</p>
+                <p class="mb-0"><strong>Course Approval:</strong> All courses need admin approval before going live.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

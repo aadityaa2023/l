@@ -1,0 +1,194 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}My Courses - Teacher Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filters-bar {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+    .status-tab {
+        padding: 8px 20px;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        background: white;
+        color: #6b7280;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-right: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .status-tab:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+    .status-tab.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        color: white;
+    }
+    .course-grid-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    .course-grid-card:hover {
+        box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+        transform: translateY(-4px);
+    }
+    .course-thumbnail {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    .course-placeholder {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold mb-2">My Courses</h1>
+            <p class="text-muted mb-0">Manage and track all your courses</p>
+        </div>
+        <a href="{% url 'courses:teacher_course_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i>Create New Course
+        </a>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-bar">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="d-flex flex-wrap">
+                    <a href="?status=all" class="status-tab {% if status_filter == 'all' %}active{% endif %}">
+                        All ({{ status_counts.all }})
+                    </a>
+                    <a href="?status=published" class="status-tab {% if status_filter == 'published' %}active{% endif %}">
+                        Published ({{ status_counts.published }})
+                    </a>
+                    <a href="?status=draft" class="status-tab {% if status_filter == 'draft' %}active{% endif %}">
+                        Draft ({{ status_counts.draft }})
+                    </a>
+                    <a href="?status=archived" class="status-tab {% if status_filter == 'archived' %}active{% endif %}">
+                        Archived ({{ status_counts.archived }})
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <form method="get" class="d-flex">
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                    <input type="text" name="search" class="form-control me-2" placeholder="Search courses..." value="{{ search_query }}">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Grid -->
+    {% if courses %}
+    <div class="row g-4">
+        {% for course in courses %}
+        <div class="col-md-6 col-lg-4">
+            <div class="course-grid-card">
+                {% if course.thumbnail %}
+                <img src="{{ course.thumbnail.url }}" class="course-thumbnail" alt="{{ course.title }}">
+                {% else %}
+                <div class="course-placeholder">
+                    <i class="fas fa-headphones fa-4x text-white opacity-50"></i>
+                </div>
+                {% endif %}
+                
+                <div class="p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge {% if course.status == 'published' %}bg-success{% elif course.status == 'draft' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {{ course.status|title }}
+                        </span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'courses:teacher_course_edit' course.id %}">
+                                    <i class="fas fa-edit me-2"></i>Edit Course
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'courses:course_detail' course.slug %}">
+                                    <i class="fas fa-eye me-2"></i>View Course
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'courses:teacher_course_students' course.id %}">
+                                    <i class="fas fa-users me-2"></i>View Students
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'courses:teacher_course_delete' course.id %}">
+                                    <i class="fas fa-trash me-2"></i>Delete
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-2">{{ course.title }}</h5>
+                    <p class="text-muted small mb-3">{{ course.short_description|truncatewords:15 }}</p>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="fw-bold text-primary">{{ course.student_count }}</div>
+                            <small class="text-muted">Students</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-warning">{{ course.avg_rating|default:0|floatformat:1 }}</div>
+                            <small class="text-muted">Rating</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-success">₹{{ course.total_revenue|default:0|floatformat:0 }}</div>
+                            <small class="text-muted">Revenue</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <a href="{% url 'courses:teacher_course_edit' course.id %}" class="btn btn-outline-primary">
+                            Manage Course
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-book fa-5x text-muted mb-4"></i>
+        <h3 class="text-muted mb-3">No courses found</h3>
+        <p class="text-muted mb-4">
+            {% if search_query %}
+            No courses match your search criteria. Try a different search term.
+            {% else %}
+            Get started by creating your first course!
+            {% endif %}
+        </p>
+        <a href="{% url 'courses:teacher_course_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i>Create Your First Course
+        </a>
+    </div>
+    {% endif %}
+{% endblock %}

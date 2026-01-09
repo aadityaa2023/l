@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LeQ - Audio Learning Platform{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Premium Purple Theme Colors */
+            --primary-color: #8B5CF6;
+            --primary-dark: #7C3AED;
+            --secondary-color: #A78BFA;
+            --accent-color: #EC4899;
+            --bg-primary: #0F0F0F;
+            --bg-secondary: #1A1A1A;
+            --bg-card: #1E1E1E;
+            --bg-card-hover: #252525;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0B0B0;
+            --text-muted: #707070;
+            --border-color: #2A2A2A;
+            --success-color: #10B981;
+            --danger-color: #EF4444;
+            --warning-color: #F59E0B;
+        }
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        
+        /* Navbar KukuFM Style */
+        .navbar-custom {
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.75rem;
+            color: var(--primary-color) !important;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .navbar-brand i {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary) !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem !important;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary) !important;
+            background: var(--bg-card);
+        }
+        
+        .nav-link i {
+            opacity: 0.7;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 0.6rem 1.75rem;
+            border-radius: 24px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.5);
+        }
+        
+        .btn-outline-custom {
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.5rem 1.5rem;
+            border-radius: 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+        
+        .btn-outline-custom:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        /* Card Styles - KukuFM */
+        .card-custom {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .card-custom:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        
+        /* Audio Course Card */
+        .audio-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+        
+        .audio-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            border-color: var(--primary-color);
+        }
+        
+        .audio-card-img {
+            position: relative;
+            padding-top: 140%;
+            background: linear-gradient(135deg, #1A1A1A, #2A2A2A);
+            overflow: hidden;
+        }
+        
+        .audio-card-img img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .audio-card-play {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+        
+        .audio-card:hover .audio-card-play {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .audio-card-body {
+            padding: 12px;
+        }
+        
+        .audio-card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .audio-card-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        /* Category Pills */
+        .category-pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1.25rem;
+            border-radius: 24px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        
+        .category-pill:hover,
+        .category-pill.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .category-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .category-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Footer KukuFM Style */
+        .footer-custom {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            padding: 3rem 0 1.5rem;
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .footer-custom a {
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        
+        .footer-custom a:hover {
+            color: var(--primary-color);
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+        }
+        
+        /* Dropdown Menu */
+        .dropdown-menu {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        
+        .dropdown-item {
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-item:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+        
+        .dropdown-divider {
+            border-color: var(--border-color);
+        }
+        
+        /* Smooth Transitions */
+        a, button, .btn, .card, .nav-link {
+            transition: all 0.3s ease;
+        }
+        
+        /* Custom Alert Styles */
+        .alert {
+            border-radius: 8px;
+        }
+        
+        /* Alert Message Variants */
+        .alert-message-success {
+            background: var(--bg-card);
+            border: 1px solid var(--accent-color);
+            border-left: 4px solid var(--accent-color);
+            color: var(--text-primary);
+        }
+        
+        .alert-message-error,
+        .alert-message-danger {
+            background: var(--bg-card);
+            border: 1px solid var(--danger-color);
+            border-left: 4px solid var(--danger-color);
+            color: var(--text-primary);
+        }
+        
+        .alert-message-warning {
+            background: var(--bg-card);
+            border: 1px solid var(--warning-color);
+            border-left: 4px solid var(--warning-color);
+            color: var(--text-primary);
+        }
+        
+        .alert-message-info {
+            background: var(--bg-card);
+            border: 1px solid var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+            color: var(--text-primary);
+        }
+        
+        /* Alert Icons */
+        .alert-icon-success::before {
+            content: "\f058";
+            color: var(--accent-color);
+        }
+        
+        .alert-icon-error::before,
+        .alert-icon-danger::before {
+            content: "\f06a";
+            color: var(--danger-color);
+        }
+        
+        .alert-icon-warning::before {
+            content: "\f071";
+            color: var(--warning-color);
+        }
+        
+        .alert-icon-info::before {
+            content: "\f05a";
+            color: var(--primary-color);
+        }
+        
+        .alert-icon-success,
+        .alert-icon-error,
+        .alert-icon-danger,
+        .alert-icon-warning,
+        .alert-icon-info {
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+        }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.5rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .display-3 {
+                font-size: 2.5rem;
+            }
+        }
+        
+        /* Loading Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-headphones-alt"></i>
+                <span>LeQ</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center gap-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'courses:course_list' %}">
+                            <i class="fas fa-book-reader me-1"></i> Browse
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'courses:my_courses' %}">
+                                <i class="fas fa-bookmark me-1"></i> My Library
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'users:dashboard' %}">
+                                <i class="fas fa-chart-line me-1"></i> Dashboard
+                            </a>
+                        </li>
+                        {% if user.is_teacher %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'courses:teacher_courses' %}">
+                                <i class="fas fa-microphone me-1"></i> Teaching
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item dropdown ms-2">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <div class="avatar-circle me-2">
+                                    {% if user.is_student and user.student_profile.profile_picture %}
+                                        <img src="{{ user.student_profile.profile_picture.url }}" alt="Profile" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                                    {% elif user.is_teacher and user.teacher_profile.profile_picture %}
+                                        <img src="{{ user.teacher_profile.profile_picture.url }}" alt="Profile" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); font-weight: 600; font-size: 0.9rem;">
+                                            {{ user.first_name.0|default:user.email.0|upper }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
+                                <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="fas fa-user me-2"></i> Profile</a></li>
+                                {% if user.is_student %}
+                                <li><a class="dropdown-item" href="{% url 'notifications:student_messages' %}">
+                                    <i class="fas fa-envelope me-2"></i> Messages
+                                    {% if unread_messages %}
+                                    <span class="badge bg-danger ms-1">{{ unread_messages }}</span>
+                                    {% endif %}
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'notifications:student_questions' %}">
+                                    <i class="fas fa-question-circle me-2"></i> My Questions
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'users:student_learning_goals' %}"><i class="fas fa-bullseye me-2"></i> Learning Goals</a></li>
+                                <li><a class="dropdown-item" href="{% url 'users:student_achievements' %}"><i class="fas fa-trophy me-2"></i> Achievements</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'users:student_billing' %}"><i class="fas fa-file-invoice me-2"></i> Billing History</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'payments:my_payments' %}"><i class="fas fa-wallet me-2"></i> Payments</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'account_login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary-custom" href="{% url 'account_signup' %}">
+                                Start Learning
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-dismissible fade show shadow-sm alert-message-{{ message.tags|default:'info' }}" role="alert">
+            <i class="fas alert-icon-{{ message.tags|default:'info' }} me-2"></i>{{ message }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="min-vh-100">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-custom">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5 class="fw-bold mb-3" style="color: var(--primary-color);">
+                        <i class="fas fa-headphones-alt me-2"></i>LeQ
+                    </h5>
+                    <p class="text-muted" style="font-size: 0.9rem;">
+                        Your ultimate destination for audio learning. Transform every moment into a learning opportunity.
+                    </p>
+                    <div class="social-links mt-3 d-flex gap-3">
+                        <a href="#" class="text-decoration-none" style="color: var(--text-muted); transition: color 0.3s;">
+                            <i class="fab fa-facebook fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-decoration-none" style="color: var(--text-muted); transition: color 0.3s;">
+                            <i class="fab fa-twitter fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-decoration-none" style="color: var(--text-muted); transition: color 0.3s;">
+                            <i class="fab fa-instagram fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-decoration-none" style="color: var(--text-muted); transition: color 0.3s;">
+                            <i class="fab fa-youtube fa-lg"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Explore</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{% url 'courses:course_list' %}" class="text-decoration-none" style="font-size: 0.9rem;">Browse Courses</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Categories</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Trending</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">New Releases</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Company</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">About Us</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Careers</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Blog</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Support</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Help Center</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Privacy</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">Terms</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none" style="font-size: 0.9rem;">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Get the App</h6>
+                    <a href="#" class="d-block mb-2">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
+                             alt="Google Play" style="width: 130px; border-radius: 6px;">
+                    </a>
+                    <a href="#" class="d-block">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" 
+                             alt="App Store" style="width: 130px; border-radius: 6px;">
+                    </a>
+                </div>
+            </div>
+            <hr style="border-color: var(--border-color); margin: 2rem 0 1.5rem;">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start mb-2">
+                    <p class="mb-0" style="font-size: 0.85rem; color: var(--text-muted);">
+                        &copy; 2024 LeQ Audio Learning. All rights reserved.
+                    </p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <p class="mb-0" style="font-size: 0.85rem; color: var(--text-muted);">
+                        Made with <i class="fas fa-heart" style="color: var(--primary-color);"></i> for learners
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- CSRF Token Configuration for AJAX -->
+    <script>
+        // Get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        // Configure fetch to include CSRF token
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            // Only add CSRF token for same-origin requests
+            if (!url.startsWith('http') || url.startsWith(window.location.origin)) {
+                options.credentials = options.credentials || 'same-origin';
+                
+                // Add CSRF token for non-GET requests
+                if (!options.method || options.method.toUpperCase() !== 'GET') {
+                    options.headers = options.headers || {};
+                    if (typeof options.headers === 'object' && !(options.headers instanceof Headers)) {
+                        options.headers['X-CSRFToken'] = csrftoken;
+                    } else if (options.headers instanceof Headers) {
+                        options.headers.append('X-CSRFToken', csrftoken);
+                    }
+                }
+            }
+            return originalFetch(url, options);
+        };
+
+        // Configure XMLHttpRequest to include CSRF token
+        (function() {
+            const originalOpen = XMLHttpRequest.prototype.open;
+            const originalSend = XMLHttpRequest.prototype.send;
+
+            XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+                this._method = method;
+                this._url = url;
+                return originalOpen.apply(this, arguments);
+            };
+
+            XMLHttpRequest.prototype.send = function(data) {
+                // Only add CSRF token for same-origin, non-GET requests
+                if (this._method && this._method.toUpperCase() !== 'GET') {
+                    if (!this._url || !this._url.startsWith('http') || this._url.startsWith(window.location.origin)) {
+                        this.setRequestHeader('X-CSRFToken', csrftoken);
+                    }
+                }
+                return originalSend.apply(this, arguments);
+            };
+        })();
+
+        // jQuery AJAX setup (if jQuery is used)
+        if (window.jQuery) {
+            jQuery.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!(/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type)) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

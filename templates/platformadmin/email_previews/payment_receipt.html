@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #27ae60; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border: 1px solid #e0e0e0; }
+        .receipt-box { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .receipt-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .total { font-weight: bold; font-size: 18px; color: #27ae60; }
+        .footer { text-align: center; padding: 20px; color: #888; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Payment Successful!</h1>
+    </div>
+    <div class="content">
+        <h2>Hi {{ user.first_name|default:"Student" }},</h2>
+        <p>Thank you for your purchase! Your payment has been successfully processed.</p>
+        
+        <div class="receipt-box">
+            <h3>Payment Receipt</h3>
+            <div class="receipt-row">
+                <span>Transaction ID:</span>
+                <span>{{ payment.transaction_id|default:"TXN123456789" }}</span>
+            </div>
+            <div class="receipt-row">
+                <span>Course:</span>
+                <span>{{ course.title|default:"Sample Course Title" }}</span>
+            </div>
+            <div class="receipt-row">
+                <span>Date:</span>
+                <span>{{ payment.created_at|date:"F d, Y"|default:"December 17, 2025" }}</span>
+            </div>
+            <div class="receipt-row total">
+                <span>Amount Paid:</span>
+                <span>₹{{ payment.amount|default:"999.00" }}</span>
+            </div>
+        </div>
+        
+        <p>You now have full access to the course. Start learning today!</p>
+        <p>A copy of this receipt has been sent to your email for your records.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 LeQ. All rights reserved.</p>
+        <p>Questions? Contact us at support@leq.com</p>
+    </div>
+</body>
+</html>

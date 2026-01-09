@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lesson.title }} - LeQ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="row g-0">
+        <!-- Sidebar -->
+        <div class="col-lg-3 bg-white border-end" style="height: calc(100vh - 76px); overflow-y: auto;">
+            <div class="p-4">
+                <a href="{% url 'courses:course_learn' lesson.module.course.id %}" class="btn btn-outline-primary btn-sm mb-3">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Course
+                </a>
+                <h6 class="fw-bold">{{ lesson.module.course.title }}</h6>
+                <p class="small text-muted">{{ lesson.module.title }}</p>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="p-5">
+                <h2 class="fw-bold mb-4">{{ lesson.title }}</h2>
+                
+                <!-- Media Players -->
+                {% if lesson.lesson_type == 'video' or lesson.lesson_type == 'audio' %}
+                    <!-- Display all media files -->
+                    {% if media_files %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">
+                                <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} me-2"></i>
+                                Lesson Media ({{ media_files.count }} file{{ media_files.count|pluralize }})
+                            </h5>
+                            {% for media in media_files %}
+                                <div class="mb-4">
+                                    {% if media.title %}
+                                        <h6 class="mb-2">{{ forloop.counter }}. {{ media.title }}</h6>
+                                    {% else %}
+                                        <h6 class="mb-2">{{ forloop.counter }}. {{ media.get_media_type_display }} File</h6>
+                                    {% endif %}
+                                    
+                                    {% if media.media_type == 'video' %}
+                                        <video controls class="w-100" style="max-height: 500px; border-radius: 8px;" controlsList="nodownload" preload="metadata">
+                                            <source src="{{ media.get_media_url }}" type="video/mp4">
+                                            Your browser does not support the video element.
+                                        </video>
+                                    {% else %}
+                                        <audio controls class="w-100" controlsList="nodownload" preload="metadata">
+                                            <source src="{{ media.get_media_url }}" type="audio/mpeg">
+                                            Your browser does not support the audio element.
+                                        </audio>
+                                    {% endif %}
+                                    
+                                    {% if media.duration_minutes %}
+                                        <small class="text-muted d-block mt-2">Duration: {{ media.duration_minutes }} minutes</small>
+                                    {% endif %}
+                                </div>
+                                {% if not forloop.last %}<hr class="my-3">{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Legacy single audio file support -->
+                    {% if lesson.audio_file %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3"><i class="fas fa-headphones me-2"></i>{% if media_files %}Legacy {% endif %}Audio Lesson</h5>
+                            <audio controls class="w-100" controlsList="nodownload" preload="metadata">
+                                <source src="{% url 'courses:serve_lesson_audio' lesson.id %}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- No media uploaded -->
+                    {% if not media_files and not lesson.audio_file %}
+                    <div class="card mb-4">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}upload{% endif %} fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No media files uploaded yet</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+                
+                <!-- Content -->
+                <div class="card-custom p-4">
+                    <div class="prose">
+                        {{ lesson.description|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    audio {
+        width: 100%;
+        height: 54px;
+        border-radius: 12px;
+        outline: none;
+    }
+    
+    audio::-webkit-media-controls-panel {
+        background-color: #f8f9fa;
+    }
+    
+    video {
+        border-radius: 8px;
+        background-color: #000;
+    }
+</style>
+{% endblock %}

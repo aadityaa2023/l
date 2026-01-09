@@ -1,0 +1,163 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-ticket-alt"></i> Coupon Management</h2>
+    <a href="{% url 'platformadmin:coupon_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create New Coupon
+    </a>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ coupon_stats.total }}</div>
+            <div class="stat-label">Total Coupons</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <div class="stat-value">{{ coupon_stats.active }}</div>
+            <div class="stat-label">Active Coupons</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <div class="stat-value">{{ coupon_stats.total_uses }}</div>
+            <div class="stat-label">Total Uses</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card danger">
+            <div class="stat-value">₹{{ coupon_stats.total_discount|floatformat:0 }}</div>
+            <div class="stat-label">Total Discount Given</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <select name="status" class="form-control form-control-sm">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <input type="text" name="search" placeholder="Search by code or description..." 
+                       class="form-control form-control-sm" value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Coupons Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>Discount</th>
+                    <th>Valid Period</th>
+                    <th>Usage</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for coupon in coupons %}
+                <tr>
+                    <td><strong>{{ coupon.code }}</strong></td>
+                    <td>
+                        <span class="badge bg-info">{{ coupon.get_discount_type_display }}</span>
+                    </td>
+                    <td>
+                        {% if coupon.discount_type == 'percentage' %}
+                            {{ coupon.discount_value }}%
+                        {% else %}
+                            ₹{{ coupon.discount_value }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small>
+                            {{ coupon.valid_from|date:"M d, Y" }}<br>
+                            to {{ coupon.valid_until|date:"M d, Y" }}
+                        </small>
+                    </td>
+                    <td>
+                        {{ coupon.current_uses }}
+                        {% if coupon.max_uses %}
+                            / {{ coupon.max_uses }}
+                        {% else %}
+                            / ∞
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if coupon.status == 'active' %}
+                            <span class="badge bg-success">Active</span>
+                        {% elif coupon.status == 'expired' %}
+                            <span class="badge bg-danger">Expired</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'platformadmin:coupon_edit' coupon.id %}" 
+                           class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        No coupons found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="pagination-custom mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                    Next
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

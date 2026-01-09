@@ -1,0 +1,111 @@
+{% extends 'platformadmin/base.html' %}
+{% load widget_tweaks %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-file-alt"></i> Edit CMS Page</h2>
+    <a href="{% url 'platformadmin:cms_management' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Pages
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.title.label }}</label>
+                        {% render_field form.title class="form-control" %}
+                        {% if form.title.errors %}
+                            <div class="text-danger small mt-1">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.slug.label }}</label>
+                        {% render_field form.slug class="form-control" %}
+                        {% if form.slug.errors %}
+                            <div class="text-danger small mt-1">{{ form.slug.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.content.label }}</label>
+                        {% render_field form.content class="form-control" rows="15" %}
+                        {% if form.content.errors %}
+                            <div class="text-danger small mt-1">{{ form.content.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h5 class="mb-3">SEO Settings</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.meta_title.label }}</label>
+                        {% render_field form.meta_title class="form-control" %}
+                        {% if form.meta_title.errors %}
+                            <div class="text-danger small mt-1">{{ form.meta_title.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.meta_description.label }}</label>
+                        {% render_field form.meta_description class="form-control" rows="3" %}
+                        {% if form.meta_description.errors %}
+                            <div class="text-danger small mt-1">{{ form.meta_description.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.meta_keywords.label }}</label>
+                        {% render_field form.meta_keywords class="form-control" %}
+                        {% if form.meta_keywords.errors %}
+                            <div class="text-danger small mt-1">{{ form.meta_keywords.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {% render_field form.is_published class="form-check-input" %}
+                            <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                                {{ form.is_published.label }}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Page
+                        </button>
+                        <a href="{% url 'platformadmin:cms_management' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-info-circle text-info"></i> Page Info</h6>
+                <ul class="small mb-0">
+                    <li><strong>Created:</strong> {{ page.created_at|date:"M d, Y H:i" }}</li>
+                    <li><strong>Updated:</strong> {{ page.updated_at|date:"M d, Y H:i" }}</li>
+                    <li><strong>Views:</strong> {{ page.view_count|default:0 }}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

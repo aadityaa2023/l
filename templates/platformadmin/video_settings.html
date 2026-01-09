@@ -1,0 +1,197 @@
+{% extends 'platformadmin/base.html' %}
+{% load widget_tweaks %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-video"></i> Video Settings</h2>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <h5 class="mb-3"><i class="fas fa-shield-alt text-primary"></i> Security & DRM</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {% render_field settings.enable_drm class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.enable_drm.id_for_label }}">
+                                {{ settings.enable_drm.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Enable Digital Rights Management for video protection</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {% render_field settings.enable_watermark class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.enable_watermark.id_for_label }}">
+                                {{ settings.enable_watermark.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Add platform watermark to videos</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">{{ settings.watermark_text.label }}</label>
+                        {% render_field settings.watermark_text class="form-control" placeholder="e.g., LeQ Platform" %}
+                        <small class="text-muted">Text to display in watermark</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mb-3"><i class="fas fa-cog text-info"></i> Playback Settings</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ settings.default_quality.label }}</label>
+                        {% render_field settings.default_quality class="form-select" %}
+                        <small class="text-muted">Default video quality for playback</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ settings.max_quality.label }}</label>
+                        {% render_field settings.max_quality class="form-select" %}
+                        <small class="text-muted">Maximum allowed video quality</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {% render_field settings.allow_download class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.allow_download.id_for_label }}">
+                                {{ settings.allow_download.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Allow students to download videos</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            {% render_field settings.enable_speed_control class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.enable_speed_control.id_for_label }}">
+                                {{ settings.enable_speed_control.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Allow playback speed adjustment (0.5x to 2x)</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mb-3"><i class="fas fa-clock text-warning"></i> Bandwidth & Performance</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {% render_field settings.enable_adaptive_streaming class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.enable_adaptive_streaming.id_for_label }}">
+                                {{ settings.enable_adaptive_streaming.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Automatically adjust quality based on connection speed</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ settings.buffer_time.label }}</label>
+                        <div class="input-group">
+                            {% render_field settings.buffer_time class="form-control" %}
+                            <span class="input-group-text">seconds</span>
+                        </div>
+                        <small class="text-muted">Pre-loading buffer time (recommended: 5-10 seconds)</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            {% render_field settings.enable_offline_viewing class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.enable_offline_viewing.id_for_label }}">
+                                {{ settings.enable_offline_viewing.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Allow offline caching for mobile apps</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mb-3"><i class="fas fa-chart-bar text-success"></i> Analytics & Tracking</h5>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            {% render_field settings.track_watch_time class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.track_watch_time.id_for_label }}">
+                                {{ settings.track_watch_time.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Track student video watch time for analytics</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            {% render_field settings.require_full_watch class="form-check-input" %}
+                            <label class="form-check-label" for="{{ settings.require_full_watch.id_for_label }}">
+                                {{ settings.require_full_watch.label }}
+                            </label>
+                        </div>
+                        <small class="text-muted">Require watching full video before marking complete</small>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                        <button type="reset" class="btn btn-secondary">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-info-circle text-info"></i> Information</h6>
+                <ul class="small mb-0">
+                    <li><strong>DRM:</strong> Protects videos from unauthorized copying</li>
+                    <li><strong>Watermark:</strong> Adds visible branding to deter piracy</li>
+                    <li><strong>Adaptive Streaming:</strong> Better experience on varying connections</li>
+                    <li><strong>Quality Settings:</strong> Balance between bandwidth and visual quality</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-lightbulb text-warning"></i> Recommendations</h6>
+                <ul class="small mb-0">
+                    <li>Enable DRM for premium content</li>
+                    <li>Use adaptive streaming for better UX</li>
+                    <li>Default quality: 720p for most users</li>
+                    <li>Max quality: 1080p for premium plans</li>
+                    <li>Buffer time: 5-10 seconds recommended</li>
+                    <li>Track watch time for engagement metrics</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-exclamation-triangle text-danger"></i> Important</h6>
+                <p class="small mb-0">
+                    Changes to these settings affect all videos on the platform. 
+                    Test thoroughly before applying. DRM and watermark may impact 
+                    playback performance on older devices.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

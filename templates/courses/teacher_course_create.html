@@ -1,0 +1,186 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Create New Course - Teacher Panel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+    }
+    .form-section-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        padding: 12px 16px;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .thumbnail-preview {
+        width: 100%;
+        max-width: 300px;
+        height: 200px;
+        border-radius: 12px;
+        object-fit: cover;
+        display: none;
+        margin-top: 12px;
+    }
+    .price-toggle {
+        display: flex;
+        align-items: center;
+        background: #f9fafb;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Header -->
+            <div class="mb-4">
+                <h1 class="fw-bold mb-2">Create New Course</h1>
+                <p class="text-muted">Fill in the details to create your course</p>
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="form-card">
+                    <h3 class="form-section-title">Basic Information</h3>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Course Title *</label>
+                        <input type="text" name="title" class="form-control" required placeholder="e.g., Complete Python Programming">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Short Description</label>
+                        <input type="text" name="short_description" class="form-control" placeholder="A brief one-liner about your course" maxlength="500">
+                        <small class="text-muted">This will appear in course listings</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Full Description *</label>
+                        <textarea name="description" class="form-control" rows="6" required placeholder="Describe what students will learn in this course..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="">Select a category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label">Level *</label>
+                            <select name="level" class="form-select" required>
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Language</label>
+                        <input type="text" name="language" class="form-control" value="English" placeholder="English, Hindi, etc.">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Course Thumbnail</label>
+                        <input type="file" name="thumbnail" class="form-control" accept="image/*" id="thumbnailInput">
+                        <img id="thumbnailPreview" class="thumbnail-preview" alt="Thumbnail preview">
+                        <small class="text-muted d-block mt-2">Recommended size: 1280x720px (16:9 ratio)</small>
+                    </div>
+                </div>
+
+                <!-- Pricing -->
+                <div class="form-card">
+                    <h3 class="form-section-title">Pricing</h3>
+                    
+                    <div class="price-toggle">
+                        <input type="checkbox" name="is_free" class="form-check-input me-3" id="isFreeCheck" style="width: 24px; height: 24px;">
+                        <div>
+                            <label for="isFreeCheck" class="form-check-label fw-bold mb-0">Make this course free</label>
+                            <small class="text-muted d-block">Students can enroll without payment</small>
+                        </div>
+                    </div>
+                    
+                    <div id="pricingFields">
+                        <div class="mb-4">
+                            <label class="form-label">Course Price (₹) *</label>
+                            <input type="number" name="price" class="form-control" value="0" min="0" step="0.01" placeholder="999">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'courses:teacher_courses' %}" class="btn btn-lg btn-light">
+                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-lg btn-primary">
+                        <i class="fas fa-check me-2"></i>Create Course
+                    </button>
+                </div>
+            </form>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Thumbnail preview
+document.getElementById('thumbnailInput')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('thumbnailPreview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+// Free course toggle
+document.getElementById('isFreeCheck')?.addEventListener('change', function() {
+    const pricingFields = document.getElementById('pricingFields');
+    if (this.checked) {
+        pricingFields.style.opacity = '0.5';
+        pricingFields.style.pointerEvents = 'none';
+        document.querySelector('input[name="price"]').value = '0';
+    } else {
+        pricingFields.style.opacity = '1';
+        pricingFields.style.pointerEvents = 'auto';
+    }
+});
+</script>
+{% endblock %}

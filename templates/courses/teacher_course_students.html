@@ -1,0 +1,81 @@
+{% extends 'teacher_base.html' %}
+
+{% block title %}Students - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'courses:teacher_courses' %}">My Courses</a></li>
+            <li class="breadcrumb-item active">Students</li>
+        </ol>
+    </nav>
+    <h2 class="fw-bold mb-1">Enrolled Students</h2>
+    <p class="text-muted mb-0">{{ course.title }}</p>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        {% if enrollments %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Email</th>
+                        <th>Enrolled Date</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if enrollment.student.student_profile.profile_picture %}
+                                    <img src="{{ enrollment.student.student_profile.profile_picture.url }}" class="rounded-circle" width="40" height="40" alt="{{ enrollment.student.get_full_name }}">
+                                    {% else %}
+                                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <span class="text-white fw-bold">{{ enrollment.student.first_name|first|upper }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ enrollment.student.get_full_name|default:enrollment.student.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ enrollment.student.email }}</td>
+                        <td>{{ enrollment.enrolled_at|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ enrollment.progress_percentage }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ enrollment.progress_percentage }}%</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ enrollment.status == 'active' and 'success' or 'secondary' }}">
+                                {{ enrollment.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary">View Details</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+            <h5 class="text-muted">No students enrolled yet</h5>
+            <p class="text-muted">Students will appear here once they enroll in your course</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}Teacher Dashboard - LeQ{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<section class="py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="text-white fw-bold mb-2">Teacher Dashboard</h2>
+                <p class="text-white-50 mb-0">Manage your courses and track student progress</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="#" class="btn btn-light">
+                    <i class="fas fa-plus me-2"></i>Create Course
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <!-- Stats Overview -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <i class="fas fa-book fa-3x mb-3" style="color: var(--primary-color);"></i>
+                    <h3 class="fw-bold mb-1">{{ courses.count }}</h3>
+                    <p class="text-muted mb-0">Total Courses</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <i class="fas fa-users fa-3x text-success mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ analytics.total_students|default:0 }}</h3>
+                    <p class="text-muted mb-0">Total Students</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <i class="fas fa-rupee-sign fa-3x mb-3" style="color: var(--warning-color);"></i>
+                    <h3 class="fw-bold mb-1">₹{{ revenue_30days|floatformat:0 }}</h3>
+                    <p class="text-muted mb-0">Revenue (30 days)</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-4 text-center">
+                    <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                    <h3 class="fw-bold mb-1">{{ analytics.average_rating|default:0|floatformat:1 }}</h3>
+                    <p class="text-muted mb-0">Average Rating</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <!-- My Courses -->
+                <h4 class="fw-bold mb-4">My Courses</h4>
+                {% for course in courses %}
+                <div class="card-custom mb-3">
+                    <div class="row g-0">
+                        <div class="col-md-3">
+                            {% if course.thumbnail %}
+                            <img src="{{ course.thumbnail.url }}" class="img-fluid h-100" alt="{{ course.title }}" style="object-fit: cover; border-radius: 12px 0 0 12px;">
+                            {% else %}
+                            <div class="h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 0 0 12px;">
+                                <i class="fas fa-headphones fa-3x text-white opacity-50"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="fw-bold mb-1">{{ course.title }}</h5>
+                                        <span class="badge {% if course.status == 'published' %}bg-success{% elif course.status == 'draft' %}bg-warning{% else %}bg-secondary{% endif %} mb-2">
+                                            {{ course.status|title }}
+                                        </span>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                                            <li><a class="dropdown-item" href="#"><i class="fas fa-eye me-2"></i>View</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="row text-center">
+                                    <div class="col-3">
+                                        <i class="fas fa-users text-muted me-1"></i>
+                                        <small class="text-muted">{{ course.student_count }} students</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <i class="fas fa-star text-warning me-1"></i>
+                                        <small class="text-muted">{{ course.avg_rating|default:0|floatformat:1 }}</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <i class="fas fa-book text-muted me-1"></i>
+                                        <small class="text-muted">{{ course.total_lessons }} lessons</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <small class="fw-bold" style="color: var(--primary-color);">₹{{ course.price }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="card-custom p-5 text-center">
+                    <i class="fas fa-chalkboard-teacher fa-4x text-muted mb-3"></i>
+                    <h5>No courses yet</h5>
+                    <p class="text-muted">Start creating your first course</p>
+                    <a href="#" class="btn btn-primary-custom">Create Course</a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Recent Enrollments -->
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-bold mb-4">Recent Enrollments</h5>
+                    {% for enrollment in recent_enrollments|slice:":5" %}
+                    <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            {{ enrollment.student.first_name.0|default:enrollment.student.email.0|upper }}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 small">{{ enrollment.student.get_full_name }}</h6>
+                            <small class="text-muted">{{ enrollment.course.title|truncatewords:5 }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No enrollments yet</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Recent Reviews -->
+                <div class="card-custom p-4">
+                    <h5 class="fw-bold mb-4">Recent Reviews</h5>
+                    {% for review in recent_reviews %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between mb-2">
+                            <h6 class="mb-0 small">{{ review.student.get_full_name }}</h6>
+                            <div class="text-warning small">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= review.rating %}<i class="fas fa-star"></i>{% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <p class="small text-muted mb-0">{{ review.comment|truncatewords:15 }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No reviews yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

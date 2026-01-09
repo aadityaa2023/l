@@ -1,0 +1,189 @@
+{% extends 'platformadmin/base.html' %}
+{% load widget_tweaks %}
+
+{% block platformadmin_content %}
+<div class="platformadmin-header">
+    <h1>
+        <i class="fas fa-images"></i> {{ form_title }}
+    </h1>
+    <a href="{% url 'platformadmin:banner_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to List
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Banner Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h6>Please correct the following errors:</h6>
+                        <ul>
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">
+                            Title <span class="text-danger">*</span>
+                        </label>
+                        {{ form.title|add_class:"form-control" }}
+                        {% if form.title.help_text %}
+                        <small class="text-muted">{{ form.title.help_text }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            Description <span class="text-danger">*</span>
+                        </label>
+                        {{ form.description|add_class:"form-control" }}
+                        {% if form.description.help_text %}
+                        <small class="text-muted">{{ form.description.help_text }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label">
+                            Banner Image <span class="text-danger">*</span>
+                        </label>
+                        {{ form.image|add_class:"form-control" }}
+                        {% if form.image.help_text %}
+                        <small class="text-muted d-block">{{ form.image.help_text }}</small>
+                        {% endif %}
+                        {% if banner and banner.image %}
+                        <div class="mt-2">
+                            <small class="text-muted">Current image:</small><br>
+                            <img src="{{ banner.image.url }}" alt="{{ banner.title }}" 
+                                 style="max-width: 400px; margin-top: 8px; border-radius: 4px;">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.button_text.id_for_label }}" class="form-label">
+                                Button Text
+                            </label>
+                            {{ form.button_text|add_class:"form-control" }}
+                            {% if form.button_text.help_text %}
+                            <small class="text-muted">{{ form.button_text.help_text }}</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.button_link.id_for_label }}" class="form-label">
+                                Button Link
+                            </label>
+                            {{ form.button_link|add_class:"form-control" }}
+                            {% if form.button_link.help_text %}
+                            <small class="text-muted">{{ form.button_link.help_text }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.banner_type.id_for_label }}" class="form-label">
+                                Banner Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.banner_type|add_class:"form-select" }}
+                            {% if form.banner_type.help_text %}
+                            <small class="text-muted">{{ form.banner_type.help_text }}</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                Priority <span class="text-danger">*</span>
+                            </label>
+                            {{ form.priority|add_class:"form-control" }}
+                            {% if form.priority.help_text %}
+                            <small class="text-muted">{{ form.priority.help_text }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">
+                                Start Date <span class="text-danger">*</span>
+                            </label>
+                            {{ form.start_date|add_class:"form-control" }}
+                            {% if form.start_date.help_text %}
+                            <small class="text-muted">{{ form.start_date.help_text }}</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">
+                                End Date
+                            </label>
+                            {{ form.end_date|add_class:"form-control" }}
+                            {% if form.end_date.help_text %}
+                            <small class="text-muted">{{ form.end_date.help_text }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            {{ form.is_active|add_class:"form-check-input" }}
+                            <label for="{{ form.is_active.id_for_label }}" class="form-check-label">
+                                Active (Banner will be visible if within scheduled dates)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Banner
+                        </button>
+                        <a href="{% url 'platformadmin:banner_list' %}" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Tips</h6>
+            </div>
+            <div class="card-body">
+                <ul class="small">
+                    <li><strong>Image Size:</strong> Recommended size is 1920x600px for best display across devices.</li>
+                    <li><strong>Priority:</strong> Higher priority banners appear first in carousels (0-100).</li>
+                    <li><strong>Banner Types:</strong>
+                        <ul>
+                            <li><strong>Home:</strong> Displayed on the homepage</li>
+                            <li><strong>Course:</strong> Shown on course listing/detail pages</li>
+                            <li><strong>Offer:</strong> Special promotional banners</li>
+                        </ul>
+                    </li>
+                    <li><strong>Scheduling:</strong> Banners are only visible between start and end dates when active.</li>
+                    <li><strong>CTA Button:</strong> Optional - leave blank if you don't need a call-to-action button.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

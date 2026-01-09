@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card-custom p-4">
+                    <h4 class="fw-bold mb-4">Complete Your Purchase</h4>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Click the button below to proceed with secure payment via Razorpay
+                    </div>
+
+                    <button id="rzp-button" class="btn btn-primary-custom w-100 py-3 btn-lg">
+                        <i class="fas fa-lock me-2"></i>Pay ₹{{ course.actual_price }}
+                    </button>
+
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Your payment information is encrypted and secure
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card-custom p-4">
+                    <h5 class="fw-bold mb-4">Order Summary</h5>
+                    
+                    {% if course.thumbnail %}
+                    <img src="{{ course.thumbnail.url }}" class="img-fluid rounded mb-3" alt="{{ course.title }}">
+                    {% endif %}
+                    
+                    <h6 class="fw-bold mb-2">{{ course.title }}</h6>
+                    <p class="small text-muted mb-3">{{ course.teacher.get_full_name }}</p>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Original Price</span>
+                        <span>₹{{ course.price }}</span>
+                    </div>
+                    
+                    {% if course.discount_price %}
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Discount</span>
+                        <span>-₹{{ course.price|add:"-"|add:course.discount_price }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="fw-bold mb-0">Total</h5>
+                        <h5 class="fw-bold mb-0" style="color: var(--primary-color);">₹{{ course.actual_price }}</h5>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        <small>Secure payment powered by Razorpay</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    var options = {
+        "key": "{{ razorpay_key_id }}",
+        "amount": "{{ order.amount }}",
+        "currency": "{{ order.currency }}",
+        "name": "LeQ",
+        "description": "{{ course.title }}",
+        "order_id": "{{ order.id }}",
+        "handler": function (response) {
+            // Send payment details to server for verification
+            fetch("{% url 'payments:verify_payment' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = "{% url 'payments:payment_success' %}?payment_id=" + data.payment_id;
+                } else {
+                    window.location.href = "{% url 'payments:payment_failed' %}";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.location.href = "{% url 'payments:payment_failed' %}";
+            });
+        },
+        "prefill": {
+            "name": "{{ user.get_full_name }}",
+            "email": "{{ user.email }}",
+            "contact": "{{ user.phone_number|default:'' }}"
+        },
+        "theme": {
+            "color": "#3399cc"
+        },
+        "modal": {
+            "ondismiss": function() {
+                console.log('Payment modal closed');
+            }
+        }
+    };
+
+    var rzp = new Razorpay(options);
+
+    document.getElementById('rzp-button').onclick = function(e) {
+        e.preventDefault();
+        rzp.open();
+    };
+
+    // Handle payment failure
+    rzp.on('payment.failed', function (response) {
+        window.location.href = "{% url 'payments:payment_failed' %}";
+    });
+</script>
+{% endblock %}
+</section>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-money-bill-wave"></i> Instructor Earnings</h2>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">₹{{ earnings_stats.total_revenue|floatformat:0 }}</div>
+            <div class="stat-label">Total Revenue</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <div class="stat-value">₹{{ earnings_stats.instructor_earnings|floatformat:0 }}</div>
+            <div class="stat-label">Instructor Earnings (70%)</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card info">
+            <div class="stat-value">₹{{ earnings_stats.platform_earnings|floatformat:0 }}</div>
+            <div class="stat-label">Platform Earnings (30%)</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <div class="stat-value">{{ earnings_stats.pending_payouts }}</div>
+            <div class="stat-label">Pending Payouts</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-9">
+                <input type="text" name="instructor" placeholder="Search by instructor email..." 
+                       class="form-control form-control-sm" value="{{ instructor_filter }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Instructors Earnings Table -->
+<div class="card">
+    <div class="card-header bg-light">
+        <h6 class="mb-0">Instructor Earnings Breakdown</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Instructor</th>
+                    <th>Total Sales</th>
+                    <th>Total Students</th>
+                    <th>Platform Commission (30%)</th>
+                    <th>Net Earnings (70%)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for teacher in teachers %}
+                <tr>
+                    <td>
+                        <strong>{{ teacher.email }}</strong><br>
+                        <small class="text-muted">{{ teacher.get_full_name|default:"N/A" }}</small>
+                    </td>
+                    <td>
+                        {% if teacher.total_sales %}
+                            ₹{{ teacher.total_sales|floatformat:2 }}
+                        {% else %}
+                            ₹0.00
+                        {% endif %}
+                    </td>
+                    <td>{{ teacher.total_students|default:0 }}</td>
+                    <td class="text-danger">
+                        {% if teacher.total_sales %}
+                            ₹{{ teacher.platform_commission|floatformat:2 }}
+                        {% else %}
+                            ₹0.00
+                        {% endif %}
+                    </td>
+                    <td class="text-success">
+                        <strong>
+                            {% if teacher.total_sales %}
+                                ₹{{ teacher.net_earnings|floatformat:2 }}
+                            {% else %}
+                                ₹0.00
+                            {% endif %}
+                        </strong>
+                    </td>
+                    <td>
+                        <a href="{% url 'platformadmin:teacher_analytics' %}?teacher={{ teacher.id }}" 
+                           class="btn btn-sm btn-info">
+                            <i class="fas fa-chart-line"></i> Details
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        No instructor data found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="pagination-custom mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if instructor_filter %}&instructor={{ instructor_filter }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if instructor_filter %}&instructor={{ instructor_filter }}{% endif %}">
+                    Next
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

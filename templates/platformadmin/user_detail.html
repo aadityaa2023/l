@@ -1,0 +1,174 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<div class="mb-4">
+    <h2>{{ user.get_full_name|default:user.email }}</h2>
+    <p class="text-muted">{{ user.email }}</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- User Information Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">User Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Email:</strong> {{ user.email }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Role:</strong> <span class="badge bg-info">{{ user.get_role_display }}</span>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Status:</strong>
+                        {% if user.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Joined:</strong> {{ user.date_joined|date:"M d, Y H:i" }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Phone:</strong> {{ user.phone|default:"Not provided" }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Email Verified:</strong>
+                        {% if user.email_verified %}
+                            <span class="badge bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge bg-warning">No</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Role-Specific Stats -->
+        {% if user.role == 'teacher' and teacher_stats %}
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-chalkboard-user"></i> Teacher Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Total Courses:</strong> {{ teacher_stats.total_courses }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Published:</strong> {{ teacher_stats.published_courses }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Total Students:</strong> {{ teacher_stats.total_students }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if user.role == 'student' and student_stats %}
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Student Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Enrollments:</strong> {{ student_stats.total_enrollments }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Total Spent:</strong> ₹{{ student_stats.total_spent }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- User Actions -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" class="d-grid gap-2">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.action }}
+                    </div>
+
+                    {% if form.new_role.field %}
+                    <div class="mb-3" id="role-select" style="display: none;">
+                        {{ form.new_role }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        {{ form.reason }}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Apply Action
+                    </button>
+                    <a href="{% url 'platformadmin:user_management' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Info -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Quick Info</h5>
+            </div>
+            <div class="card-body small">
+                <p class="mb-2">
+                    <strong>Staff:</strong>
+                    {% if user.is_staff %}
+                        <span class="badge bg-warning">Yes</span>
+                    {% else %}
+                        <span class="badge bg-secondary">No</span>
+                    {% endif %}
+                </p>
+                <p class="mb-2">
+                    <strong>Superuser:</strong>
+                    {% if user.is_superuser %}
+                        <span class="badge bg-danger">Yes</span>
+                    {% else %}
+                        <span class="badge bg-secondary">No</span>
+                    {% endif %}
+                </p>
+                <p class="mb-0">
+                    <strong>ID:</strong> {{ user.id }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Show/hide new_role field based on action selection
+    document.getElementById('id_action').addEventListener('change', function() {
+        const roleSelect = document.getElementById('role-select');
+        if (this.value === 'change_role') {
+            roleSelect.style.display = 'block';
+            document.getElementById('id_new_role').required = true;
+        } else {
+            roleSelect.style.display = 'none';
+            document.getElementById('id_new_role').required = false;
+        }
+    });
+    // Trigger change event on page load
+    document.getElementById('id_action').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

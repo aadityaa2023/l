@@ -1,0 +1,157 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}{{ question.title }} - Q&A{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'notifications:teacher_questions' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Questions
+    </a>
+</div>
+
+<!-- Question Card -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="d-flex flex-grow-1">
+                <div class="avatar-md bg-primary text-white rounded me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    {{ question.student.first_name.0|default:question.student.email.0|upper }}
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">{{ question.student.get_full_name|default:question.student.email }}</h6>
+                    <small class="text-muted">{{ question.student.email }}</small>
+                </div>
+            </div>
+            <div class="text-end">
+                <small class="text-muted d-block">{{ question.created_at|date:"M d, Y H:i" }}</small>
+                {% if question.is_answered %}
+                <span class="badge bg-success mt-2">
+                    <i class="fas fa-check me-1"></i>Answered
+                </span>
+                {% else %}
+                <span class="badge bg-warning mt-2">
+                    <i class="fas fa-clock me-1"></i>Pending
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <small class="text-primary d-block mb-2">
+                <i class="fas fa-book me-1"></i>Course: {{ question.course.title }}
+            </small>
+            {% if question.lesson %}
+            <small class="text-info d-block">
+                <i class="fas fa-headphones me-1"></i>Lesson: {{ question.lesson.title }}
+            </small>
+            {% endif %}
+        </div>
+
+        <h4 class="mb-3">{{ question.title }}</h4>
+        <p class="mb-0" style="white-space: pre-wrap;">{{ question.question }}</p>
+    </div>
+</div>
+
+<!-- Answers -->
+<div class="mb-4">
+    <h5 class="mb-3">
+        <i class="fas fa-comments me-2"></i>
+        Answers ({{ answers.count }})
+    </h5>
+
+    {% for answer in answers %}
+    <div class="card border-0 shadow-sm mb-3 {% if answer.is_best_answer %}border-success border-2{% endif %}">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex">
+                    <div class="avatar-md {% if answer.user.is_teacher %}bg-success{% else %}bg-info{% endif %} text-white rounded me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        {{ answer.user.first_name.0|default:answer.user.email.0|upper }}
+                    </div>
+                    <div>
+                        <h6 class="mb-0">
+                            {{ answer.user.get_full_name|default:answer.user.email }}
+                            {% if answer.user.is_teacher %}
+                            <span class="badge bg-success ms-2">Teacher</span>
+                            {% endif %}
+                            {% if answer.is_best_answer %}
+                            <span class="badge bg-warning ms-2">
+                                <i class="fas fa-star me-1"></i>Best Answer
+                            </span>
+                            {% endif %}
+                        </h6>
+                        <small class="text-muted">{{ answer.created_at|date:"M d, Y H:i" }}</small>
+                    </div>
+                </div>
+                {% if user.is_teacher and not answer.is_best_answer %}
+                <button class="btn btn-sm btn-outline-warning mark-best-answer" data-answer-id="{{ answer.id }}">
+                    <i class="fas fa-star me-1"></i>Mark as Best
+                </button>
+                {% endif %}
+            </div>
+            <p class="mb-0 ms-5 ps-3" style="white-space: pre-wrap;">{{ answer.answer }}</p>
+        </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>No answers yet. Be the first to answer!
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Answer Form (for teachers) -->
+{% if user.is_teacher %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <h6 class="mb-0">Post Your Answer</h6>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <textarea name="answer" class="form-control" rows="6" placeholder="Type your answer here..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paper-plane me-2"></i>Post Answer
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.mark-best-answer')) {
+            const button = e.target.closest('.mark-best-answer');
+            const answerId = button.dataset.answerId;
+            
+            if (!confirm('Mark this as the best answer? This will unmark any other best answer.')) {
+                return;
+            }
+            
+            fetch(`/notifications/questions/answer/${answerId}/mark-best/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to mark as best answer'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

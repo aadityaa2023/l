@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Learning Goals - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <h2 class="text-white fw-bold mb-2">Learning Goals</h2>
+        <p class="text-white-50 mb-0">Track and achieve your learning targets</p>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <!-- Goal Setting -->
+            <div class="col-lg-4 mb-4">
+                <div class="card-custom p-4 sticky-top" style="top: 20px;">
+                    <h5 class="fw-bold mb-4">Set Your Goals</h5>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="daily_goal_minutes" class="form-label">
+                                Daily Goal (minutes)
+                            </label>
+                            <input type="number" name="daily_goal_minutes" id="daily_goal_minutes" 
+                                   class="form-control" value="{{ student_profile.daily_goal_minutes }}" 
+                                   min="5" max="480" step="5" required>
+                            <small class="text-muted">Recommended: 30-60 minutes</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="weekly_goal_hours" class="form-label">
+                                Weekly Goal (hours)
+                            </label>
+                            <input type="number" name="weekly_goal_hours" id="weekly_goal_hours" 
+                                   class="form-control" value="{{ student_profile.weekly_goal_hours }}" 
+                                   min="1" max="40" step="1" required>
+                            <small class="text-muted">Recommended: 3-7 hours</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100">
+                            <i class="fas fa-save me-2"></i>Save Goals
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress & Stats -->
+            <div class="col-lg-8">
+                <!-- Daily Progress -->
+                <div class="card-custom p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">Today's Progress</h5>
+                        <span class="badge bg-primary">{{ daily_progress.percentage|floatformat:0 }}%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div class="progress-bar bg-gradient" role="progressbar" 
+                             style="width: {{ daily_progress.percentage }}%; background: linear-gradient(90deg, #667eea, #764ba2);"
+                             data-percentage="{{ daily_progress.percentage }}">
+                            {{ daily_progress.minutes }} / {{ student_profile.daily_goal_minutes }} min
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Time Spent</small>
+                            <strong>{{ daily_progress.minutes }} minutes</strong>
+                        </div>
+                        <div class="col-6 text-end">
+                            <small class="text-muted d-block">Remaining</small>
+                            <strong>{{ daily_progress.remaining }} minutes</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Progress -->
+                <div class="card-custom p-4 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">This Week's Progress</h5>
+                        <span class="badge bg-success">{{ weekly_progress.percentage|floatformat:0 }}%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 30px;">
+                        <div class="progress-bar bg-success bg-gradient" role="progressbar" 
+                             style="width: {{ weekly_progress.percentage }}%;"
+                             data-percentage="{{ weekly_progress.percentage }}">
+                            {{ weekly_progress.hours|floatformat:1 }} / {{ student_profile.weekly_goal_hours }} hrs
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Time Spent</small>
+                            <strong>{{ weekly_progress.hours|floatformat:1 }} hours</strong>
+                        </div>
+                        <div class="col-6 text-end">
+                            <small class="text-muted d-block">Remaining</small>
+                            <strong>{{ weekly_progress.remaining|floatformat:1 }} hours</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Activity Chart -->
+                <div class="card-custom p-4 mb-4">
+                    <h5 class="fw-bold mb-4">Daily Activity (Last 7 Days)</h5>
+                    <div class="daily-activity">
+                        {% for day in daily_activity %}
+                        <div class="activity-day mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">{{ day.date|date:"D, M j" }}</span>
+                                <strong>{{ day.minutes }} min</strong>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar" 
+                                     data-percentage="{{ day.percentage }}"
+                                     style="width: {{ day.percentage }}%; background: linear-gradient(90deg, #667eea, #764ba2);">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card-custom p-4 text-center">
+                            <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                            <h3 class="mb-1">{{ streak_days }}</h3>
+                            <p class="text-muted mb-0">Day Streak</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-custom p-4 text-center">
+                            <i class="fas fa-clock fa-3x text-success mb-3"></i>
+                            <h3 class="mb-1">{{ total_hours|floatformat:1 }}</h3>
+                            <p class="text-muted mb-0">Total Hours</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate progress bars
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const percentage = bar.getAttribute('data-percentage');
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.transition = 'width 1s ease-in-out';
+            bar.style.width = percentage + '%';
+        }, 100);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+LearnQuick - Verification Code
+
+Hello{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+{% if purpose == 'signup' %}
+Thank you for signing up! Please use the following verification code to complete your registration:
+{% elif purpose == 'login' %}
+We received a login request for your account. Please use the following code to verify your identity:
+{% elif purpose == 'password_reset' %}
+We received a request to reset your password. Please use the following code to proceed:
+{% else %}
+Please use the following verification code:
+{% endif %}
+
+Your verification code: {{ otp_code }}
+
+This code expires in {{ validity_minutes|default:5 }} minutes.
+
+SECURITY NOTICE:
+Never share this code with anyone. Our team will never ask for your verification code.
+
+If you didn't request this code, please ignore this email or contact our support team if you have concerns about your account security.
+
+---
+© {{ current_year|default:"2024" }} LearnQuick. All rights reserved.
+This is an automated message. Please do not reply.

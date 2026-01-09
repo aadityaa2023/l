@@ -1,0 +1,88 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}{{ message.subject }} - Messages{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'notifications:messages_inbox' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Inbox
+    </a>
+</div>
+
+<!-- Message Thread -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="mb-0">{{ message.subject }}</h5>
+        {% if message.course %}
+        <small class="text-primary">
+            <i class="fas fa-book me-1"></i>{{ message.course.title }}
+        </small>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <!-- Original Message -->
+        <div class="message-item mb-4 pb-4 border-bottom">
+            <div class="d-flex mb-3">
+                <div class="avatar-md bg-primary text-white rounded me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    {{ message.sender.first_name.0|default:message.sender.email.0|upper }}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-0">{{ message.sender.get_full_name|default:message.sender.email }}</h6>
+                            <small class="text-muted">{{ message.sender.email }}</small>
+                        </div>
+                        <small class="text-muted">{{ message.created_at|date:"M d, Y H:i" }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="ms-5 ps-3">
+                <p class="mb-0" style="white-space: pre-wrap;">{{ message.body }}</p>
+            </div>
+        </div>
+
+        <!-- Replies -->
+        {% for reply in replies %}
+        <div class="message-item mb-4 {% if not forloop.last %}pb-4 border-bottom{% endif %}">
+            <div class="d-flex mb-3">
+                <div class="avatar-md {% if reply.sender == user %}bg-success{% else %}bg-info{% endif %} text-white rounded me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    {{ reply.sender.first_name.0|default:reply.sender.email.0|upper }}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-0">
+                                {{ reply.sender.get_full_name|default:reply.sender.email }}
+                                {% if reply.sender == user %}
+                                <span class="badge bg-success ms-2">You</span>
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">{{ reply.sender.email }}</small>
+                        </div>
+                        <small class="text-muted">{{ reply.created_at|date:"M d, Y H:i" }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="ms-5 ps-3">
+                <p class="mb-0" style="white-space: pre-wrap;">{{ reply.body }}</p>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Reply Form -->
+        <div class="mt-4 pt-4 border-top">
+            <h6 class="mb-3">Reply to this message</h6>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <textarea name="body" class="form-control" rows="4" placeholder="Type your reply..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Send Reply
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

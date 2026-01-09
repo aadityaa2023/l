@@ -1,0 +1,216 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-hand-holding-usd"></i> Payout Management</h2>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card warning">
+            <div class="stat-value">{{ payout_stats.total_requested }}</div>
+            <div class="stat-label">Pending Requests</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card danger">
+            <div class="stat-value">₹{{ payout_stats.total_amount|floatformat:0 }}</div>
+            <div class="stat-label">Total Pending Amount</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card success">
+            <div class="stat-value">{{ payout_stats.completed_this_month }}</div>
+            <div class="stat-label">Completed This Month</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-9">
+                <select name="status" class="form-control form-control-sm">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="requested" {% if status_filter == 'requested' %}selected{% endif %}>Requested</option>
+                    <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>Processing</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Payouts Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-custom mb-0">
+            <thead>
+                <tr>
+                    <th>Instructor</th>
+                    <th>Period</th>
+                    <th>Gross Amount</th>
+                    <th>Commission</th>
+                    <th>Net Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payout in payouts %}
+                <tr>
+                    <td>
+                        <strong>{{ payout.instructor.email }}</strong><br>
+                        <small class="text-muted">{{ payout.instructor.get_full_name|default:"N/A" }}</small>
+                    </td>
+                    <td>
+                        <small>
+                            {{ payout.period_start|date:"M d, Y" }}<br>
+                            to {{ payout.period_end|date:"M d, Y" }}
+                        </small>
+                    </td>
+                    <td>₹{{ payout.gross_amount }}</td>
+                    <td class="text-danger">₹{{ payout.platform_commission }}</td>
+                    <td class="text-success"><strong>₹{{ payout.net_amount }}</strong></td>
+                    <td>
+                        {% if payout.status == 'requested' %}
+                            <span class="badge bg-warning">Requested</span>
+                        {% elif payout.status == 'completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif payout.status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% elif payout.status == 'processing' %}
+                            <span class="badge bg-info">Processing</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if payout.status == 'requested' %}
+                            <button type="button" class="btn btn-sm btn-success me-1" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#approveModal{{ payout.id }}">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#rejectModal{{ payout.id }}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            
+                            <!-- Approve Modal -->
+                            <div class="modal fade" id="approveModal{{ payout.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Approve Payout</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" action="{% url 'platformadmin:payout_approve' payout.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Transaction Reference *</label>
+                                                    <input type="text" name="transaction_reference" 
+                                                           class="form-control" required
+                                                           placeholder="UTR/Transaction number">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Admin Notes</label>
+                                                    <textarea name="admin_notes" class="form-control" rows="3"></textarea>
+                                                </div>
+                                                <div class="alert alert-info">
+                                                    <strong>Amount to pay:</strong> ₹{{ payout.net_amount }}
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-success">Approve Payout</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Reject Modal -->
+                            <div class="modal fade" id="rejectModal{{ payout.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reject Payout</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="post" action="{% url 'platformadmin:payout_reject' payout.id %}">
+                                            {% csrf_token %}
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Rejection Reason *</label>
+                                                    <textarea name="rejection_reason" class="form-control" 
+                                                              rows="4" required></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-danger">Reject Payout</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% elif payout.status == 'completed' %}
+                            <small class="text-muted">
+                                Ref: {{ payout.transaction_reference|default:"N/A" }}
+                            </small>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        No payout requests found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="pagination-custom mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                    Next
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

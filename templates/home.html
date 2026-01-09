@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+
+{% block title %}LeQ - Learn Through Audio{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Hero Gradient Background */
+    .hero-gradient {
+        background: linear-gradient(135deg, #1A1A1A 0%, #0F0F0F 100%);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero-gradient::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 50%;
+        height: 100%;
+        background: radial-gradient(ellipse at top right, rgba(139, 92, 246, 0.15), transparent);
+    }
+    
+    .hero-gradient::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 40%;
+        height: 80%;
+        background: radial-gradient(ellipse at bottom left, rgba(167, 139, 250, 0.1), transparent);
+    }
+    
+    /* Floating Animation */
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+    
+    .floating {
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    /* Section Headers */
+    .section-header {
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .section-subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+    
+    /* Badge Styles */
+    .badge-custom {
+        background: rgba(139, 92, 246, 0.15);
+        color: var(--primary-color);
+        padding: 0.35rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    /* Feature Icon */
+    .feature-icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+    <!-- Banner Carousel for Authenticated Users -->
+    <section style="padding: 2rem 0; background: var(--bg-primary);">
+        <div class="container-fluid px-lg-5">
+            {% include 'components/banner_carousel.html' with banner_type='home' %}
+        </div>
+    </section>
+{% else %}
+    <!-- Hero Section for Non-Authenticated Users -->
+    <section class="hero-gradient" style="min-height: 85vh; padding: 5rem 0;">
+        <div class="container">
+            <div class="row align-items-center" style="position: relative; z-index: 1;">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="mb-3">
+                        <span class="badge-custom">
+                            <i class="fas fa-star me-1"></i>India's #1 Audio Learning Platform
+                        </span>
+                    </div>
+                    <h1 class="display-3 fw-bold mb-4" style="color: var(--text-primary); line-height: 1.2;">
+                        Learn Through
+                        <span style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            Audio
+                        </span>
+                        Anytime, Anywhere
+                    </h1>
+                    <p class="lead mb-4" style="color: var(--text-secondary); font-size: 1.1rem;">
+                        Transform your commute, workout, or downtime into productive learning sessions. 
+                        Listen to expert-led courses on any topic.
+                    </p>
+                    
+                    <div class="d-flex gap-3 flex-wrap mb-5">
+                        <a href="{% url 'account_signup' %}" class="btn btn-primary-custom btn-lg px-5 py-3">
+                            <i class="fas fa-rocket me-2"></i>Start Learning Free
+                        </a>
+                        <a href="#categories" class="btn btn-outline-custom btn-lg px-5 py-3">
+                            Explore Categories
+                        </a>
+                    </div>
+                    
+                    <!-- Stats Row -->
+                    <div class="row g-4">
+                        <div class="col-4">
+                            <h4 class="fw-bold mb-1" style="color: var(--primary-color);">{{ stats.total_students|default:"10K+" }}</h4>
+                            <small style="color: var(--text-muted);">Active Learners</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="fw-bold mb-1" style="color: var(--secondary-color);">{{ stats.total_courses|default:"500+" }}</h4>
+                            <small style="color: var(--text-muted);">Audio Courses</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="fw-bold mb-1" style="color: var(--accent-color);">{{ stats.total_instructors|default:"100+" }}</h4>
+                            <small style="color: var(--text-muted);">Expert Teachers</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6 text-center">
+                    <div class="floating position-relative">
+                        <div style="position: relative; display: inline-block;">
+                            <!-- Main Audio Icon -->
+                            <div style="width: 320px; height: 320px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(167, 139, 250, 0.1)); 
+                                        border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+                                        box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);">
+                                <i class="fas fa-headphones-alt" style="font-size: 10rem; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
+                                   -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            </div>
+                            
+                            <!-- Floating Badges -->
+                            <div class="position-absolute" style="top: 10%; right: -10%; animation: float 4s ease-in-out infinite;">
+                                <div class="card-custom p-3" style="background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-play-circle" style="color: var(--primary-color); font-size: 1.5rem;"></i>
+                                        <div>
+                                            <div style="font-size: 0.7rem; color: var(--text-muted);">Now Playing</div>
+                                            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">Python Basics</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="position-absolute" style="bottom: 20%; left: -15%; animation: float 5s ease-in-out infinite;">
+                                <div class="card-custom p-3" style="background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-fire" style="color: var(--secondary-color); font-size: 1.5rem;"></i>
+                                        <div>
+                                            <div style="font-size: 0.7rem; color: var(--text-muted);">Daily Streak</div>
+                                            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">7 Days 🔥</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endif %}
+
+<!-- Categories Section -->
+<section id="categories" style="padding: 4rem 0; background: var(--bg-primary);">
+    <div class="container-fluid px-lg-5">
+        <div class="section-header mb-4">
+            <h2 class="section-title">Browse by Category</h2>
+            <p class="section-subtitle">Explore thousands of audio courses across various topics</p>
+        </div>
+        
+        <!-- Horizontal Scrollable Categories -->
+        <div class="category-scroll d-flex gap-3 pb-3">
+            <a href="{% url 'courses:course_list' %}" class="category-pill active">
+                <i class="fas fa-fire me-2"></i>Trending
+            </a>
+            {% for category in categories %}
+            <a href="{% url 'courses:course_list' %}?category={{ category.slug }}" class="category-pill">
+                {% if category.icon %}
+                <i class="{{ category.icon }} me-2"></i>
+                {% endif %}
+                {{ category.name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Trending Courses Section -->
+<section style="padding: 4rem 0; background: var(--bg-primary);">
+    <div class="container-fluid px-lg-5">
+        <div class="section-header d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="section-title">
+                    <i class="fas fa-fire me-2" style="color: var(--primary-color);"></i>Trending Now
+                </h2>
+                <p class="section-subtitle">Most popular audio courses this week</p>
+            </div>
+            <a href="{% url 'courses:course_list' %}" class="text-decoration-none" style="color: var(--primary-color); font-weight: 600;">
+                View All <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="row g-3">
+            {% if trending_courses %}
+                {% for course in trending_courses %}
+                <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none">
+                        <div class="audio-card">
+                            <div class="audio-card-img">
+                                {% if course.thumbnail %}
+                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}">
+                                {% else %}
+                                <img src="https://via.placeholder.com/300x420/1A1A1A/FF6B35?text={{ course.title|slice:':10' }}" alt="{{ course.title }}">
+                                {% endif %}
+                                <div class="audio-card-play">
+                                    <i class="fas fa-play" style="color: white; font-size: 0.85rem; margin-left: 2px;"></i>
+                                </div>
+                            </div>
+                            <div class="audio-card-body">
+                                <h6 class="audio-card-title">{{ course.title|truncatewords:6 }}</h6>
+                                <div class="audio-card-meta">
+                                    {% if course.duration_hours %}
+                                    <i class="fas fa-clock me-1"></i>{{ course.duration_hours }}h
+                                    <span class="mx-2">•</span>
+                                    {% endif %}
+                                    <i class="fas fa-star me-1" style="color: var(--secondary-color);"></i>
+                                    {% if course.average_rating > 0 %}{{ course.average_rating }}{% else %}New{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Sample Audio Course Cards if no courses exist -->
+                {% for i in "123456" %}
+                <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+                    <div class="audio-card">
+                        <div class="audio-card-img">
+                            <img src="https://via.placeholder.com/300x420/1A1A1A/8B5CF6?text=Course+{{ forloop.counter }}" alt="Course">
+                            <div class="audio-card-play">
+                                <i class="fas fa-play" style="color: white; font-size: 0.85rem; margin-left: 2px;"></i>
+                            </div>
+                        </div>
+                        <div class="audio-card-body">
+                            <h6 class="audio-card-title">Sample Audio Course {{ forloop.counter }}</h6>
+                            <div class="audio-card-meta">
+                                <i class="fas fa-clock me-1"></i>12h 30m
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-star me-1" style="color: var(--secondary-color);"></i>4.8
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+{% if not user.is_authenticated %}
+<section style="padding: 5rem 0; background: var(--bg-secondary);">
+    <div class="container">
+        <div class="section-header text-center mb-5">
+            <h2 class="section-title">Why Choose LeQ?</h2>
+            <p class="section-subtitle">Learn smarter with India's best audio learning platform</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card-custom p-4 h-100 text-center">
+                    <div class="feature-icon mx-auto">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Learn On The Go</h5>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Listen while commuting, exercising, or doing chores. Turn every moment into a learning opportunity.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card-custom p-4 h-100 text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, var(--accent-color), #D946EF);">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Offline Listening</h5>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Download courses and listen offline without any internet connection. Learn anywhere, anytime.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card-custom p-4 h-100 text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, var(--secondary-color), #C4B5FD);">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Earn Certificates</h5>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Get verified certificates upon course completion to showcase your skills and achievements.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card-custom p-4 h-100 text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #7C3AED, #5B21B6);">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Expert Instructors</h5>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Learn from industry experts and experienced educators with proven track records.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card-custom p-4 h-100 text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #6366F1, #8B5CF6);">
+                        <i class="fas fa-infinity"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Lifetime Access</h5>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Once enrolled, access your courses forever. Learn at your own pace, on your own schedule.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card-custom p-4 h-100 text-center">
+                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #DC2626, #EC4899);">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3" style="color: var(--text-primary);">24/7 Support</h5>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Get help whenever you need it with our dedicated support team always ready to assist.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</section>
+
+<!-- CTA Section -->
+<section style="padding: 5rem 0; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); position: relative; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1440 320\"><path fill=\"rgba(255,255,255,0.05)\" d=\"M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,138.7C960,139,1056,117,1152,101.3C1248,85,1344,75,1392,69.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z\"></path></svg>'); background-size: cover; opacity: 0.3;"></div>
+    <div class="container text-center" style="position: relative; z-index: 1;">
+        <h2 class="fw-bold mb-3" style="color: white; font-size: 2.5rem;">Ready to Start Your Learning Journey?</h2>
+        <p class="lead mb-4" style="color: rgba(255,255,255,0.9); font-size: 1.2rem;">
+            Join 10,000+ learners already transforming their lives with LeQ
+        </p>
+        {% if not user.is_authenticated %}
+        <a href="{% url 'account_signup' %}" class="btn btn-lg px-5 py-3" 
+           style="background: white; color: var(--primary-color); border-radius: 24px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+            <i class="fas fa-rocket me-2"></i>Get Started for Free
+        </a>
+        {% else %}
+        <a href="{% url 'courses:course_list' %}" class="btn btn-lg px-5 py-3" 
+           style="background: white; color: var(--primary-color); border-radius: 24px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+            <i class="fas fa-book-reader me-2"></i>Browse All Courses
+        </a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section style="padding: 4rem 0; background: var(--bg-primary);">
+    <div class="container">
+        <div class="row text-center g-4">
+            <div class="col-md-3 col-6">
+                <h2 class="fw-bold mb-2" style="color: var(--primary-color); font-size: 3rem;">{{ stats.total_students|default:"10K+" }}</h2>
+                <p style="color: var(--text-muted);">Active Students</p>
+            </div>
+            <div class="col-md-3 col-6">
+                <h2 class="fw-bold mb-2" style="color: var(--accent-color); font-size: 3rem;">{{ stats.total_courses|default:"500+" }}</h2>
+                <p style="color: var(--text-muted);">Quality Courses</p>
+            </div>
+            <div class="col-md-3 col-6">
+                <h2 class="fw-bold mb-2" style="color: var(--secondary-color); font-size: 3rem;">{{ stats.total_instructors|default:"100+" }}</h2>
+                <p style="color: var(--text-muted);">Expert Instructors</p>
+            </div>
+            <div class="col-md-3 col-6">
+                <h2 class="fw-bold mb-2" style="color: var(--primary-color); font-size: 3rem;">{{ stats.satisfaction_rate|default:"98" }}%</h2>
+                <p style="color: var(--text-muted);">Satisfaction Rate</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

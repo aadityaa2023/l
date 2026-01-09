@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border: 1px solid #e0e0e0; }
+        .button { display: inline-block; padding: 12px 30px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        .footer { text-align: center; padding: 20px; color: #888; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Teacher Verification Approved!</h1>
+    </div>
+    <div class="content">
+        <h2>Congratulations {{ teacher.first_name|default:"Teacher" }}!</h2>
+        <p>Your teacher account has been verified and approved by our admin team.</p>
+        
+        <p>You can now:</p>
+        <ul>
+            <li>Create and publish courses</li>
+            <li>Upload course materials and videos</li>
+            <li>Manage your students and enrollments</li>
+            <li>Track your earnings and analytics</li>
+            <li>Receive payouts for your course sales</li>
+        </ul>
+        
+        <a href="#" class="button">Create Your First Course</a>
+        
+        <p>We're excited to have you as an instructor on LeQ. If you need any help getting started, check out our instructor guide or contact our support team.</p>
+    </div>
+    <div class="footer">
+        <p>&copy; 2025 LeQ. All rights reserved.</p>
+    </div>
+</body>
+</html>

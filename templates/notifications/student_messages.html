@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages - LeQ{% endblock %}
+
+{% block content %}
+<section class="py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="text-white fw-bold mb-2">Messages</h2>
+                <p class="text-white-50 mb-0">Communicate with your instructors</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'notifications:student_message_compose' %}" class="btn btn-light">
+                    <i class="fas fa-plus me-2"></i>New Message
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link {% if not tab or tab == 'received' %}active{% endif %}" 
+                   href="?tab=received">
+                    <i class="fas fa-inbox me-2"></i>Received
+                    {% if unread_count > 0 %}
+                    <span class="badge bg-danger ms-1">{{ unread_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'sent' %}active{% endif %}" 
+                   href="?tab=sent">
+                    <i class="fas fa-paper-plane me-2"></i>Sent
+                </a>
+            </li>
+        </ul>
+
+        <!-- Messages List -->
+        {% for message in messages %}
+        <div class="card-custom mb-3 {% if not message.is_read and tab != 'sent' %}border-start border-primary border-3{% endif %}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="avatar-circle bg-primary text-white">
+                                {{ message.sender.get_full_name.0|upper }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1">
+                                    <a href="{% url 'notifications:message_detail' message.id %}" 
+                                       class="text-decoration-none text-dark">
+                                        {{ message.title }}
+                                    </a>
+                                    {% if not message.is_read and tab != 'sent' %}
+                                    <span class="badge bg-primary ms-2">New</span>
+                                    {% endif %}
+                                </h5>
+                                <small class="text-muted">
+                                    {% if tab == 'sent' %}
+                                    To: {{ message.receiver.get_full_name }}
+                                    {% else %}
+                                    From: {{ message.sender.get_full_name }}
+                                    {% endif %}
+                                </small>
+                                <p class="text-muted mb-0 mt-2">{{ message.message|truncatewords:20 }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <small class="text-muted d-block mb-2">
+                            <i class="fas fa-clock me-1"></i>{{ message.created_at|timesince }} ago
+                        </small>
+                        <a href="{% url 'notifications:message_detail' message.id %}" class="btn btn-sm btn-outline-primary">
+                            View
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card-custom p-5 text-center">
+            <i class="fas fa-envelope fa-4x text-muted mb-3"></i>
+            <h5 class="mb-2">No messages</h5>
+            <p class="text-muted mb-3">
+                {% if tab == 'sent' %}
+                You haven't sent any messages yet
+                {% else %}
+                You don't have any received messages
+                {% endif %}
+            </p>
+            <a href="{% url 'notifications:student_message_compose' %}" class="btn btn-primary-custom">
+                <i class="fas fa-plus me-2"></i>Send a Message
+            </a>
+        </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if messages.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if messages.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ messages.previous_page_number }}{% if tab %}&tab={{ tab }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">Page {{ messages.number }} of {{ messages.paginator.num_pages }}</span>
+                </li>
+                
+                {% if messages.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ messages.next_page_number }}{% if tab %}&tab={{ tab }}{% endif %}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.avatar-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+</style>
+{% endblock %}
