@@ -9,6 +9,7 @@ staticfiles/
 .DS_Store
 venv/
 env/
+
 .venv/
 *.swp
 *.swo

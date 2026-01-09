@@ -3,7 +3,8 @@ Django==4.2.7
 djangorestframework==3.14.0
 
 # Database
-mysqlclient==2.2.0
+# Use PyMySQL (pure-Python) on hosts without dev headers
+PyMySQL==1.0.3
 
 # Authentication
 django-allauth==0.57.0
