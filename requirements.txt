@@ -3,8 +3,13 @@ Django==4.2.7
 djangorestframework==3.14.0
 
 # Database
-# Use PyMySQL (pure-Python) on hosts without dev headers
-PyMySQL==1.0.3
+# Use pure-Python drivers on hosts without dev headers.
+# `mysql-connector-python` is preferred here because it doesn't require
+# compiling C extensions and works with Django when using the
+# `mysql.connector.django` engine.
+mysql-connector-python==8.1.0
+# Optional: PyMySQL can be installed too (some deploys prefer it)
+# PyMySQL==1.0.3
 
 # Authentication
 django-allauth==0.57.0

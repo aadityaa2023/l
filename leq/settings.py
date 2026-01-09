@@ -135,10 +135,40 @@ WSGI_APPLICATION = 'leq.wsgi.application'
 # Support both MySQL (shared hosting) and SQLite (local development)
 DB_ENGINE = env('DB_ENGINE', default='django.db.backends.mysql')
 
+# When running on shared hosting it's common that building C extensions
+# (like `mysqlclient`) fails. To avoid that, prefer a pure-Python
+# alternative (`mysql-connector-python`) when `mysqlclient` is missing
+# or reports a version older than Django's minimum requirement.
+def _mysqlclient_too_old():
+    try:
+        import MySQLdb
+        ver = getattr(MySQLdb, '__version__', None)
+        if not ver:
+            return True
+        # simple numeric comparison: '1.0.3' < '1.4.3'
+        def _to_tuple(s):
+            return tuple(int(x) for x in s.split('.') if x.isdigit())
+        return _to_tuple(ver) < (1, 4, 3)
+    except Exception:
+        return True
+
 if DB_ENGINE == 'django.db.backends.mysql':
+    # Default engine; may be overridden below if fallback driver chosen
+    engine = 'django.db.backends.mysql'
+
+    # If mysqlclient is missing or too old, try mysql-connector-python
+    if _mysqlclient_too_old():
+        try:
+            import mysql.connector  # provided by mysql-connector-python
+            engine = 'mysql.connector.django'
+        except Exception:
+            # Leave engine as django.db.backends.mysql; Django will raise
+            # the original helpful error if nothing usable is available.
+            engine = 'django.db.backends.mysql'
+
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
+            'ENGINE': engine,
             'NAME': env('DB_NAME', default=''),
             'USER': env('DB_USER', default=''),
             'PASSWORD': env('DB_PASSWORD', default=''),
