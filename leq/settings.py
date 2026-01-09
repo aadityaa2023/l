@@ -9,18 +9,6 @@ import environ
 from django.templatetags.static import static
 from django.urls import reverse_lazy
 
-# Patch mysql-connector-python compatibility issue with Django 4.2
-# This fixes: TypeError: DatabaseWrapper.display_name() takes 0 positional arguments but 1 was given
-try:
-    from mysql.connector.django.base import DatabaseWrapper
-    if hasattr(DatabaseWrapper, 'display_name'):
-        original_display_name = DatabaseWrapper.display_name
-        if callable(original_display_name):
-            # Patch it to be a property instead of a method
-            DatabaseWrapper.display_name = property(lambda self: 'MySQL')
-except ImportError:
-    pass  # mysql-connector-python not installed
-
 # Initialize environment variables
 env = environ.Env(
     DEBUG=(bool, False)
