@@ -139,17 +139,39 @@ DB_ENGINE = env('DB_ENGINE', default='django.db.backends.mysql')
 # (like `mysqlclient`) fails. To avoid that, prefer a pure-Python
 # alternative (`mysql-connector-python`) when `mysqlclient` is missing
 # or reports a version older than Django's minimum requirement.
-def _mysqlclient_too_old():
+def _should_use_connector():
+    """Check if we should use mysql-connector-python instead of mysqlclient."""
     try:
+        # Try importing MySQLdb (provided by mysqlclient or PyMySQL)
         import MySQLdb
-        ver = getattr(MySQLdb, '__version__', None)
-        if not ver:
+        ver = getattr(MySQLdb, '__version__', '0.0.0')
+        
+        # Parse version string and compare with Django's minimum (1.4.3)
+        def _parse_version(version_str):
+            parts = []
+            for part in str(version_str).split('.'):
+                try:
+                    parts.append(int(part))
+                except ValueError:
+                    # Handle non-numeric parts by ignoring them
+                    break
+            return tuple(parts + [0] * (3 - len(parts)))  # pad to 3 elements
+        
+        current_ver = _parse_version(ver)
+        min_ver = (1, 4, 3)
+        
+        if current_ver < min_ver:
+            print(f"DEBUG: MySQLdb version {ver} < required 1.4.3, trying mysql-connector-python")
             return True
-        # simple numeric comparison: '1.0.3' < '1.4.3'
-        def _to_tuple(s):
-            return tuple(int(x) for x in s.split('.') if x.isdigit())
-        return _to_tuple(ver) < (1, 4, 3)
-    except Exception:
+        else:
+            print(f"DEBUG: MySQLdb version {ver} is acceptable")
+            return False
+            
+    except ImportError:
+        print("DEBUG: MySQLdb not available, trying mysql-connector-python")
+        return True
+    except Exception as e:
+        print(f"DEBUG: Error checking MySQLdb: {e}, trying mysql-connector-python")
         return True
 
 if DB_ENGINE == 'django.db.backends.mysql':
@@ -157,14 +179,16 @@ if DB_ENGINE == 'django.db.backends.mysql':
     engine = 'django.db.backends.mysql'
 
     # If mysqlclient is missing or too old, try mysql-connector-python
-    if _mysqlclient_too_old():
+    if _should_use_connector():
         try:
             import mysql.connector  # provided by mysql-connector-python
             engine = 'mysql.connector.django'
-        except Exception:
+            print("DEBUG: Using mysql.connector.django backend")
+        except ImportError:
+            print("DEBUG: mysql.connector not available, falling back to django.db.backends.mysql")
             # Leave engine as django.db.backends.mysql; Django will raise
             # the original helpful error if nothing usable is available.
-            engine = 'django.db.backends.mysql'
+            pass
 
     DATABASES = {
         'default': {
