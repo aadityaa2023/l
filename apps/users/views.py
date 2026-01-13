@@ -98,20 +98,33 @@ def teacher_dashboard(request):
     )
     
     from apps.payments.models import Payment
+    from apps.platformadmin.models import CourseAssignment
     from django.db.models import Sum
     from datetime import datetime, timedelta
     
-    # Get teacher's courses with detailed stats
-    courses = Course.objects.filter(teacher=request.user).annotate(
+    # Get teacher's ASSIGNED courses with detailed stats
+    assignments = CourseAssignment.objects.filter(
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).select_related('course')
+    
+    course_ids = [assignment.course.id for assignment in assignments]
+    courses = Course.objects.filter(id__in=course_ids).annotate(
         student_count=Count('enrollments', filter=Q(enrollments__status='active')),
         avg_rating=Avg('reviews__rating'),
         total_revenue=Sum('enrollments__payment_amount', filter=Q(enrollments__status='active'))
     ).order_by('-created_at')
     
+    # Get pending assignments
+    pending_assignments = CourseAssignment.objects.filter(
+        teacher=request.user,
+        status='assigned'
+    ).select_related('course', 'assigned_by')
+    
     # Course status counts
-    courses_published = courses.filter(status='published').count()
-    courses_draft = courses.filter(status='draft').count()
-    courses_archived = courses.filter(status='archived').count()
+    courses_published = Course.objects.filter(id__in=course_ids, status='published').count()
+    courses_draft = Course.objects.filter(id__in=course_ids, status='draft').count()
+    courses_archived = Course.objects.filter(id__in=course_ids, status='archived').count()
     
     # Get teacher analytics
     try:
@@ -119,20 +132,20 @@ def teacher_dashboard(request):
     except TeacherAnalytics.DoesNotExist:
         analytics = None
     
-    # Total students across all courses
+    # Total students across all assigned courses
     total_students = Enrollment.objects.filter(
-        course__teacher=request.user,
+        course__id__in=course_ids,
         status='active'
     ).values('student').distinct().count()
     
     # Recent enrollments with course details
     recent_enrollments = Enrollment.objects.filter(
-        course__teacher=request.user
+        course__id__in=course_ids
     ).select_related('student', 'course').order_by('-enrolled_at')[:10]
     
     # Get recent reviews
     recent_reviews = Review.objects.filter(
-        course__teacher=request.user
+        course__id__in=course_ids
     ).select_related('student', 'course').order_by('-created_at')[:5]
     
     # Revenue calculations
@@ -140,19 +153,19 @@ def teacher_dashboard(request):
     seven_days_ago = datetime.now() - timedelta(days=7)
     
     revenue_30days = Payment.objects.filter(
-        course__teacher=request.user,
+        course__id__in=course_ids,
         status='completed',
         created_at__gte=thirty_days_ago
     ).aggregate(total=Sum('amount'))['total'] or 0
     
     revenue_7days = Payment.objects.filter(
-        course__teacher=request.user,
+        course__id__in=course_ids,
         status='completed',
         created_at__gte=seven_days_ago
     ).aggregate(total=Sum('amount'))['total'] or 0
     
     total_revenue = Payment.objects.filter(
-        course__teacher=request.user,
+        course__id__in=course_ids,
         status='completed'
     ).aggregate(total=Sum('amount'))['total'] or 0
     
@@ -163,7 +176,7 @@ def teacher_dashboard(request):
         day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day.replace(hour=23, minute=59, second=59, microsecond=999999)
         count = Enrollment.objects.filter(
-            course__teacher=request.user,
+            course__id__in=course_ids,
             enrolled_at__gte=day_start,
             enrolled_at__lte=day_end
         ).count()
@@ -191,6 +204,7 @@ def teacher_dashboard(request):
         'total_revenue': total_revenue,
         'enrollment_trend': enrollment_trend,
         'top_courses': top_courses,
+        'pending_assignments': pending_assignments,  # New assignments awaiting acceptance
     }
     
     return render(request, 'users/teacher_dashboard.html', context)

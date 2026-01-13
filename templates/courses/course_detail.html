@@ -145,8 +145,18 @@
                                         {% else %}
                                         <a href="{% url 'account_login' %}?next={% url 'courses:lesson_view' lesson.id %}" class="w-100 d-flex justify-content-between align-items-center text-decoration-none text-muted">
                                         {% endif %}
-                                            <div>
-                                                <i class="fas fa-play-circle text-primary me-2"></i>
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% if lesson.lesson_type == 'video' %}
+                                                    <i class="fas fa-play-circle" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                {% elif lesson.lesson_type == 'audio' %}
+                                                    <i class="fas fa-volume-up" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                {% elif lesson.lesson_type == 'text' %}
+                                                    <i class="fas fa-file-alt" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                {% elif lesson.lesson_type == 'quiz' %}
+                                                    <i class="fas fa-question-circle" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                {% else %}
+                                                    <i class="fas fa-play-circle" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                {% endif %}
                                                 <span>{{ lesson.title }}</span>
                                             </div>
                                             <small class="text-muted">

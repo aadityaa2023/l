@@ -125,14 +125,14 @@
                             <div class="card-body">
                                 <!-- Course Category -->
                                 {% if course.category %}
-                                <span class="badge bg-light text-primary mb-2">
+                                <span class="badge bg-light text-dark mb-2">
                                     <i class="{{ course.category.icon|default:'fas fa-tag' }} me-1"></i>{{ course.category.name }}
                                 </span>
                                 {% endif %}
                                 
                                 <!-- Course Title -->
                                 <h5 class="card-title fw-bold mb-2">
-                                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none text-dark">
+                                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none text-white">
                                         {{ course.title }}
                                     </a>
                                 </h5>

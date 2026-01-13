@@ -2,11 +2,28 @@
 
 {% block title %}{{ lesson.title }} - LeQ{% endblock %}
 
+{% block extra_css %}
+<style>
+footer { display: none !important; }
+.bg-white { background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
+.text-dark { color: var(--text-primary) !important; }
+.text-muted { color: var(--text-secondary) !important; }
+.card { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
+.breadcrumb { background-color: var(--bg-card) !important; }
+.breadcrumb-item a { color: var(--text-secondary) !important; }
+.breadcrumb-item.active { color: var(--text-primary) !important; }
+.list-group-item { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; }
+.list-group-item:hover { background-color: var(--bg-card-hover) !important; }
+.btn-outline-primary { border-color: var(--primary-color) !important; color: var(--primary-color) !important; }
+.btn-outline-primary:hover { background-color: var(--primary-color) !important; color: white !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-0">
     <div class="row g-0">
         <!-- Sidebar -->
-        <div class="col-lg-3 bg-white border-end" style="height: calc(100vh - 76px); overflow-y: auto;">
+        <div class="col-lg-3 bg-dark border-end" style="height: calc(100vh - 76px); overflow-y: auto;">
             <div class="p-4">
                 <a href="{% url 'courses:course_learn' lesson.module.course.id %}" class="btn btn-outline-primary btn-sm mb-3">
                     <i class="fas fa-arrow-left me-2"></i>Back to Course
@@ -23,63 +40,106 @@
                 
                 <!-- Media Players -->
                 {% if lesson.lesson_type == 'video' or lesson.lesson_type == 'audio' %}
-                    <!-- Display all media files -->
-                    {% if media_files %}
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title mb-3">
-                                <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} me-2"></i>
-                                Lesson Media ({{ media_files.count }} file{{ media_files.count|pluralize }})
-                            </h5>
-                            {% for media in media_files %}
-                                <div class="mb-4">
-                                    {% if media.title %}
-                                        <h6 class="mb-2">{{ forloop.counter }}. {{ media.title }}</h6>
-                                    {% else %}
-                                        <h6 class="mb-2">{{ forloop.counter }}. {{ media.get_media_type_display }} File</h6>
-                                    {% endif %}
-                                    
-                                    {% if media.media_type == 'video' %}
-                                        <video controls class="w-100" style="max-height: 500px; border-radius: 8px;" controlsList="nodownload" preload="metadata">
-                                            <source src="{{ media.get_media_url }}" type="video/mp4">
-                                            Your browser does not support the video element.
-                                        </video>
-                                    {% else %}
-                                        <audio controls class="w-100" controlsList="nodownload" preload="metadata">
-                                            <source src="{{ media.get_media_url }}" type="audio/mpeg">
-                                            Your browser does not support the audio element.
-                                        </audio>
-                                    {% endif %}
-                                    
-                                    {% if media.duration_minutes %}
-                                        <small class="text-muted d-block mt-2">Duration: {{ media.duration_minutes }} minutes</small>
-                                    {% endif %}
+                    <!-- Main Lesson Content - Click to Open Player -->
+                    {% if lesson.audio_file or media_files %}
+                    <div class="card mb-4 border-0 shadow-sm overflow-hidden" style="cursor: pointer; transition: all 0.3s;" onclick="window.open('{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.id %}{% else %}{% url 'courses:lesson_audio_player' lesson.id %}{% endif %}', '_blank')">
+                        <div class="position-relative">
+                            <!-- Thumbnail/Cover -->
+                            <div class="ratio ratio-16x9 bg-dark">
+                                {% if course.thumbnail %}
+                                    <img src="{{ course.thumbnail.url }}" alt="{{ lesson.title }}" class="object-fit-cover">
+                                {% else %}
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} fa-5x text-white opacity-25"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Play Overlay -->
+                                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.4);">
+                                    <div class="text-center">
+                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; transition: all 0.3s;">
+                                            <i class="fas fa-play text-primary" style="font-size: 32px; margin-left: 5px;"></i>
+                                        </div>
+                                        <p class="text-white mt-3 mb-0 fw-bold">
+                                            {% if lesson.lesson_type == 'video' %}
+                                                Click to Watch in Full Screen
+                                            {% else %}
+                                                Click to Listen in Immersive Player
+                                            {% endif %}
+                                        </p>
+                                    </div>
                                 </div>
-                                {% if not forloop.last %}<hr class="my-3">{% endif %}
-                            {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-body bg-gradient-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">
+                                        <i class="fas fa-{% if lesson.lesson_type == 'video' %}play-circle{% else %}headphones{% endif %} me-2"></i>
+                                        {{ lesson.title }}
+                                    </h5>
+                                    <p class="mb-0 small opacity-75">
+                                        {% if lesson.duration_minutes %}
+                                            <i class="fas fa-clock me-1"></i>{{ lesson.duration_minutes }} minutes
+                                        {% endif %}
+                                        {% if progress.last_position_seconds %}
+                                            <span class="ms-3"><i class="fas fa-history me-1"></i>Resume from {{ resume_time }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div>
+                                    <span class="badge bg-secondary text-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i>Open Player
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            {% if progress.completion_percentage > 0 %}
+                            <div class="mt-3">
+                                <div class="progress" style="height: 4px; background: rgba(255,255,255,0.3);">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ progress.completion_percentage }}%"></div>
+                                </div>
+                                <small class="opacity-75 d-block mt-1">{{ progress.completion_percentage|floatformat:0 }}% completed</small>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
-                    {% endif %}
                     
-                    <!-- Legacy single audio file support -->
-                    {% if lesson.audio_file %}
+                    <!-- Additional Media Files (if any) -->
+                    {% if media_files.count > 1 %}
                     <div class="card mb-4">
                         <div class="card-body">
-                            <h5 class="card-title mb-3"><i class="fas fa-headphones me-2"></i>{% if media_files %}Legacy {% endif %}Audio Lesson</h5>
-                            <audio controls class="w-100" controlsList="nodownload" preload="metadata">
-                                <source src="{% url 'courses:serve_lesson_audio' lesson.id %}" type="audio/mpeg">
-                                Your browser does not support the audio element.
-                            </audio>
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-list me-2"></i>Additional Media Files
+                            </h6>
+                            <div class="list-group">
+                                {% for media in media_files %}
+                                    {% if forloop.counter > 1 %}
+                                    <a href="{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.id %}{% else %}{% url 'courses:lesson_audio_player' lesson.id %}{% endif %}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i class="fas fa-{% if media.media_type == 'video' %}video{% else %}headphones{% endif %} me-2 text-primary"></i>
+                                            <span>{{ forloop.counter }}. {% if media.title %}{{ media.title }}{% else %}{{ media.get_media_type_display }} File{% endif %}</span>
+                                        </div>
+                                        {% if media.duration_minutes %}
+                                        <span class="badge bg-secondary text-light">{{ media.duration_minutes }} min</span>
+                                        {% endif %}
+                                    </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                     {% endif %}
                     
+                    {% else %}
                     <!-- No media uploaded -->
-                    {% if not media_files and not lesson.audio_file %}
                     <div class="card mb-4">
-                        <div class="card-body text-center py-4">
+                        <div class="card-body text-center py-5">
                             <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}upload{% endif %} fa-3x text-muted mb-3"></i>
-                            <p class="text-muted mb-0">No media files uploaded yet</p>
+                            <h5 class="text-muted">No media files uploaded yet</h5>
+                            <p class="text-muted mb-0 small">The teacher will upload the lesson content soon.</p>
                         </div>
                     </div>
                     {% endif %}
@@ -97,20 +157,43 @@
 </div>
 
 <style>
-    audio {
-        width: 100%;
-        height: 54px;
-        border-radius: 12px;
-        outline: none;
+    /* Player Card Hover Effects */
+    .card[onclick]:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
     }
     
-    audio::-webkit-media-controls-panel {
-        background-color: #f8f9fa;
+    .card[onclick]:hover .bg-white.rounded-circle {
+        transform: scale(1.1);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     }
     
-    video {
-        border-radius: 8px;
-        background-color: #000;
+    .card[onclick]:active {
+        transform: translateY(-2px);
+    }
+    
+    /* Smooth image transitions */
+    .card[onclick] img {
+        transition: transform 0.3s ease;
+    }
+    
+    .card[onclick]:hover img {
+        transform: scale(1.05);
+    }
+    
+    /* Progress bar animation */
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+    
+    /* Badge animation */
+    .badge {
+        transition: all 0.3s ease;
+    }
+    
+    .card[onclick]:hover .badge {
+        transform: scale(1.05);
     }
 </style>
 {% endblock %}
+

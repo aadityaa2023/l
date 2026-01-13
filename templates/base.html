@@ -34,6 +34,23 @@
             --warning-color: #F59E0B;
         }
         
+        .category-badge {
+            background-color: rgba(var(--r), var(--g), var(--b), 0.125);
+            color: var(--color);
+            border: 1px solid rgba(var(--r), var(--g), var(--b), 0.25);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .category-icon {
+            color: var(--color);
+        }
+        
+        .category-color-dot {
+            background-color: var(--color);
+        }
+        
         * {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -66,6 +83,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            color: transparent;
         }
         
         .nav-link {
@@ -450,21 +468,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
                                 <li><a class="dropdown-item" href="{% url 'users:profile' %}"><i class="fas fa-user me-2"></i> Profile</a></li>
-                                {% if user.is_student %}
-                                <li><a class="dropdown-item" href="{% url 'notifications:student_messages' %}">
-                                    <i class="fas fa-envelope me-2"></i> Messages
-                                    {% if unread_messages %}
-                                    <span class="badge bg-danger ms-1">{{ unread_messages }}</span>
-                                    {% endif %}
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'notifications:student_questions' %}">
-                                    <i class="fas fa-question-circle me-2"></i> My Questions
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'users:student_learning_goals' %}"><i class="fas fa-bullseye me-2"></i> Learning Goals</a></li>
-                                <li><a class="dropdown-item" href="{% url 'users:student_achievements' %}"><i class="fas fa-trophy me-2"></i> Achievements</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'users:student_billing' %}"><i class="fas fa-file-invoice me-2"></i> Billing History</a></li>
-                                {% endif %}
                                 <li><a class="dropdown-item" href="{% url 'payments:my_payments' %}"><i class="fas fa-wallet me-2"></i> Payments</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{% url 'users:logout' %}"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>

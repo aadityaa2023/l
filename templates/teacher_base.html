@@ -74,6 +74,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            color: transparent;
         }
         
         .sidebar-menu {
@@ -348,10 +349,6 @@
                 <a href="{% url 'courses:teacher_courses' %}" class="menu-item {% if 'teacher_courses' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="fas fa-book"></i>
                     <span>My Courses</span>
-                </a>
-                <a href="{% url 'courses:teacher_course_create' %}" class="menu-item {% if 'course_create' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Create Course</span>
                 </a>
                 <a href="{% url 'courses:teacher_analytics' %}" class="menu-item {% if 'analytics' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="fas fa-chart-line"></i>

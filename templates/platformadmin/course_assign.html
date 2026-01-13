@@ -1,0 +1,195 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Assign Teacher - {{ course.title }} - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-user-plus"></i> Assign Teacher to Course</h2>
+                <p class="text-muted mb-0">{{ course.title }}</p>
+            </div>
+            <a href="{% url 'platformadmin:admin_course_edit' course.id %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+        
+        <!-- Current Assignments -->
+        {% if existing_assignments %}
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Currently Assigned Teachers</h5>
+            </div>
+            <div class="card-body">
+                {% for assignment in existing_assignments %}
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 border rounded">
+                    <div>
+                        <strong>{{ assignment.teacher.get_full_name|default:assignment.teacher.email }}</strong>
+                        <br>
+                        <small class="text-muted">{{ assignment.teacher.email }}</small>
+                        <br>
+                        <small class="text-muted">
+                            Status: 
+                            {% if assignment.status == 'assigned' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif assignment.status == 'accepted' %}
+                                <span class="badge bg-success">Accepted</span>
+                            {% elif assignment.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ assignment.status|title }}</span>
+                            {% endif %}
+                        </small>
+                        <br>
+                        <small class="text-muted">
+                            Permissions: 
+                            {% if assignment.can_edit_content %}<span class="badge bg-primary">Edit Content</span>{% endif %}
+                            {% if assignment.can_delete_content %}<span class="badge bg-danger">Delete Content</span>{% endif %}
+                            {% if assignment.can_edit_details %}<span class="badge bg-info">Edit Details</span>{% endif %}
+                            {% if assignment.can_publish %}<span class="badge bg-success">Publish</span>{% endif %}
+                        </small>
+                    </div>
+                    <a href="{% url 'platformadmin:admin_course_unassign' assignment.id %}" 
+                       class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-times"></i> Remove
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Assignment Form -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-plus"></i> Assign New Teacher</h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="teacher" class="form-label">Select Teacher <span class="text-danger">*</span></label>
+                        <select class="form-select" id="teacher" name="teacher_id" required>
+                            <option value="">Choose a teacher...</option>
+                            {% for teacher in available_teachers %}
+                            <option value="{{ teacher.id }}">
+                                {{ teacher.get_full_name|default:teacher.email }} - {{ teacher.email }}
+                                {% if teacher.teacher_profile %}
+                                    ({{ teacher.teacher_profile.courses.count }} courses)
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Select a teacher to assign to this course</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6 class="mb-3"><i class="fas fa-key"></i> Assign Permissions</h6>
+                    <p class="text-muted small">Select what the teacher can do with this course</p>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="can_edit_content" name="can_edit_content" checked>
+                            <label class="form-check-label" for="can_edit_content">
+                                <strong>Can Edit Content</strong>
+                                <br>
+                                <small class="text-muted">
+                                    Teacher can add and edit modules and lessons
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="can_delete_content" name="can_delete_content">
+                            <label class="form-check-label" for="can_delete_content">
+                                <strong>Can Delete Content</strong>
+                                <br>
+                                <small class="text-muted">
+                                    Teacher can delete modules and lessons
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="can_edit_details" name="can_edit_details">
+                            <label class="form-check-label" for="can_edit_details">
+                                <strong>Can Edit Details</strong>
+                                <br>
+                                <small class="text-muted">
+                                    Teacher can edit course title, description, category, pricing, etc.
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="can_publish" name="can_publish">
+                            <label class="form-check-label" for="can_publish">
+                                <strong>Can Publish</strong>
+                                <br>
+                                <small class="text-muted">
+                                    Teacher can change course status (draft/published/archived)
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> <strong>Note:</strong> The teacher will receive a notification 
+                        about this assignment and can accept or reject it. They can only work on the course after accepting.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-user-plus"></i> Assign Teacher
+                        </button>
+                        <a href="{% url 'platformadmin:admin_course_edit' course.id %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-check "Can Edit Content" by default as it's the primary permission
+    const canEditContent = document.getElementById('can_edit_content');
+    
+    // You can add logic here to enforce business rules, e.g.:
+    // - If can_publish is checked, auto-check can_edit_details
+    // - Prevent unchecking all permissions
+    
+    const canPublish = document.getElementById('can_publish');
+    const canEditDetails = document.getElementById('can_edit_details');
+    
+    canPublish.addEventListener('change', function() {
+        if (this.checked) {
+            canEditDetails.checked = true;
+        }
+    });
+});
+</script>
+{% endblock %}

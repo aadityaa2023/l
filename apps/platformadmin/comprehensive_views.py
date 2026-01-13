@@ -257,40 +257,9 @@ def review_delete(request, review_id):
 @platformadmin_required
 def subscription_management(request):
     """Manage user subscriptions"""
-    status_filter = request.GET.get('status', '')
-    search = request.GET.get('search', '')
-    
-    subscriptions = Subscription.objects.select_related('user', 'course').all()
-    
-    if status_filter:
-        subscriptions = subscriptions.filter(status=status_filter)
-    
-    if search:
-        subscriptions = subscriptions.filter(
-            Q(user__email__icontains=search) |
-            Q(course__title__icontains=search)
-        )
-    
-    # Pagination
-    paginator = Paginator(subscriptions.order_by('-created_at'), 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = get_context_data(request)
-    context['page_obj'] = page_obj
-    context['subscriptions'] = page_obj.object_list
-    context['status_filter'] = status_filter
-    context['search'] = search
-    
-    # Stats
-    context['subscription_stats'] = {
-        'total': subscriptions.count(),
-        'active': Subscription.objects.filter(status='active').count(),
-        'cancelled': Subscription.objects.filter(status='cancelled').count(),
-        'expired': Subscription.objects.filter(status='expired').count(),
-    }
-    
-    return render(request, 'platformadmin/subscription_management.html', context)
+    # Subscription management UI removed from platformadmin. Backend Subscription model remains.
+    messages.info(request, "Subscription UI has been removed from the platform admin.")
+    return redirect('platformadmin:dashboard')
 
 
 @platformadmin_required
@@ -495,41 +464,9 @@ def login_history(request):
 @platformadmin_required
 def student_progress(request):
     """Track student progress and completion"""
-    search = request.GET.get('search', '')
-    course_filter = request.GET.get('course', '')
-    
-    enrollments = Enrollment.objects.select_related('student', 'course').all()
-    
-    if search:
-        enrollments = enrollments.filter(
-            Q(student__email__icontains=search) |
-            Q(course__title__icontains=search)
-        )
-    
-    if course_filter:
-        enrollments = enrollments.filter(course_id=course_filter)
-    
-    # Pagination
-    paginator = Paginator(enrollments.order_by('-enrolled_at'), 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = get_context_data(request)
-    context['page_obj'] = page_obj
-    context['enrollments'] = page_obj.object_list
-    context['search'] = search
-    context['course_filter'] = course_filter
-    context['courses'] = Course.objects.filter(status='published')
-    
-    # Stats
-    context['progress_stats'] = {
-        'total_enrollments': enrollments.count(),
-        'completed': enrollments.filter(is_completed=True).count(),
-        'in_progress': enrollments.filter(is_completed=False, progress_percentage__gt=0).count(),
-        'not_started': enrollments.filter(progress_percentage=0).count(),
-    }
-    
-    return render(request, 'platformadmin/student_progress.html', context)
+    # Student progress UI removed from platformadmin. Keep backend data/models intact.
+    messages.info(request, "Student progress UI has been removed from the platform admin.")
+    return redirect('platformadmin:dashboard')
 
 
 # ============================================================================
@@ -729,30 +666,9 @@ def announcement_management(request):
 @require_http_methods(['GET', 'POST'])
 def video_settings(request):
     """Manage video streaming and DRM settings"""
-    settings_obj, created = VideoSettings.objects.get_or_create(id=1)
-    
-    if request.method == 'POST':
-        settings_obj.enable_drm = request.POST.get('enable_drm') == 'on'
-        settings_obj.enable_watermark = request.POST.get('enable_watermark') == 'on'
-        settings_obj.watermark_text = request.POST.get('watermark_text', '')
-        settings_obj.default_quality = request.POST.get('default_quality', '720p')
-        settings_obj.max_quality = request.POST.get('max_quality', '1080p')
-        settings_obj.allow_download = request.POST.get('allow_download') == 'on'
-        settings_obj.enable_speed_control = request.POST.get('enable_speed_control') == 'on'
-        settings_obj.enable_adaptive_streaming = request.POST.get('enable_adaptive_streaming') == 'on'
-        settings_obj.buffer_time = int(request.POST.get('buffer_time', 5))
-        settings_obj.enable_offline_viewing = request.POST.get('enable_offline_viewing') == 'on'
-        settings_obj.track_watch_time = request.POST.get('track_watch_time') == 'on'
-        settings_obj.require_full_watch = request.POST.get('require_full_watch') == 'on'
-        settings_obj.save()
-        
-        messages.success(request, "Video settings updated successfully.")
-        return redirect('platformadmin:video_settings')
-    
-    context = get_context_data(request)
-    context['settings'] = settings_obj
-    
-    return render(request, 'platformadmin/video_settings.html', context)
+    # Video settings UI removed from platformadmin. Backend model `VideoSettings` remains.
+    messages.info(request, "Video settings UI has been removed from the platform admin.")
+    return redirect('platformadmin:dashboard')
 
 
 # ============================================================================

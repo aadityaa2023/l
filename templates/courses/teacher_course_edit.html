@@ -3,6 +3,30 @@
 
 {% block title %}Edit Course - {{ course.title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .sortable-ghost {
+        opacity: 0.4;
+    }
+    .sortable-chosen {
+        opacity: 0.8;
+    }
+    .sortable-drag {
+        transform: rotate(5deg);
+    }
+    .grip-handle {
+        cursor: grab;
+        color: #6b7280;
+    }
+    .grip-handle:hover {
+        color: #374151;
+    }
+    .grip-handle:active {
+        cursor: grabbing;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="mb-4">
     <nav aria-label="breadcrumb">
@@ -197,9 +221,9 @@
                                 {% for module in modules %}
                                 <div class="accordion-item mb-3 border rounded">
                                     <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#module{{ module.id }}">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#module{{ module.id }}" data-module-id="{{ module.id }}">
                                             <div class="d-flex w-100 align-items-center">
-                                                <i class="fas fa-grip-vertical me-3 text-muted"></i>
+                                                <i class="fas fa-grip-vertical me-3 grip-handle"></i>
                                                 <div class="flex-grow-1">
                                                     <strong>{{ module.title }}</strong>
                                                     <div class="small text-muted">{{ module.lessons.count }} lesson{{ module.lessons.count|pluralize }}</div>
@@ -227,24 +251,27 @@
                                             {% if module.lessons.all %}
                                                 <div class="list-group">
                                                     {% for lesson in module.lessons.all %}
-                                                    <div class="list-group-item">
+                                                    <div class="list-group-item" data-lesson-id="{{ lesson.id }}">
                                                         <div class="d-flex justify-content-between align-items-center">
                                                             <div class="d-flex align-items-center flex-grow-1">
-                                                                <i class="fas fa-grip-vertical me-3 text-muted"></i>
+                                                                <i class="fas fa-grip-vertical me-3 grip-handle"></i>
                                                                 <div>
                                                                     <div class="fw-bold">{{ lesson.title }}</div>
-                                                                    <div class="small text-muted">
-                                                                        <span class="badge bg-secondary me-2">{{ lesson.get_lesson_type_display }}</span>
+                                                                    <div class="small text-muted d-flex align-items-center gap-2">
+                                                                        {% if lesson.lesson_type == 'video' %}
+                                                                            <i class="fas fa-play-circle" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                                        {% elif lesson.lesson_type == 'audio' %}
+                                                                            <i class="fas fa-volume-up" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                                        {% elif lesson.lesson_type == 'text' %}
+                                                                            <i class="fas fa-file-alt" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                                        {% elif lesson.lesson_type == 'quiz' %}
+                                                                            <i class="fas fa-question-circle" style="opacity: 0.5; font-size: 0.9rem;"></i>
+                                                                        {% endif %}
                                                                         {% if lesson.duration_seconds %}
-                                                                            <i class="fas fa-clock me-1"></i>{{ lesson.duration_seconds|floatformat:0 }}s
+                                                                            <span style="opacity: 0.7;">{{ lesson.duration_seconds|floatformat:0 }}s</span>
                                                                         {% endif %}
                                                                         {% if lesson.is_free_preview %}
-                                                                            <span class="badge bg-info ms-2">Free Preview</span>
-                                                                        {% endif %}
-                                                                        {% if lesson.media_files.count > 0 %}
-                                                                            <span class="badge bg-success ms-2">
-                                                                                <i class="fas fa-photo-video me-1"></i>{{ lesson.media_files.count }} media file{{ lesson.media_files.count|pluralize }}
-                                                                            </span>
+                                                                            <span class="badge bg-info" style="font-size: 0.7rem;">Free</span>
                                                                         {% endif %}
                                                                     </div>
                                                                 </div>
@@ -410,11 +437,6 @@
                         <small class="text-muted">You can upload multiple audio or video files. Supported formats: MP3, WAV, M4A, MP4, AVI, MOV, MKV, WebM</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Legacy Audio File (Optional)</label>
-                        <input type="file" name="audio_file" class="form-control" accept="audio/*">
-                        <small class="text-muted">Single audio file (for backward compatibility)</small>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label fw-bold">Text Content</label>
                         <textarea name="text_content" class="form-control" rows="5"></textarea>
                     </div>
@@ -498,16 +520,6 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Legacy Audio File</label>
-                        {% if lesson.audio_file %}
-                        <div class="alert alert-info small mb-2">
-                            <i class="fas fa-file-audio me-2"></i>Current: {{ lesson.audio_file.name|slice:":50" }}...
-                        </div>
-                        {% endif %}
-                        <input type="file" name="audio_file" class="form-control" accept="audio/*">
-                        <small class="text-muted">Leave empty to keep current file</small>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label fw-bold">Text Content</label>
                         <textarea name="text_content" class="form-control" rows="5">{{ lesson.text_content }}</textarea>
                     </div>
@@ -558,7 +570,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
+const moduleIds = [{% for module in modules %}{{ module.id }},{% endfor %}];
+
 // Function to toggle media fields based on lesson type
 function toggleMediaFields(selectElement) {
     const lessonType = selectElement.value;
@@ -599,11 +614,110 @@ function deleteMedia(mediaId) {
     });
 }
 
-// Initialize media field visibility on page load
+// Function to reorder modules
+function reorderModules() {
+    const courseContentAccordion = document.getElementById('courseContentAccordion');
+    if (!courseContentAccordion) return;
+    
+    const moduleItems = Array.from(courseContentAccordion.children);
+    const moduleOrder = moduleItems.map(item => {
+        const header = item.querySelector('.accordion-header');
+        const button = header.querySelector('.accordion-button');
+        return button.getAttribute('data-module-id');
+    });
+    
+    fetch(`/courses/teacher/courses/{{ course.id }}/modules/reorder/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            module_order: moduleOrder
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Error reordering modules:', data.error);
+            location.reload(); // Reload to restore original order
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        location.reload(); // Reload to restore original order
+    });
+}
+
+// Function to reorder lessons within a module
+function reorderLessons(moduleId) {
+    const lessonList = document.querySelector(`#module${moduleId} .list-group`);
+    if (!lessonList) return;
+    
+    const lessonItems = Array.from(lessonList.children);
+    const lessonOrder = lessonItems.map(item => item.getAttribute('data-lesson-id'));
+    
+    fetch(`/courses/teacher/module/${moduleId}/lessons/reorder/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            lesson_order: lessonOrder
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Error reordering lessons:', data.error);
+            location.reload(); // Reload to restore original order
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        location.reload(); // Reload to restore original order
+    });
+}
+
+// Initialize drag and drop functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize media field visibility
     document.querySelectorAll('select[name="lesson_type"]').forEach(select => {
         toggleMediaFields(select);
     });
+    
+    // Make modules sortable
+    const courseContentAccordion = document.getElementById('courseContentAccordion');
+    if (courseContentAccordion) {
+        new Sortable(courseContentAccordion, {
+            handle: '.grip-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            onEnd: function(evt) {
+                reorderModules();
+            }
+        });
+    }
+    
+    // Make lessons sortable within each module
+    for (const moduleId of moduleIds) {
+        const lessonList = document.querySelector(`#module${moduleId} .list-group`);
+        if (lessonList) {
+            new Sortable(lessonList, {
+                handle: '.grip-handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    reorderLessons(moduleId);
+                }
+            });
+        }
+    }
 });
 </script>
 {% endblock %}

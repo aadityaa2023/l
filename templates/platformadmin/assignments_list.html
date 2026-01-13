@@ -1,0 +1,249 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}All Course Assignments - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-users-cog"></i> All Course Assignments</h2>
+        <p class="text-muted mb-0">Manage all teacher assignments across all courses</p>
+    </div>
+    <a href="{% url 'platformadmin:admin_courses_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Courses
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h3>{{ total_assignments }}</h3>
+                <p class="mb-0">Total Assignments</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h3>{{ pending_assignments }}</h3>
+                <p class="mb-0">Pending Acceptance</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h3>{{ accepted_assignments }}</h3>
+                <p class="mb-0">Accepted</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h3>{{ rejected_assignments }}</h3>
+                <p class="mb-0">Rejected</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="assigned" {% if request.GET.status == 'assigned' %}selected{% endif %}>Pending</option>
+                    <option value="accepted" {% if request.GET.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                    <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="revoked" {% if request.GET.status == 'revoked' %}selected{% endif %}>Revoked</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="course" class="form-label">Course</label>
+                <input type="text" class="form-control" id="course" name="course" 
+                       value="{{ request.GET.course }}" placeholder="Search by course title">
+            </div>
+            
+            <div class="col-md-3">
+                <label for="teacher" class="form-label">Teacher</label>
+                <input type="text" class="form-control" id="teacher" name="teacher" 
+                       value="{{ request.GET.teacher }}" placeholder="Search by teacher name/email">
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assignments Table -->
+<div class="card">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="fas fa-list"></i> Assignments ({{ assignments.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if assignments %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Course</th>
+                        <th>Teacher</th>
+                        <th>Status</th>
+                        <th>Permissions</th>
+                        <th>Assigned</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in assignments %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if assignment.course.thumbnail %}
+                                <img src="{{ assignment.course.thumbnail.url }}" alt="{{ assignment.course.title }}" 
+                                     class="me-2" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                                {% endif %}
+                                <div>
+                                    <strong>{{ assignment.course.title }}</strong><br>
+                                    <small class="text-muted">{{ assignment.course.category.name|default:"Uncategorized" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ assignment.teacher.get_full_name|default:assignment.teacher.email }}</strong><br>
+                            <small class="text-muted">{{ assignment.teacher.email }}</small>
+                        </td>
+                        <td>
+                            {% if assignment.status == 'assigned' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif assignment.status == 'accepted' %}
+                                <span class="badge bg-success">Accepted</span>
+                            {% elif assignment.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% elif assignment.status == 'revoked' %}
+                                <span class="badge bg-secondary">Revoked</span>
+                            {% else %}
+                                <span class="badge bg-info">{{ assignment.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>
+                                {% if assignment.can_edit_content %}
+                                    <span class="badge bg-primary">Content</span>
+                                {% endif %}
+                                {% if assignment.can_edit_details %}
+                                    <span class="badge bg-info">Details</span>
+                                {% endif %}
+                                {% if assignment.can_publish %}
+                                    <span class="badge bg-success">Publish</span>
+                                {% endif %}
+                                {% if not assignment.can_edit_content and not assignment.can_edit_details and not assignment.can_publish %}
+                                    <span class="text-muted">None</span>
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {{ assignment.assigned_at|date:"M d, Y" }}<br>
+                                <span class="text-muted">by {{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.email }}</span>
+                            </small>
+                        </td>
+                        <td>
+                            <small>
+                                {% if assignment.status == 'accepted' and assignment.accepted_at %}
+                                    Accepted<br>{{ assignment.accepted_at|date:"M d, Y" }}
+                                {% elif assignment.status == 'rejected' and assignment.rejected_at %}
+                                    Rejected<br>{{ assignment.rejected_at|date:"M d, Y" }}
+                                {% elif assignment.status == 'revoked' and assignment.revoked_at %}
+                                    Revoked<br>{{ assignment.revoked_at|date:"M d, Y" }}
+                                {% else %}
+                                    {{ assignment.assigned_at|date:"M d, Y" }}
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'platformadmin:admin_course_edit' assignment.course.id %}" 
+                                   class="btn btn-sm btn-outline-primary" title="View Course">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if assignment.status != 'revoked' %}
+                                <a href="{% url 'platformadmin:admin_course_unassign' assignment.id %}" 
+                                   class="btn btn-sm btn-outline-danger" title="Unassign">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.course %}&course={{ request.GET.course }}{% endif %}{% if request.GET.teacher %}&teacher={{ request.GET.teacher }}{% endif %}">
+                            First
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.course %}&course={{ request.GET.course }}{% endif %}{% if request.GET.teacher %}&teacher={{ request.GET.teacher }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.course %}&course={{ request.GET.course }}{% endif %}{% if request.GET.teacher %}&teacher={{ request.GET.teacher }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.course %}&course={{ request.GET.course }}{% endif %}{% if request.GET.teacher %}&teacher={{ request.GET.teacher }}{% endif %}">
+                            Last
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="p-5 text-center text-muted">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>No assignments found matching your criteria.</p>
+            <a href="{% url 'platformadmin:admin_courses_list' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Course & Assign Teachers
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

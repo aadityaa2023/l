@@ -17,8 +17,19 @@ env = environ.Env(
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Read .env file
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+# Read environment files
+# Prefer local overrides in `.env.local` for development, fall back to `.env`.
+local_env = os.path.join(BASE_DIR, '.env.local')
+prod_env = os.path.join(BASE_DIR, '.env')
+if os.path.exists(local_env):
+    environ.Env.read_env(local_env)
+    print("DEBUG: Loaded environment from .env.local")
+elif os.path.exists(prod_env):
+    environ.Env.read_env(prod_env)
+    print("DEBUG: Loaded environment from .env")
+else:
+    # No env file found; rely on OS-level environment variables
+    print("DEBUG: No .env file found; relying on OS environment variables")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-otu^*u_&!zzks2%kg2)*q47-mto1+=l*%by4i!r5%%&^a&gwjw')

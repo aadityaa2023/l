@@ -568,3 +568,72 @@ class VideoSettings(models.Model):
 
     def __str__(self):
         return "Video Settings"
+
+
+class CourseAssignment(models.Model):
+    """Track course assignments from platform admin to teachers"""
+    
+    STATUS_CHOICES = (
+        ('assigned', 'Assigned'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('revoked', 'Revoked'),
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(
+        'courses.Course',
+        on_delete=models.CASCADE,
+        related_name='assignments'
+    )
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='course_assignments',
+        limit_choices_to={'role': 'teacher'}
+    )
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='assigned_courses',
+        limit_choices_to={'role': 'admin'}
+    )
+    
+    status = models.CharField(_('status'), max_length=20, choices=STATUS_CHOICES, default='assigned')
+    
+    # Permissions
+    can_edit_content = models.BooleanField(_('can edit content'), default=True, 
+                                            help_text="Allow teacher to add and edit lessons and modules")
+    can_delete_content = models.BooleanField(_('can delete content'), default=False,
+                                              help_text="Allow teacher to delete lessons and modules")
+    can_edit_details = models.BooleanField(_('can edit course details'), default=False,
+                                            help_text="Allow teacher to edit course title, description, pricing")
+    can_publish = models.BooleanField(_('can publish'), default=False,
+                                       help_text="Allow teacher to publish/unpublish course")
+    
+    # Notes
+    assignment_notes = models.TextField(_('assignment notes'), blank=True,
+                                         help_text="Admin notes about this assignment")
+    rejection_reason = models.TextField(_('rejection reason'), blank=True)
+    
+    # Timestamps
+    assigned_at = models.DateTimeField(_('assigned at'), auto_now_add=True)
+    accepted_at = models.DateTimeField(_('accepted at'), null=True, blank=True)
+    rejected_at = models.DateTimeField(_('rejected at'), null=True, blank=True)
+    revoked_at = models.DateTimeField(_('revoked at'), null=True, blank=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+
+    class Meta:
+        verbose_name = _('course assignment')
+        verbose_name_plural = _('course assignments')
+        ordering = ['-assigned_at']
+        unique_together = [['course', 'teacher']]
+        indexes = [
+            models.Index(fields=['teacher', 'status']),
+            models.Index(fields=['course', 'status']),
+            models.Index(fields=['-assigned_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.course.title} → {self.teacher.email} ({self.status})"

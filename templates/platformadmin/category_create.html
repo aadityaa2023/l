@@ -1,0 +1,117 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Create Category - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-plus-circle"></i> Create New Category</h2>
+                <p class="text-muted mb-0">Add a main category or subcategory</p>
+            </div>
+            <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-folder-plus"></i> Category Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" required placeholder="e.g., Programming, Business, Design">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="parent" class="form-label">Parent Category</label>
+                        <select class="form-select" id="parent" name="parent">
+                            <option value="">None (Main Category)</option>
+                            {% for main_cat in main_categories %}
+                            <option value="{{ main_cat.id }}">{{ main_cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Leave empty to create a main category, or select a parent to create a subcategory</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Brief description of the category..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="icon" class="form-label">Icon Class</label>
+                            <input type="text" class="form-control" id="icon" name="icon" 
+                                   placeholder="e.g., fas fa-code">
+                            <small class="text-muted">Font Awesome icon class (e.g., fas fa-code, fas fa-laptop)</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="color" class="form-label">Color</label>
+                            <input type="color" class="form-control form-control-color" id="color" name="color" value="#667eea">
+                            <small class="text-muted">Primary color for the category</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="display_order" class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="display_order" name="display_order" value="0" min="0">
+                            <small class="text-muted">Lower numbers appear first (0 = top)</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label d-block">Status</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    Active (visible to users)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb"></i> <strong>Pro Tip:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Use descriptive names that users can easily understand</li>
+                            <li>Icons help users quickly identify categories visually</li>
+                            <li>Subcategories help organize specific topics under broader categories</li>
+                            <li>Display order controls the sequence in dropdowns and listings</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Create Category
+                        </button>
+                        <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('icon').addEventListener('input', function() {
+    const iconClass = this.value;
+    const preview = document.getElementById('icon-preview');
+    if (preview) {
+        preview.className = iconClass + ' fa-2x';
+    }
+});
+</script>
+{% endblock %}

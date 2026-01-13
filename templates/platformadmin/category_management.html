@@ -1,0 +1,195 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Category Management - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-folder-tree"></i> Category & Subcategory Management</h2>
+        <p class="text-muted mb-0">Organize courses with hierarchical categories</p>
+    </div>
+    <a href="{% url 'platformadmin:admin_category_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create Category
+    </a>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h3>{{ total_categories }}</h3>
+                <p class="mb-0"><i class="fas fa-layer-group"></i> Total Categories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h3>{{ main_category_count }}</h3>
+                <p class="mb-0"><i class="fas fa-folder"></i> Main Categories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h3>{{ subcategory_count }}</h3>
+                <p class="mb-0"><i class="fas fa-sitemap"></i> Subcategories</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h3>{{ active_categories }}</h3>
+                <p class="mb-0"><i class="fas fa-check-circle"></i> Active</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="fas fa-filter"></i> Search & Filters</h6>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-5">
+                <input type="text" name="search" class="form-control" placeholder="Search categories..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="parent" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="main" {% if parent_filter == 'main' %}selected{% endif %}>Main Categories Only</option>
+                    <option value="sub" {% if parent_filter == 'sub' %}selected{% endif %}>Subcategories Only</option>
+                    <option disabled>───────────────</option>
+                    {% for main_cat in main_categories %}
+                    <option value="{{ main_cat.id }}" {% if parent_filter == main_cat.id|stringformat:"s" %}selected{% endif %}>
+                        Under {{ main_cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-secondary w-100">
+                    <i class="fas fa-redo"></i> Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Categories Table -->
+<div class="card">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="fas fa-list"></i> All Categories ({{ categories.count }})</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th width="5%">Order</th>
+                    <th width="30%">Category Name</th>
+                    <th width="10%">Icon/Color</th>
+                    <th width="20%">Description</th>
+                    <th width="8%">Type</th>
+                    <th width="8%">Courses</th>
+                    <th width="8%">Status</th>
+                    <th width="11%">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>
+                        <span class="badge bg-secondary">{{ category.display_order }}</span>
+                    </td>
+                    <td>
+                        {% if category.parent %}
+                            <i class="fas fa-level-up-alt text-muted ms-3"></i>
+                            <small class="text-muted">{{ category.parent.name }} ></small>
+                        {% endif %}
+                        <strong>{{ category.name }}</strong>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if category.icon %}
+                                <i class="{{ category.icon }} fa-2x category-icon" style="--color: {{ category.color }}"></i>
+                            {% endif %}
+                            <div class="rounded-circle category-color-dot" style="width: 20px; height: 20px; --color: {{ category.color }}"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <small class="text-muted">{{ category.description|truncatewords:10|default:"-" }}</small>
+                    </td>
+                    <td>
+                        {% if category.parent %}
+                            <span class="badge bg-info">Subcategory</span>
+                        {% else %}
+                            <span class="badge bg-primary">Main</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge bg-success">{{ category.course_count }}</span>
+                    </td>
+                    <td>
+                        {% if category.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'platformadmin:admin_category_edit' category.id %}" 
+                               class="btn btn-outline-primary" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'platformadmin:admin_category_delete' category.id %}" 
+                               class="btn btn-outline-danger" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                        <h5>No categories found</h5>
+                        <p class="text-muted">Create your first category to organize courses</p>
+                        <a href="{% url 'platformadmin:admin_category_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Category
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Quick Info -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle"></i> Category Hierarchy</h6>
+                <p class="mb-0 small text-muted">
+                    <strong>Main Categories:</strong> Top-level categories for broad course organization. <br>
+                    <strong>Subcategories:</strong> Nested under main categories for more specific course classification. <br>
+                    Categories can have unlimited subcategories to create a flexible organizational structure.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

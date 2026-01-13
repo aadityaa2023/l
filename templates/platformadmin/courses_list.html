@@ -1,0 +1,520 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Course Management - Platform Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .course-thumbnail {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #f8f9fa;
+    }
+    .course-thumbnail-placeholder {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        border: 2px solid #f8f9fa;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .category-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    .action-btn:hover {
+        transform: scale(1.1);
+    }
+    .filter-card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .table-custom thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .table-custom tbody tr {
+        transition: background-color 0.2s;
+    }
+    .table-custom tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .quick-action-btn {
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="fas fa-graduation-cap"></i> Course Management</h2>
+        <p class="text-muted mb-0">Manage all courses, categories, assignments, and content</p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'platformadmin:admin_course_create' %}" class="btn btn-primary quick-action-btn">
+            <i class="fas fa-plus"></i> Create Course
+        </a>
+        <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-info quick-action-btn">
+            <i class="fas fa-folder-tree"></i> Categories
+        </a>
+        <a href="{% url 'platformadmin:admin_view_all_assignments' %}" class="btn btn-success quick-action-btn">
+            <i class="fas fa-users-cog"></i> Assignments
+        </a>
+    </div>
+</div>
+
+<!-- Comprehensive Statistics Dashboard -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-uppercase mb-2 opacity-75">Total Courses</h6>
+                        <h2 class="mb-0 fw-bold">{{ total_courses }}</h2>
+                        <div class="mt-3 small">
+                            <div><i class="fas fa-check-circle"></i> {{ published_courses }} Published</div>
+                            <div><i class="fas fa-edit"></i> {{ draft_courses }} Draft</div>
+                        </div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-book fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-uppercase mb-2 opacity-75">Students Enrolled</h6>
+                        <h2 class="mb-0 fw-bold">{{ active_students }}</h2>
+                        <div class="mt-3 small">
+                            <div><i class="fas fa-chart-line"></i> {{ total_enrollments }} Total</div>
+                        </div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-users fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-warning text-dark h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-uppercase mb-2 opacity-75">Assignments</h6>
+                        <h2 class="mb-0 fw-bold">{{ total_assignments }}</h2>
+                        <div class="mt-3 small">
+                            <div><i class="fas fa-clock"></i> {{ pending_assignments }} Pending</div>
+                            <div><i class="fas fa-check"></i> {{ accepted_assignments }} Active</div>
+                        </div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-user-check fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="text-uppercase mb-2 opacity-75">Total Revenue</h6>
+                        <h2 class="mb-0 fw-bold">₹{{ total_revenue|floatformat:0 }}</h2>
+                        <div class="mt-3 small">
+                            <div><i class="fas fa-calendar-alt"></i> ₹{{ monthly_revenue|floatformat:0 }} This Month</div>
+                        </div>
+                    </div>
+                    <div class="opacity-50">
+                        <i class="fas fa-rupee-sign fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Statistics -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <h4 class="text-primary">{{ published_courses }}</h4>
+                        <small class="text-muted">Published</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-warning">{{ draft_courses }}</h4>
+                        <small class="text-muted">Draft</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-secondary">{{ archived_courses }}</h4>
+                        <small class="text-muted">Archived</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-success">{{ free_courses }}</h4>
+                        <small class="text-muted">Free Courses</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-info">{{ paid_courses }}</h4>
+                        <small class="text-muted">Paid Courses</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h4 class="text-danger">{{ rejected_assignments }}</h4>
+                        <small class="text-muted">Rejected Assigns</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Filters -->
+<div class="card filter-card mb-4">
+    <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas fa-filter"></i> Search & Filters</h6>
+            <small>{{ courses|length }} of {{ total_courses }} courses</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">
+                    <i class="fas fa-search"></i> Search
+                </label>
+                <input type="text" name="search" class="form-control" placeholder="Course title, description..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">
+                    <i class="fas fa-signal"></i> Status
+                </label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                    <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Published</option>
+                    <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Archived</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">
+                    <i class="fas fa-folder"></i> Category
+                </label>
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if category_filter == category.id|stringformat:"s" %}selected{% endif %}>
+                        {{ category.full_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">
+                    <i class="fas fa-sort"></i> Sort By
+                </label>
+                <select name="sort" class="form-select">
+                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+                    <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title A-Z</option>
+                    <option value="-title" {% if sort_by == '-title' %}selected{% endif %}>Title Z-A</option>
+                    <option value="-price" {% if sort_by == '-price' %}selected{% endif %}>Price High-Low</option>
+                    <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price Low-High</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="fas fa-search"></i> Apply
+                    </button>
+                    <a href="{% url 'platformadmin:admin_courses_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Courses Table -->
+<div class="card">
+    <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list"></i> All Courses</h5>
+            <span class="badge bg-white text-primary">{{ courses|length }} of {{ total_courses }}</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-custom table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">Course</th>
+                    <th style="width: 12%;">Category</th>
+                    <th style="width: 10%;">Teachers</th>
+                    <th style="width: 8%;">Status</th>
+                    <th style="width: 8%;">Price</th>
+                    <th style="width: 8%;">Students</th>
+                    <th style="width: 9%;">Content</th>
+                    <th style="width: 10%;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            {% if course.thumbnail %}
+                            <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="course-thumbnail me-3">
+                            {% else %}
+                            <div class="course-thumbnail-placeholder me-3 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-book text-white fa-lg"></i>
+                            </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold text-dark mb-1">{{ course.title|truncatewords:8 }}</div>
+                                <small class="text-muted d-block">{{ course.short_description|truncatewords:10 }}</small>
+                                <div class="mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt"></i> {{ course.created_at|date:"M d, Y" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if course.category %}
+                            <span class="category-badge" style="--color: {{ course.category.color }}; --r: {{ course.category.r }}; --g: {{ course.category.g }}; --b: {{ course.category.b }};">
+                                {% if course.category.icon %}
+                                <i class="{{ course.category.icon }}"></i>
+                                {% endif %}
+                                {{ course.category.name }}
+                            </span>
+                            {% if course.category.is_subcategory %}
+                            <div class="mt-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-folder"></i> {{ course.category.parent.name }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-light text-muted">Uncategorized</span>
+                        {% endif %}
+                        <div class="mt-1">
+                            <small class="text-muted">{{ course.level|title }}</small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if course.assignment_count > 0 %}
+                            <span class="badge bg-success-subtle text-success">
+                                <i class="fas fa-user-check"></i> {{ course.assignment_count }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning-subtle text-warning">
+                                <i class="fas fa-user-times"></i> None
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if course.status == 'published' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle"></i> Published
+                            </span>
+                        {% elif course.status == 'draft' %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-edit"></i> Draft
+                            </span>
+                        {% else %}
+                            <span class="badge bg-dark">
+                                <i class="fas fa-archive"></i> Archived
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if course.is_free %}
+                            <span class="badge bg-success-subtle text-success">
+                                <i class="fas fa-gift"></i> Free
+                            </span>
+                        {% else %}
+                            <div class="fw-semibold text-success">₹{{ course.actual_price|floatformat:0 }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-users text-primary me-2"></i>
+                            <span class="fw-semibold">{{ course.student_count|default:0 }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <small class="text-muted">
+                            <div><i class="fas fa-folder text-warning"></i> {{ course.modules_count }} Modules</div>
+                        </small>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'platformadmin:admin_course_edit' course.id %}" 
+                               class="btn btn-outline-primary action-btn" 
+                               title="Edit Course"
+                               data-bs-toggle="tooltip">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'platformadmin:admin_course_assign' course.id %}" 
+                               class="btn btn-outline-success action-btn" 
+                               title="Assign Teacher"
+                               data-bs-toggle="tooltip">
+                                <i class="fas fa-user-plus"></i>
+                            </a>
+                            <a href="{% url 'platformadmin:admin_course_delete' course.id %}" 
+                               class="btn btn-outline-danger action-btn" 
+                               title="Delete Course"
+                               data-bs-toggle="tooltip">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <div class="py-5">
+                            <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">No courses found</h5>
+                            <p class="text-muted mb-3">Start by creating your first course or adjust your filters.</p>
+                            <a href="{% url 'platformadmin:admin_course_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Your First Course
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-light">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&search={{ search }}&status={{ status_filter }}&category={{ category_filter }}&sort={{ sort_by }}">
+                        <i class="fas fa-angle-double-left"></i> First
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search }}&status={{ status_filter }}&category={{ category_filter }}&sort={{ sort_by }}">
+                        <i class="fas fa-angle-left"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        <span class="badge bg-white text-primary ms-2">{{ total_courses }} total</span>
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search }}&status={{ status_filter }}&category={{ category_filter }}&sort={{ sort_by }}">
+                        Next <i class="fas fa-angle-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&search={{ search }}&status={{ status_filter }}&category={{ category_filter }}&sort={{ sort_by }}">
+                        Last <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions Footer -->
+<div class="card mt-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: none;">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h6 class="mb-1"><i class="fas fa-lightbulb text-warning"></i> Quick Actions</h6>
+                <small class="text-muted">Manage your courses and categories efficiently</small>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <div class="btn-group">
+                    <a href="{% url 'platformadmin:admin_course_create' %}" class="btn btn-sm btn-primary quick-action-btn">
+                        <i class="fas fa-plus"></i> Create Course
+                    </a>
+                    <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-sm btn-info quick-action-btn">
+                        <i class="fas fa-folder-tree"></i> Categories
+                    </a>
+                    <a href="{% url 'platformadmin:admin_view_all_assignments' %}" class="btn btn-sm btn-success quick-action-btn">
+                        <i class="fas fa-users"></i> Assignments
+                    </a>
+                    <a href="{% url 'platformadmin:dashboard' %}" class="btn btn-sm btn-secondary quick-action-btn">
+                        <i class="fas fa-chart-line"></i> Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

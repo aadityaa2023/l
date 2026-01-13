@@ -2,29 +2,42 @@
 
 {% block title %}{{ course.title }} - Learning - LeQ{% endblock %}
 
+{% block extra_css %}
+<style>
+footer { display: none !important; }
+.bg-white { background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
+.text-dark { color: var(--text-primary) !important; }
+.text-muted { color: var(--text-secondary) !important; }
+.breadcrumb { background-color: var(--bg-card) !important; }
+.breadcrumb-item a { color: var(--text-secondary) !important; }
+.breadcrumb-item.active { color: var(--text-primary) !important; }
+.card { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-0">
     <div class="row g-0">
         <!-- Sidebar - Course Content -->
-        <div class="col-lg-3 bg-white border-end" style="height: calc(100vh - 76px); overflow-y: auto;">
+        <div class="col-lg-3 bg-dark border-end text-white" style="height: calc(100vh - 76px); overflow-y: auto;">
             <div class="p-4">
                 <h5 class="fw-bold mb-3">{{ course.title }}</h5>
                 <div class="progress mb-4" style="height: 8px;">
                     <div class="progress-bar" role="progressbar" style="width: {{ enrollment.progress_percentage }}%; background-color: var(--primary-color);" 
                          aria-valuenow="{{ enrollment.progress_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
-                <p class="small text-muted mb-4">{{ enrollment.progress_percentage }}% Complete</p>
+                <p class="small text-white-50 mb-4">{{ enrollment.progress_percentage }}% Complete</p>
                 
                 <!-- Modules & Lessons -->
                 <div class="accordion accordion-flush" id="modulesAccordion">
                     {% for module in modules %}
                     <div class="accordion-item border-0">
                         <h2 class="accordion-header">
-                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} px-0" type="button" 
+                                    <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} px-0" type="button" 
                                     data-bs-toggle="collapse" data-bs-target="#module{{ module.id }}">
                                 <div class="w-100">
                                     <div class="fw-semibold">{{ module.title }}</div>
-                                    <small class="text-muted">{{ module.lessons.count }} lessons</small>
+                                    <small class="text-white-50">{{ module.lessons.count }} lessons</small>
                                 </div>
                             </button>
                         </h2>
@@ -33,7 +46,7 @@
                             <div class="accordion-body px-0">
                                 {% for lesson in module.lessons.all %}
                                           <a href="{% url 'courses:lesson_view' lesson.id %}" 
-                                              class="d-block text-decoration-none py-2 px-3 rounded mb-1 {% if lesson.id == current_lesson.id %}bg-primary text-white{% else %}text-dark{% endif %} lesson-item">
+                                              class="d-block text-decoration-none py-2 px-3 rounded mb-1 {% if lesson.id == current_lesson.id %}bg-primary text-white{% else %}text-white-50{% endif %} lesson-item">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <div class="d-flex align-items-center">
                                             {% if lesson.id in completed_lessons %}
@@ -41,21 +54,20 @@
                                             {% else %}
                                             <i class="far fa-circle me-2"></i>
                                             {% endif %}
-                                            <div>
-                                                <span class="small d-block">{{ lesson.title }}</span>
+                                            <div class="d-flex align-items-center gap-2">
                                                 {% if lesson.lesson_type == 'video' %}
-                                                    <span class="badge badge-sm bg-danger" style="font-size: 0.65rem;">
-                                                        <i class="fas fa-video"></i> Video
-                                                    </span>
+                                                    <i class="fas fa-play-circle" style="opacity: 0.5; font-size: 0.85rem;"></i>
+                                                {% elif lesson.lesson_type == 'audio' %}
+                                                    <i class="fas fa-volume-up" style="opacity: 0.5; font-size: 0.85rem;"></i>
+                                                {% elif lesson.lesson_type == 'text' %}
+                                                    <i class="fas fa-file-alt" style="opacity: 0.5; font-size: 0.85rem;"></i>
+                                                {% elif lesson.lesson_type == 'quiz' %}
+                                                    <i class="fas fa-question-circle" style="opacity: 0.5; font-size: 0.85rem;"></i>
                                                 {% endif %}
-                                                {% if lesson.media_files.count > 0 %}
-                                                    <span class="badge badge-sm bg-info" style="font-size: 0.65rem;">
-                                                        <i class="fas fa-photo-video"></i> {{ lesson.media_files.count }}
-                                                    </span>
-                                                {% endif %}
+                                                <span class="small">{{ lesson.title }}</span>
                                             </div>
                                         </div>
-                                        <small>{{ lesson.duration_minutes|default:0 }}m</small>
+                                        <small class="text-white-50">{{ lesson.duration_minutes|default:0 }}m</small>
                                     </div>
                                 </a>
                                 {% endfor %}
@@ -64,13 +76,13 @@
                                 {% if module.lessons.count and lesson.media_files.count > 0 %}
                                 <div class="ms-3">
                                     {% for media in lesson.media_files.all %}
-                                    <a href="{% url 'courses:lesson_view' lesson.id %}#media{{ media.id }}" class="d-block small text-decoration-none py-1 px-3 rounded mb-1 {% if lesson.id == current_lesson.id %}text-primary{% else %}text-muted{% endif %}">
+                                    <a href="{% url 'courses:lesson_view' lesson.id %}#media{{ media.id }}" class="d-block small text-decoration-none py-1 px-3 rounded mb-1 {% if lesson.id == current_lesson.id %}text-white{% else %}text-white-50{% endif %}">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div>
-                                                <i class="fas fa-file me-2"></i>
+                                                <i class="fas fa-file me-2" style="opacity:0.6"></i>
                                                 {{ forloop.counter }}. {{ media.title|default:media.get_media_type_display }}
                                             </div>
-                                            <small class="text-muted">{{ media.duration_minutes|default:0 }}m</small>
+                                            <small class="text-white-50">{{ media.duration_minutes|default:0 }}m</small>
                                         </div>
                                     </a>
                                     {% endfor %}
@@ -103,60 +115,62 @@
                 <!-- Audio Player -->
                 <div class="card-custom p-4 mb-4">
                     {% if current_lesson.lesson_type == 'video' or current_lesson.lesson_type == 'audio' %}
-                        <!-- Display all media files -->
-                        {% if current_lesson.media_files.all %}
-                            <h5 class="fw-bold mb-3">
-                                <i class="fas fa-{% if current_lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} me-2"></i>
-                                Lesson Media ({{ current_lesson.media_files.count }} file{{ current_lesson.media_files.count|pluralize }})
-                            </h5>
-                            {% for media in current_lesson.media_files.all %}
-                                <div class="mb-4" id="media{{ media.id }}">
-                                    {% if media.title %}
-                                        <h6 class="mb-2">{{ forloop.counter }}. {{ media.title }}</h6>
-                                    {% else %}
-                                        <h6 class="mb-2">{{ forloop.counter }}. {{ media.get_media_type_display }} File</h6>
-                                    {% endif %}
-                                    
-                                    {% if media.media_type == 'video' %}
-                                        <video controls class="w-100" style="max-height: 500px; border-radius: 8px;" controlsList="nodownload" preload="metadata">
-                                            <source src="{{ media.get_media_url }}" type="video/mp4">
-                                            Your browser does not support the video element.
-                                        </video>
-                                    {% else %}
-                                        <audio controls class="w-100" controlsList="nodownload" preload="metadata">
-                                            <source src="{{ media.get_media_url }}" type="audio/mpeg">
-                                            Your browser does not support the audio element.
-                                        </audio>
-                                    {% endif %}
-                                    
-                                    {% if media.duration_minutes %}
-                                        <small class="text-muted">Duration: {{ media.duration_minutes }} minutes</small>
-                                    {% endif %}
+                        <!-- Click to Open Dedicated Player -->
+                        {% if current_lesson.audio_file or current_lesson.media_files.all %}
+                        <div class="position-relative overflow-hidden rounded-3" style="cursor: pointer; transition: all 0.3s;" onclick="window.open('{% if current_lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' current_lesson.id %}{% else %}{% url 'courses:lesson_audio_player' current_lesson.id %}{% endif %}', '_blank')">
+                            <!-- Thumbnail/Cover -->
+                            <div class="ratio ratio-16x9 bg-dark">
+                                {% if course.thumbnail %}
+                                    <img src="{{ course.thumbnail.url }}" alt="{{ current_lesson.title }}" class="object-fit-cover" style="transition: transform 0.3s;">
+                                {% else %}
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-{% if current_lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} fa-5x text-white opacity-25"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Play Overlay -->
+                                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.5); transition: all 0.3s;">
+                                    <div class="text-center">
+                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center player-btn" style="width: 80px; height: 80px; transition: all 0.3s;">
+                                            <i class="fas fa-play text-primary" style="font-size: 32px; margin-left: 5px;"></i>
+                                        </div>
+                                        <p class="text-white mt-3 mb-0 fw-bold">
+                                            {% if current_lesson.lesson_type == 'video' %}
+                                                Click to Open Video Player
+                                            {% else %}
+                                                Click to Open Audio Player
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-white-50 small mb-0">
+                                            {% if current_lesson.duration_minutes %}
+                                                <i class="fas fa-clock me-1"></i>{{ current_lesson.duration_minutes }} minutes
+                                            {% endif %}
+                                        </p>
+                                    </div>
                                 </div>
-                                {% if not forloop.last %}<hr class="my-3">{% endif %}
-                            {% endfor %}
-                        {% endif %}
-                        
-                        <!-- Legacy single audio file support -->
-                        {% if current_lesson.audio_file %}
-                            {% if current_lesson.media_files.all %}
-                                <hr class="my-4">
-                                <h6 class="mb-2">Legacy Audio File</h6>
-                            {% endif %}
-                            <div class="audio-player-container">
-                                <audio id="audioPlayer" controls class="w-100" controlsList="nodownload" preload="metadata">
-                                    <source src="{% url 'courses:serve_lesson_audio' current_lesson.id %}" type="audio/mpeg">
-                                    Your browser does not support the audio element.
-                                </audio>
                             </div>
+                        </div>
+                        
+                        <!-- Progress Info -->
+                        {% if lesson_progress and lesson_progress.completion_percentage > 0 %}
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-muted">Your Progress</small>
+                                <small class="text-muted fw-bold">{{ lesson_progress.completion_percentage|floatformat:0 }}%</small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ lesson_progress.completion_percentage }}%"></div>
+                            </div>
+                        </div>
                         {% endif %}
                         
+                        {% else %}
                         <!-- No media uploaded yet -->
-                        {% if not current_lesson.media_files.all and not current_lesson.audio_file %}
-                            <div class="text-center py-5">
-                                <i class="fas fa-{% if current_lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} fa-4x text-muted mb-3"></i>
-                                <p class="text-muted">No media files uploaded yet</p>
-                            </div>
+                        <div class="text-center py-5">
+                            <i class="fas fa-{% if current_lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">No media files uploaded yet</h5>
+                            <p class="text-muted mb-0 small">The teacher will upload the lesson content soon.</p>
+                        </div>
                         {% endif %}
                     {% elif current_lesson.text_content %}
                     <div class="text-center py-5">
@@ -329,31 +343,31 @@
         background-color: rgba(91, 81, 216, 0.1) !important;
     }
     
-    audio {
-        width: 100%;
-        height: 54px;
-        border-radius: 12px;
-        outline: none;
+    /* Player Card Hover Effects */
+    [onclick*="player"]:hover {
+        transform: scale(1.02);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
     
-    audio::-webkit-media-controls-panel {
-        background-color: var(--light-bg);
+    [onclick*="player"]:hover img {
+        transform: scale(1.05);
     }
     
-    video {
-        border-radius: 8px;
-        background-color: #000;
+    [onclick*="player"]:hover .player-btn {
+        transform: scale(1.1);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    [onclick*="player"]:active {
+        transform: scale(1);
+    }
+    
+    [onclick*="player"] * {
+        transition: all 0.3s ease;
     }
 </style>
 
 <script>
-    // Track audio progress
-    const audioPlayer = document.getElementById('audioPlayer');
-    if (audioPlayer) {
-        audioPlayer.addEventListener('timeupdate', function() {
-            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-            // You can send this to backend via AJAX to track listening progress
-        });
-    }
+    // No longer needed - using dedicated players
 </script>
 {% endblock %}

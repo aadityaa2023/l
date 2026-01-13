@@ -1,0 +1,144 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Delete Course - {{ course.title }} - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Delete Course Confirmation</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger mb-4">
+                    <h5 class="alert-heading"><i class="fas fa-warning"></i> Warning!</h5>
+                    <p class="mb-0">This action cannot be undone. Please review the information below before proceeding.</p>
+                </div>
+                
+                <h5>You are about to delete:</h5>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        {% if course.thumbnail %}
+                        <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="img-thumbnail mb-3" style="max-height: 150px;">
+                        {% endif %}
+                        <h4>{{ course.title }}</h4>
+                        <p class="text-muted">{{ course.short_description }}</p>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <strong>Category:</strong> {{ course.category.name|default:"Uncategorized" }}<br>
+                                <strong>Level:</strong> {{ course.level|title }}<br>
+                                <strong>Status:</strong> {{ course.status|title }}<br>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Created:</strong> {{ course.created_at|date:"M d, Y" }}<br>
+                                <strong>Created By:</strong> {{ course.created_by.get_full_name|default:course.created_by.email }}<br>
+                                {% if course.is_free %}
+                                    <strong>Price:</strong> Free
+                                {% else %}
+                                    <strong>Price:</strong> ₹{{ course.price|floatformat:2 }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5>Impact of Deletion:</h5>
+                <ul class="list-group mb-4">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Students Enrolled
+                        <span class="badge bg-primary rounded-pill">{{ student_count }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Modules
+                        <span class="badge bg-secondary rounded-pill">{{ modules_count }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Lessons
+                        <span class="badge bg-info rounded-pill">{{ lessons_count }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Teacher Assignments
+                        <span class="badge bg-success rounded-pill">{{ assignments_count }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Total Revenue Generated
+                        <span class="badge bg-warning rounded-pill">₹{{ total_revenue|floatformat:2 }}</span>
+                    </li>
+                </ul>
+                
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-info-circle"></i> What will be deleted:</h6>
+                    <ul class="mb-0">
+                        <li>All course content (modules and lessons)</li>
+                        <li>All student enrollments and progress data</li>
+                        <li>All teacher assignments</li>
+                        <li>All course-related analytics data</li>
+                        <li>All uploaded course files (audio, documents, etc.)</li>
+                        <li>Course thumbnail and other media files</li>
+                    </ul>
+                </div>
+                
+                {% if student_count > 0 %}
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-circle"></i> Student Impact:</h6>
+                    <p class="mb-0">
+                        <strong>{{ student_count }}</strong> student(s) are currently enrolled in this course. 
+                        Deleting this course will remove their access and delete all their progress data.
+                    </p>
+                </div>
+                {% endif %}
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="confirmation" class="form-label">
+                            Type <strong>{{ course.title }}</strong> to confirm deletion:
+                        </label>
+                        <input type="text" class="form-control" id="confirmation" name="confirmation" required 
+                               placeholder="Type the course title exactly">
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm_checkbox" required>
+                        <label class="form-check-label" for="confirm_checkbox">
+                            I understand this action is permanent and cannot be undone
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger flex-grow-1" id="delete_button" disabled>
+                            <i class="fas fa-trash"></i> Delete Course Permanently
+                        </button>
+                        <a href="{% url 'platformadmin:admin_course_edit' course.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmationInput = document.getElementById('confirmation');
+    const confirmCheckbox = document.getElementById('confirm_checkbox');
+    const deleteButton = document.getElementById('delete_button');
+    const courseTitle = "{{ course.title }}";
+    
+    function checkConfirmation() {
+        if (confirmationInput.value === courseTitle && confirmCheckbox.checked) {
+            deleteButton.disabled = false;
+        } else {
+            deleteButton.disabled = true;
+        }
+    }
+    
+    confirmationInput.addEventListener('input', checkConfirmation);
+    confirmCheckbox.addEventListener('change', checkConfirmation);
+});
+</script>
+{% endblock %}

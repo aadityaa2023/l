@@ -264,6 +264,14 @@ def lesson_view(request, lesson_id):
         lesson=lesson
     )
     
+    # Format resume time
+    if progress.last_position_seconds:
+        minutes = progress.last_position_seconds // 60
+        seconds = progress.last_position_seconds % 60
+        resume_time = f"{minutes}:{seconds:02d}"
+    else:
+        resume_time = None
+    
     # Get user's notes for this lesson
     notes = Note.objects.filter(
         enrollment=enrollment,
@@ -284,6 +292,7 @@ def lesson_view(request, lesson_id):
         'course': course,
         'enrollment': enrollment,
         'progress': progress,
+        'resume_time': resume_time,
         'notes': notes,
         'sessions': sessions,
         'media_files': media_files,
@@ -314,6 +323,135 @@ def mark_lesson_complete(request, lesson_id):
         progress.save()
         
         return JsonResponse({'success': True})
+    
+    return JsonResponse({'success': False}, status=400)
+
+
+@login_required
+def lesson_audio_player(request, lesson_id):
+    """Dedicated audio player view for lessons"""
+    lesson = get_object_or_404(Lesson.objects.select_related('module__course'), id=lesson_id)
+    course = lesson.module.course
+    
+    # Check enrollment
+    enrollment = get_object_or_404(
+        Enrollment,
+        student=request.user,
+        course=course,
+        status='active'
+    )
+    
+    # Get or create lesson progress
+    progress, created = LessonProgress.objects.get_or_create(
+        enrollment=enrollment,
+        lesson=lesson
+    )
+    
+    # Select the best audio URL: prefer Lesson.audio_file, then media_files of type 'audio'
+    audio_url = None
+    try:
+        if lesson.audio_file:
+            audio_url = lesson.get_audio_url
+        else:
+            audio_media = lesson.media_files.filter(media_type='audio').order_by('order').first()
+            if audio_media:
+                audio_url = audio_media.get_media_url
+    except Exception:
+        audio_url = None
+
+    context = {
+        'lesson': lesson,
+        'course': course,
+        'enrollment': enrollment,
+        'progress': progress,
+        'audio_url': audio_url,
+    }
+
+    return render(request, 'lessons/audioplayer.html', context)
+
+
+@login_required
+def lesson_video_player(request, lesson_id):
+    """Dedicated video player view for lessons"""
+    lesson = get_object_or_404(Lesson.objects.select_related('module__course'), id=lesson_id)
+    course = lesson.module.course
+    
+    # Check enrollment
+    enrollment = get_object_or_404(
+        Enrollment,
+        student=request.user,
+        course=course,
+        status='active'
+    )
+    
+    # Get or create lesson progress
+    progress, created = LessonProgress.objects.get_or_create(
+        enrollment=enrollment,
+        lesson=lesson
+    )
+    
+    # Select the best video URL from Lesson.media_files with media_type 'video'
+    video_url = None
+    try:
+        video_media = lesson.media_files.filter(media_type='video').order_by('order').first()
+        if video_media:
+            video_url = video_media.get_media_url
+    except Exception:
+        video_url = None
+
+    context = {
+        'lesson': lesson,
+        'course': course,
+        'enrollment': enrollment,
+        'progress': progress,
+        'video_url': video_url,
+    }
+
+    return render(request, 'lessons/videoplayer.html', context)
+
+
+@login_required
+def lesson_update_progress(request, lesson_id):
+    """Update lesson progress via AJAX"""
+    if request.method == 'POST':
+        import json
+        
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        enrollment = get_object_or_404(
+            Enrollment,
+            student=request.user,
+            course=lesson.module.course,
+            status='active'
+        )
+        
+        progress, created = LessonProgress.objects.get_or_create(
+            enrollment=enrollment,
+            lesson=lesson
+        )
+        
+        try:
+            data = json.loads(request.body)
+            watch_time = data.get('watchTime', 0)
+            is_completed = data.get('isCompleted', False)
+            
+            # Update progress
+            progress.last_position_seconds = watch_time
+            if is_completed and not progress.is_completed:
+                progress.is_completed = True
+                progress.completed_at = datetime.now()
+            
+            # Calculate completion percentage
+            if lesson.duration_seconds > 0:
+                progress.completion_percentage = min(100, (watch_time / lesson.duration_seconds) * 100)
+            
+            progress.save()
+            
+            # Update enrollment progress
+            enrollment.update_progress()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
     return JsonResponse({'success': False}, status=400)
 
@@ -405,21 +543,31 @@ def my_courses(request):
     return render(request, 'courses/my_courses.html', context)
 
 
-# Teacher Course Management (basic views - admin is primary interface)
+# Teacher Course Management (RESTRICTED - can only view assigned courses)
 @login_required
 def teacher_courses(request):
-    """List all teacher's courses with advanced filtering"""
+    """List teacher's ASSIGNED courses (not created by teacher)"""
     if not request.user.is_teacher:
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
+    
+    from apps.platformadmin.models import CourseAssignment
     
     # Get filter parameters
     status_filter = request.GET.get('status', 'all')
     search_query = request.GET.get('search', '')
     sort_by = request.GET.get('sort', '-created_at')
     
-    # Base queryset
-    courses = Course.objects.filter(teacher=request.user).annotate(
+    # Get only courses assigned to this teacher
+    assignments = CourseAssignment.objects.filter(
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).select_related('course', 'course__category', 'assigned_by')
+    
+    course_ids = [assignment.course.id for assignment in assignments]
+    
+    # Base queryset - only assigned courses
+    courses = Course.objects.filter(id__in=course_ids).annotate(
         student_count=Count('enrollments', filter=Q(enrollments__status='active')),
         avg_rating=Avg('reviews__rating'),
         total_revenue=Sum('enrollments__payment_amount', filter=Q(enrollments__status='active'))
@@ -440,11 +588,14 @@ def teacher_courses(request):
     
     # Get counts for each status
     status_counts = {
-        'all': Course.objects.filter(teacher=request.user).count(),
-        'published': Course.objects.filter(teacher=request.user, status='published').count(),
-        'draft': Course.objects.filter(teacher=request.user, status='draft').count(),
-        'archived': Course.objects.filter(teacher=request.user, status='archived').count(),
+        'all': Course.objects.filter(id__in=course_ids).count(),
+        'published': Course.objects.filter(id__in=course_ids, status='published').count(),
+        'draft': Course.objects.filter(id__in=course_ids, status='draft').count(),
+        'archived': Course.objects.filter(id__in=course_ids, status='archived').count(),
     }
+    
+    # Create a mapping of course to assignment for permissions
+    course_assignments = {assignment.course.id: assignment for assignment in assignments}
     
     context = {
         'courses': courses,
@@ -452,6 +603,8 @@ def teacher_courses(request):
         'search_query': search_query,
         'sort_by': sort_by,
         'status_counts': status_counts,
+        'course_assignments': course_assignments,
+        'is_assigned_mode': True,  # Flag to indicate teacher can't create courses
     }
     
     return render(request, 'courses/teacher_courses.html', context)
@@ -459,68 +612,51 @@ def teacher_courses(request):
 
 @login_required
 def teacher_course_create(request):
-    """Create a new course"""
-    if not request.user.is_teacher:
-        messages.error(request, 'You do not have teacher access')
-        return redirect('users:dashboard')
-    
-    if request.method == 'POST':
-        # Create course
-        course = Course.objects.create(
-            teacher=request.user,
-            title=request.POST.get('title'),
-            description=request.POST.get('description'),
-            short_description=request.POST.get('short_description', ''),
-            category_id=request.POST.get('category') if request.POST.get('category') else None,
-            level=request.POST.get('level', 'beginner'),
-            language=request.POST.get('language', 'English'),
-            price=request.POST.get('price', 0),
-            is_free=request.POST.get('is_free') == 'on',
-            status='draft'
-        )
-        
-        if 'thumbnail' in request.FILES:
-            course.thumbnail = request.FILES['thumbnail']
-            course.save()
-        
-        messages.success(request, f'Course "{course.title}" created successfully!')
-        return redirect('courses:teacher_course_edit', course_id=course.id)
-    
-    # Get categories for dropdown
-    categories = Category.objects.filter(is_active=True)
-    
-    context = {
-        'categories': categories,
-    }
-    
-    return render(request, 'courses/teacher_course_create.html', context)
+    """DISABLED: Teachers can no longer create courses - only platform admins"""
+    messages.error(request, 'Course creation is now handled by platform administrators. Please contact admin to get courses assigned to you.')
+    return redirect('courses:teacher_courses')
 
 
 @login_required
 def teacher_course_edit(request, course_id):
-    """Edit course details"""
+    """Edit course details - RESTRICTED based on assignment permissions"""
     if not request.user.is_teacher:
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
+    from apps.platformadmin.models import CourseAssignment
+    
+    # Check if course is assigned to this teacher
+    assignment = CourseAssignment.objects.filter(
+        course_id=course_id,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment:
+        messages.error(request, 'You do not have access to this course. This course must be assigned to you by a platform administrator.')
+        return redirect('courses:teacher_courses')
+    
+    course = get_object_or_404(Course, id=course_id)
     
     if request.method == 'POST':
-        # Update course
-        course.title = request.POST.get('title')
-        course.description = request.POST.get('description')
-        course.short_description = request.POST.get('short_description', '')
-        course.category_id = request.POST.get('category') if request.POST.get('category') else None
-        course.level = request.POST.get('level')
-        course.language = request.POST.get('language')
-        course.price = request.POST.get('price', 0)
-        course.discount_price = request.POST.get('discount_price') if request.POST.get('discount_price') else None
-        course.is_free = request.POST.get('is_free') == 'on'
-        course.allow_download = request.POST.get('allow_download') == 'on'
-        course.status = request.POST.get('status', 'draft')
+        # Check permissions for editing course details
+        if assignment.can_edit_details:
+            course.title = request.POST.get('title')
+            course.description = request.POST.get('description')
+            course.short_description = request.POST.get('short_description', '')
+            course.category_id = request.POST.get('category') if request.POST.get('category') else None
+            course.level = request.POST.get('level')
+            course.language = request.POST.get('language')
+            
+            if 'thumbnail' in request.FILES:
+                course.thumbnail = request.FILES['thumbnail']
+        else:
+            messages.warning(request, 'You do not have permission to edit course details.')
         
-        if 'thumbnail' in request.FILES:
-            course.thumbnail = request.FILES['thumbnail']
+        # Check permission for publishing
+        if assignment.can_publish and request.POST.get('status'):
+            course.status = request.POST.get('status', 'draft')
         
         course.save()
         messages.success(request, 'Course updated successfully!')
@@ -545,6 +681,10 @@ def teacher_course_edit(request, course_id):
         'modules': modules,
         'student_count': student_count,
         'total_revenue': total_revenue,
+        'assignment': assignment,  # Pass assignment for permission checks in template
+        'can_edit_details': assignment.can_edit_details,
+        'can_edit_content': assignment.can_edit_content,
+        'can_publish': assignment.can_publish,
     }
     
     return render(request, 'courses/teacher_course_edit.html', context)
@@ -552,20 +692,9 @@ def teacher_course_edit(request, course_id):
 
 @login_required
 def teacher_course_delete(request, course_id):
-    """Delete a course"""
-    if not request.user.is_teacher:
-        messages.error(request, 'You do not have teacher access')
-        return redirect('users:dashboard')
-    
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
-    
-    if request.method == 'POST':
-        course_title = course.title
-        course.delete()
-        messages.success(request, f'Course "{course_title}" deleted successfully!')
-        return redirect('courses:teacher_courses')
-    
-    return render(request, 'courses/teacher_course_delete_confirm.html', {'course': course})
+    """DISABLED: Teachers can no longer delete courses"""
+    messages.error(request, 'Course deletion is now handled by platform administrators.')
+    return redirect('courses:teacher_courses')
 
 
 @login_required
@@ -575,7 +704,20 @@ def teacher_course_students(request, course_id):
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
+    from apps.platformadmin.models import CourseAssignment
+    
+    # Check if course is assigned to this teacher
+    assignment = CourseAssignment.objects.filter(
+        course_id=course_id,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment:
+        messages.error(request, 'You do not have access to this course')
+        return redirect('courses:teacher_courses')
+    
+    course = get_object_or_404(Course, id=course_id)
     
     enrollments = Enrollment.objects.filter(course=course).select_related(
         'student', 'student__student_profile'
@@ -654,7 +796,20 @@ def teacher_module_create(request, course_id):
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    course = get_object_or_404(Course, id=course_id, teacher=request.user)
+    from apps.platformadmin.models import CourseAssignment
+    
+    # Check if course is assigned and teacher has content edit permission
+    assignment = CourseAssignment.objects.filter(
+        course_id=course_id,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment or not assignment.can_edit_content:
+        messages.error(request, 'You do not have permission to add modules to this course')
+        return redirect('courses:teacher_courses')
+    
+    course = get_object_or_404(Course, id=course_id)
     
     if request.method == 'POST':
         # Get the highest order number
@@ -682,7 +837,20 @@ def teacher_module_edit(request, module_id):
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    module = get_object_or_404(Module, id=module_id, course__teacher=request.user)
+    from apps.platformadmin.models import CourseAssignment
+    
+    module = get_object_or_404(Module, id=module_id)
+    
+    # Check if course is assigned and teacher has content edit permission
+    assignment = CourseAssignment.objects.filter(
+        course=module.course,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment or not assignment.can_edit_content:
+        messages.error(request, 'You do not have permission to edit modules in this course')
+        return redirect('courses:teacher_courses')
     
     if request.method == 'POST':
         module.title = request.POST.get('title')
@@ -703,7 +871,21 @@ def teacher_module_delete(request, module_id):
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    module = get_object_or_404(Module, id=module_id, course__teacher=request.user)
+    from apps.platformadmin.models import CourseAssignment
+    
+    module = get_object_or_404(Module, id=module_id)
+    
+    # Check if course is assigned and teacher has content edit permission
+    assignment = CourseAssignment.objects.filter(
+        course=module.course,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment or not assignment.can_edit_content:
+        messages.error(request, 'You do not have permission to delete modules from this course')
+        return redirect('courses:teacher_courses')
+    
     course_id = module.course.id
     module_title = module.title
     
@@ -748,52 +930,105 @@ def teacher_lesson_create(request, module_id):
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    module = get_object_or_404(Module, id=module_id, course__teacher=request.user)
+    from apps.platformadmin.models import CourseAssignment
+    
+    module = get_object_or_404(Module, id=module_id)
+    
+    # Check if course is assigned and teacher has content edit permission
+    assignment = CourseAssignment.objects.filter(
+        course=module.course,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment or not assignment.can_edit_content:
+        messages.error(request, 'You do not have permission to add lessons to this course')
+        return redirect('courses:teacher_courses')
     
     if request.method == 'POST':
         # Get the highest order number
         max_order = Lesson.objects.filter(module=module).aggregate(Max('order'))['order__max'] or 0
         
-        # Create lesson
-        lesson = Lesson.objects.create(
-            module=module,
-            course=module.course,
-            title=request.POST.get('title'),
-            description=request.POST.get('description', ''),
-            lesson_type=request.POST.get('lesson_type', 'audio'),
-            order=max_order + 1,
-            is_free_preview=request.POST.get('is_free_preview') == 'on',
-            is_published=request.POST.get('is_published') == 'on',
-            text_content=request.POST.get('text_content', '')
-        )
+        # Get common lesson data
+        base_title = request.POST.get('title')
+        description = request.POST.get('description', '')
+        lesson_type = request.POST.get('lesson_type', 'audio')
+        is_free_preview = request.POST.get('is_free_preview') == 'on'
+        is_published = request.POST.get('is_published') == 'on'
+        text_content = request.POST.get('text_content', '')
         
-        # Handle file upload if provided (legacy single file)
-        if 'audio_file' in request.FILES:
-            audio_file = request.FILES['audio_file']
-            lesson.audio_file = audio_file
-            lesson.file_size = audio_file.size
-            lesson.save()
-        
-        # Handle multiple media files
+        # Handle multiple media files - create separate lesson for each file
         media_files = request.FILES.getlist('media_files')
         if media_files:
+            created_lessons = []
             for index, media_file in enumerate(media_files):
                 # Determine media type based on file extension
                 file_extension = media_file.name.split('.')[-1].lower()
                 if file_extension in ['mp4', 'avi', 'mov', 'mkv', 'webm']:
                     media_type = 'video'
+                    actual_lesson_type = 'video'
                 else:
                     media_type = 'audio'
+                    actual_lesson_type = 'audio'
                 
+                # Create individual lesson for each file
+                if len(media_files) > 1:
+                    lesson_title = f"{base_title} - Part {index + 1}"
+                else:
+                    lesson_title = base_title
+                
+                lesson = Lesson.objects.create(
+                    module=module,
+                    course=module.course,
+                    title=lesson_title,
+                    description=description,
+                    lesson_type=actual_lesson_type,
+                    order=max_order + index + 1,
+                    is_free_preview=is_free_preview,
+                    is_published=is_published,
+                    text_content=text_content
+                )
+                
+                # Attach media file to this lesson
                 LessonMedia.objects.create(
                     lesson=lesson,
                     media_file=media_file,
                     media_type=media_type,
                     file_size=media_file.size,
-                    order=index
+                    order=0
                 )
+                
+                created_lessons.append(lesson)
+            
+            # Use the first lesson for success message
+            lesson = created_lessons[0]
+            if len(media_files) > 1:
+                messages.success(request, f'{len(media_files)} lessons created successfully from uploaded media files!')
+            else:
+                messages.success(request, f'Lesson "{lesson.title}" created successfully!')
+        else:
+            # Create single lesson without media files (for text lessons or legacy single file)
+            lesson = Lesson.objects.create(
+                module=module,
+                course=module.course,
+                title=base_title,
+                description=description,
+                lesson_type=lesson_type,
+                order=max_order + 1,
+                is_free_preview=is_free_preview,
+                is_published=is_published,
+                text_content=text_content
+            )
+            
+            # Handle file upload if provided (legacy single file)
+            if 'audio_file' in request.FILES:
+                audio_file = request.FILES['audio_file']
+                lesson.audio_file = audio_file
+                lesson.file_size = audio_file.size
+                lesson.save()
+            
+            messages.success(request, f'Lesson "{lesson.title}" created successfully!')
         
-        messages.success(request, f'Lesson "{lesson.title}" created successfully!')
         return redirect('courses:teacher_course_edit', course_id=module.course.id)
     
     return redirect('courses:teacher_course_edit', course_id=module.course.id)
@@ -806,7 +1041,20 @@ def teacher_lesson_edit(request, lesson_id):
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    lesson = get_object_or_404(Lesson, id=lesson_id, course__teacher=request.user)
+    from apps.platformadmin.models import CourseAssignment
+    
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    
+    # Check if course is assigned and teacher has content edit permission
+    assignment = CourseAssignment.objects.filter(
+        course=lesson.course,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment or not assignment.can_edit_content:
+        messages.error(request, 'You do not have permission to edit lessons in this course')
+        return redirect('courses:teacher_courses')
     
     if request.method == 'POST':
         lesson.title = request.POST.get('title')
@@ -1320,10 +1568,22 @@ def teacher_course_preview(request, course_id):
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
+    from apps.platformadmin.models import CourseAssignment
+    
+    # Check if course is assigned to this teacher
+    assignment = CourseAssignment.objects.filter(
+        course_id=course_id,
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).first()
+    
+    if not assignment:
+        messages.error(request, 'You do not have access to this course')
+        return redirect('courses:teacher_courses')
+    
     course = get_object_or_404(
         Course.objects.prefetch_related('modules__lessons'),
-        id=course_id,
-        teacher=request.user
+        id=course_id
     )
     
     # Calculate course stats
@@ -1347,11 +1607,8 @@ def teacher_course_preview(request, course_id):
 @login_required
 @require_http_methods(["POST"])
 def teacher_course_duplicate(request, course_id):
-    """Duplicate a course"""
-    if not request.user.is_teacher:
-        return JsonResponse({'success': False, 'error': 'Unauthorized'})
-    
-    original_course = get_object_or_404(Course, id=course_id, teacher=request.user)
+    """DISABLED: Teachers can no longer duplicate courses - only platform admins"""
+    return JsonResponse({'success': False, 'error': 'Course duplication is now handled by platform administrators'})
     
     # Create duplicate course
     duplicate = Course.objects.get(pk=original_course.pk)
@@ -1385,5 +1642,100 @@ def teacher_course_duplicate(request, course_id):
         'success': True,
         'redirect_url': f'/courses/teacher/courses/{duplicate.id}/edit/'
     })
+
+
+# ==================== COURSE ASSIGNMENT ACCEPTANCE/REJECTION ====================
+
+@login_required
+@require_http_methods(["POST"])
+def teacher_accept_assignment(request, assignment_id):
+    """Teacher accepts a course assignment"""
+    if not request.user.is_teacher:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'})
+    
+    from apps.platformadmin.models import CourseAssignment
+    
+    assignment = get_object_or_404(CourseAssignment, id=assignment_id, teacher=request.user)
+    
+    if assignment.status != 'assigned':
+        return JsonResponse({'success': False, 'error': 'This assignment cannot be accepted'})
+    
+    assignment.status = 'accepted'
+    assignment.accepted_at = timezone.now()
+    assignment.save()
+    
+    messages.success(request, f'You have accepted the assignment for "{assignment.course.title}"')
+    return JsonResponse({
+        'success': True,
+        'message': f'Assignment accepted for {assignment.course.title}',
+        'redirect_url': '/users/teacher-dashboard/'
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def teacher_reject_assignment(request, assignment_id):
+    """Teacher rejects a course assignment"""
+    if not request.user.is_teacher:
+        return JsonResponse({'success': False, 'error': 'Unauthorized'})
+    
+    from apps.platformadmin.models import CourseAssignment
+    
+    assignment = get_object_or_404(CourseAssignment, id=assignment_id, teacher=request.user)
+    
+    if assignment.status != 'assigned':
+        return JsonResponse({'success': False, 'error': 'This assignment cannot be rejected'})
+    
+    rejection_reason = request.POST.get('reason', '')
+    
+    assignment.status = 'rejected'
+    assignment.rejected_at = timezone.now()
+    assignment.rejection_reason = rejection_reason
+    assignment.save()
+    
+    messages.info(request, f'You have rejected the assignment for "{assignment.course.title}"')
+    return JsonResponse({
+        'success': True,
+        'message': f'Assignment rejected for {assignment.course.title}',
+        'redirect_url': '/users/teacher-dashboard/'
+    })
+
+
+@login_required
+def teacher_view_assignments(request):
+    """View all course assignments (pending, accepted, rejected)"""
+    if not request.user.is_teacher:
+        messages.error(request, 'You do not have teacher access')
+        return redirect('users:dashboard')
+    
+    from apps.platformadmin.models import CourseAssignment
+    
+    # Get all assignments
+    all_assignments = CourseAssignment.objects.filter(
+        teacher=request.user
+    ).select_related('course', 'assigned_by', 'course__category').order_by('-assigned_at')
+    
+    # Filter by status
+    status_filter = request.GET.get('status', 'all')
+    if status_filter != 'all':
+        all_assignments = all_assignments.filter(status=status_filter)
+    
+    # Status counts
+    status_counts = {
+        'all': CourseAssignment.objects.filter(teacher=request.user).count(),
+        'assigned': CourseAssignment.objects.filter(teacher=request.user, status='assigned').count(),
+        'accepted': CourseAssignment.objects.filter(teacher=request.user, status='accepted').count(),
+        'rejected': CourseAssignment.objects.filter(teacher=request.user, status='rejected').count(),
+        'revoked': CourseAssignment.objects.filter(teacher=request.user, status='revoked').count(),
+    }
+    
+    context = {
+        'assignments': all_assignments,
+        'status_filter': status_filter,
+        'status_counts': status_counts,
+    }
+    
+    return render(request, 'courses/teacher_assignments.html', context)
+
 
 

@@ -1,0 +1,169 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Delete Category - {{ category.name }} - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Delete Category</h2>
+                <p class="text-muted mb-0">{{ category.full_name }}</p>
+            </div>
+            <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-trash"></i> Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Warning!</h5>
+                    <p class="mb-0">You are about to delete the category <strong>"{{ category.name }}"</strong>. This action cannot be undone.</p>
+                </div>
+
+                <!-- Category Preview -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            {% if category.icon %}
+                            <div class="me-3">
+                                <i class="{{ category.icon }} fa-3x category-icon" style="--color: {{ category.color }}"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h4 class="mb-1">{{ category.name }}</h4>
+                                <p class="text-muted mb-0">
+                                    {% if category.parent %}
+                                    <span class="badge bg-secondary">Subcategory of {{ category.parent.name }}</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">Main Category</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Impact Analysis -->
+                <h5 class="mb-3">Impact Analysis</h5>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card {% if course_count > 0 %}border-warning{% else %}border-success{% endif %}">
+                            <div class="card-body">
+                                <h3 class="{% if course_count > 0 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ course_count }}
+                                </h3>
+                                <p class="mb-0">Courses using this category</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card {% if subcategory_count > 0 %}border-warning{% else %}border-success{% endif %}">
+                            <div class="card-body">
+                                <h3 class="{% if subcategory_count > 0 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ subcategory_count }}
+                                </h3>
+                                <p class="mb-0">Subcategories</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if course_count > 0 %}
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-info-circle"></i> Affected Courses</h6>
+                    <p class="mb-2">The following courses will have their category set to <strong>None</strong>:</p>
+                    <ul class="mb-0">
+                        {% for course in affected_courses %}
+                        <li>{{ course.title }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if subcategory_count > 0 %}
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-info-circle"></i> Affected Subcategories</h6>
+                    <p class="mb-2">The following subcategories will be converted to main categories:</p>
+                    <ul class="mb-0">
+                        {% for subcat in subcategories %}
+                        <li>{{ subcat.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Deletion Form -->
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6>What will happen:</h6>
+                            <ul class="mb-0">
+                                <li>The category "{{ category.name }}" will be permanently deleted</li>
+                                {% if course_count > 0 %}
+                                <li>{{ course_count }} course(s) will have their category removed</li>
+                                {% endif %}
+                                {% if subcategory_count > 0 %}
+                                <li>{{ subcategory_count }} subcategory(ies) will become main categories</li>
+                                {% endif %}
+                                <li>This action cannot be undone</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm_delete" required>
+                        <label class="form-check-label" for="confirm_delete">
+                            I understand the consequences and want to delete this category
+                        </label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="fas fa-trash"></i> Yes, Delete Category
+                        </button>
+                        <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-times"></i> No, Keep Category
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Safety Reminder -->
+        <div class="alert alert-info mt-4">
+            <i class="fas fa-lightbulb"></i> <strong>Alternative:</strong> 
+            Instead of deleting, you can deactivate the category to hide it while preserving all relationships.
+            <a href="{% url 'platformadmin:admin_category_edit' category.id %}" class="alert-link">Edit Category</a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const checkbox = document.getElementById('confirm_delete');
+    
+    form.addEventListener('submit', function(e) {
+        if (!checkbox.checked) {
+            e.preventDefault();
+            alert('Please confirm that you understand the consequences.');
+            return false;
+        }
+        
+        if (!confirm('Are you absolutely sure? This action cannot be undone!')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

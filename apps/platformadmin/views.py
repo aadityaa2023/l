@@ -22,7 +22,7 @@ from apps.platformadmin.utils import (
 )
 from apps.platformadmin.models import AdminLog, CourseApproval, PlatformSetting
 from apps.platformadmin.payment_handlers import RefundHandler, PaymentAnalytics
-from apps.courses.models import Course, Category
+from apps.courses.models import Course, Category, Module
 from apps.payments.models import Payment, Refund
 
 User = get_user_model()
@@ -807,5 +807,1085 @@ def banner_toggle_status(request, banner_id):
         'is_active': banner.is_active,
         'message': f'Banner {"activated" if banner.is_active else "deactivated"} successfully!'
     })
+
+
+# ==================== COURSE MANAGEMENT (PLATFORMADMIN CREATES & ASSIGNS) ====================
+
+@platformadmin_required
+def admin_course_create(request):
+    """Platform admin creates a new course"""
+    if request.method == 'POST':
+        try:
+            # Create course
+            course = Course.objects.create(
+                created_by=request.user,
+                title=request.POST.get('title'),
+                description=request.POST.get('description'),
+                short_description=request.POST.get('short_description', ''),
+                
+                # Handle category selection - subcategory takes precedence over main category
+                category_id=(request.POST.get('category') or request.POST.get('main_category')) if (request.POST.get('category') or request.POST.get('main_category')) else None,
+                
+                level=request.POST.get('level', 'beginner'),
+                language=request.POST.get('language', 'English'),
+                price=request.POST.get('price', 0),
+                discount_price=request.POST.get('discount_price') if request.POST.get('discount_price') else None,
+                is_free=request.POST.get('is_free') == 'on',
+                status='draft',
+                allow_download=request.POST.get('allow_download') == 'on',
+            )
+            
+            if 'thumbnail' in request.FILES:
+                course.thumbnail = request.FILES['thumbnail']
+                course.save()
+            
+            # Log the action
+            AdminLog.objects.create(
+                admin=request.user,
+                action='create',
+                content_type='Course',
+                object_id=str(course.id),
+                object_repr=course.title,
+                new_values={
+                    'title': course.title,
+                    'status': course.status,
+                    'price': str(course.price),
+                }
+            )
+            
+            messages.success(request, f'Course "{course.title}" created successfully!')
+            return redirect('platformadmin:admin_course_edit', course_id=course.id)
+        except Exception as e:
+            messages.error(request, f'Error creating course: {str(e)}')
+    
+    # Get categories for dropdown - separate main categories and subcategories
+    main_categories = Category.objects.filter(is_active=True, parent=None).order_by('display_order', 'name')
+    subcategories = Category.objects.filter(is_active=True, parent__isnull=False).order_by('parent__name', 'display_order', 'name')
+    
+    context = get_context_data(request)
+    context.update({
+        'main_categories': main_categories,
+        'subcategories': subcategories,
+    })
+    
+    return render(request, 'platformadmin/course_create.html', context)
+
+
+@platformadmin_required
+def admin_course_edit(request, course_id):
+    """Platform admin edits course details"""
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        try:
+            old_values = {
+                'title': course.title,
+                'description': course.description,
+                'price': str(course.price),
+                'status': course.status,
+            }
+            
+            # Update course
+            course.title = request.POST.get('title')
+            course.description = request.POST.get('description')
+            course.short_description = request.POST.get('short_description', '')
+            
+            # Handle category selection - subcategory takes precedence over main category
+            selected_category = request.POST.get('category')  # subcategory
+            if not selected_category:
+                selected_category = request.POST.get('main_category')  # main category fallback
+            course.category_id = selected_category if selected_category else None
+            
+            course.level = request.POST.get('level')
+            course.language = request.POST.get('language')
+            course.price = request.POST.get('price', 0)
+            course.discount_price = request.POST.get('discount_price') if request.POST.get('discount_price') else None
+            course.is_free = request.POST.get('is_free') == 'on'
+            course.allow_download = request.POST.get('allow_download') == 'on'
+            course.status = request.POST.get('status', 'draft')
+            course.is_featured = request.POST.get('is_featured') == 'on'
+            
+            if 'thumbnail' in request.FILES:
+                course.thumbnail = request.FILES['thumbnail']
+            
+            course.save()
+            
+            # Log the action
+            AdminLog.objects.create(
+                admin=request.user,
+                action='update',
+                content_type='Course',
+                object_id=str(course.id),
+                object_repr=course.title,
+                old_values=old_values,
+                new_values={
+                    'title': course.title,
+                    'description': course.description,
+                    'price': str(course.price),
+                    'status': course.status,
+                }
+            )
+            
+            messages.success(request, 'Course updated successfully!')
+            return redirect('platformadmin:admin_course_edit', course_id=course.id)
+        except Exception as e:
+            messages.error(request, f'Error updating course: {str(e)}')
+    
+    # Get categories - separate main categories and subcategories
+    main_categories = Category.objects.filter(is_active=True, parent=None).order_by('display_order', 'name')
+    subcategories = Category.objects.filter(is_active=True, parent__isnull=False).order_by('parent__name', 'display_order', 'name')
+    
+    # Get course modules and lessons
+    modules = Module.objects.filter(course=course).prefetch_related('lessons').order_by('order')
+    
+    # Get course assignments
+    from apps.platformadmin.models import CourseAssignment
+    assignments = CourseAssignment.objects.filter(course=course).select_related('teacher', 'assigned_by')
+    
+    # Get course stats
+    from apps.courses.models import Enrollment
+    from django.db.models import Sum
+    student_count = Enrollment.objects.filter(course=course, status='active').count()
+    total_revenue = Enrollment.objects.filter(
+        course=course, 
+        status='active'
+    ).aggregate(total=Sum('payment_amount'))['total'] or 0
+    
+    context = get_context_data(request)
+    context.update({
+        'course': course,
+        'main_categories': main_categories,
+        'subcategories': subcategories,
+        'modules': modules,
+        'assignments': assignments,
+        'student_count': student_count,
+        'total_revenue': total_revenue,
+    })
+    
+    return render(request, 'platformadmin/course_edit.html', context)
+
+
+@platformadmin_required
+def admin_course_delete(request, course_id):
+    """Platform admin deletes a course"""
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        course_title = course.title
+        course_id_str = str(course.id)
+        
+        # Log before deletion
+        AdminLog.objects.create(
+            admin=request.user,
+            action='delete',
+            content_type='Course',
+            object_id=course_id_str,
+            object_repr=course_title,
+            old_values={
+                'title': course.title,
+                'status': course.status,
+                'teacher': course.teacher.email if course.teacher else None,
+            },
+            new_values={},
+        )
+        
+        course.delete()
+        messages.success(request, f'Course "{course_title}" deleted successfully!')
+        return redirect('platformadmin:course_management')
+    
+    context = get_context_data(request)
+    context['course'] = course
+    
+    return render(request, 'platformadmin/course_delete_confirm.html', context)
+
+
+@platformadmin_required
+def admin_course_assign(request, course_id):
+    """Assign a course to a teacher"""
+    course = get_object_or_404(Course, id=course_id)
+    from apps.platformadmin.models import CourseAssignment
+    
+    if request.method == 'POST':
+        teacher_id = request.POST.get('teacher_id')
+        teacher = get_object_or_404(User, id=teacher_id, role='teacher')
+        
+        # Check if already assigned
+        existing = CourseAssignment.objects.filter(
+            course=course, 
+            teacher=teacher,
+            status__in=['assigned', 'accepted']
+        ).first()
+        
+        if existing:
+            messages.warning(request, f'Course already assigned to {teacher.email}')
+        else:
+            # Create assignment
+            assignment = CourseAssignment.objects.create(
+                course=course,
+                teacher=teacher,
+                assigned_by=request.user,
+                status='assigned',
+                can_edit_content=request.POST.get('can_edit_content') == 'on',
+                can_delete_content=request.POST.get('can_delete_content') == 'on',
+                can_edit_details=request.POST.get('can_edit_details') == 'on',
+                can_publish=request.POST.get('can_publish') == 'on',
+                assignment_notes=request.POST.get('assignment_notes', ''),
+            )
+            
+            # Update course teacher field
+            if not course.teacher:
+                course.teacher = teacher
+                course.save()
+            
+            # Send notification to teacher
+            from apps.notifications.models import Notification
+            Notification.objects.create(
+                user=teacher,
+                notification_type='course_assignment',
+                title='New Course Assignment',
+                message=f'You have been assigned to teach "{course.title}". Please review and accept or reject this assignment.',
+                link_url=f'/courses/teacher/assignments/',
+                link_text='View Assignments',
+                course=course,
+                send_email=True
+            )
+            
+            # Log the action
+            AdminLog.objects.create(
+                admin=request.user,
+                action='create',
+                content_type='CourseAssignment',
+                object_id=str(assignment.id),
+                object_repr=f"{course.title} → {teacher.email}",
+                new_values={
+                    'course': course.title,
+                    'teacher': teacher.email,
+                    'status': assignment.status,
+                }
+            )
+            
+            messages.success(request, 'platform admin assigned.')
+            return redirect('platformadmin:admin_course_edit', course_id=course.id)
+    
+    # Get all verified teachers
+    teachers = User.objects.filter(
+        role='teacher',
+        is_active=True
+    ).select_related('teacher_profile')
+    
+    # Get existing assignments for this course
+    existing_assignments = CourseAssignment.objects.filter(
+        course=course
+    ).select_related('teacher').order_by('-assigned_at')
+    
+    context = get_context_data(request)
+    context['course'] = course
+    context['available_teachers'] = teachers
+    context['existing_assignments'] = existing_assignments
+    
+    return render(request, 'platformadmin/course_assign.html', context)
+
+
+@platformadmin_required
+def admin_course_unassign(request, assignment_id):
+    """Revoke a course assignment from a teacher"""
+    from apps.platformadmin.models import CourseAssignment
+    assignment = get_object_or_404(CourseAssignment, id=assignment_id)
+    
+    if request.method == 'POST':
+        course_title = assignment.course.title
+        teacher_email = assignment.teacher.email
+        
+        # Update assignment status
+        assignment.status = 'revoked'
+        assignment.revoked_at = timezone.now()
+        assignment.save()
+        
+        # Log the action
+        AdminLog.objects.create(
+            admin=request.user,
+            action='update',
+            content_type='CourseAssignment',
+            object_id=str(assignment.id),
+            object_repr=f"{course_title} → {teacher_email}",
+            old_values={'status': 'assigned'},
+            new_values={'status': 'revoked'},
+        )
+        
+        messages.success(request, f'Course "{course_title}" unassigned from {teacher_email}')
+        return redirect('platformadmin:admin_course_edit', course_id=assignment.course.id)
+    
+    context = get_context_data(request)
+    context['assignment'] = assignment
+    
+    return render(request, 'platformadmin/course_unassign_confirm.html', context)
+
+
+@platformadmin_required
+def admin_courses_list(request):
+    """List all courses created by platform admin with comprehensive management features"""
+    from apps.platformadmin.models import CourseAssignment
+    from apps.courses.models import Enrollment
+    
+    search = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    category_filter = request.GET.get('category', '')
+    sort_by = request.GET.get('sort', '-created_at')
+    
+    courses = Course.objects.select_related('teacher', 'category', 'created_by').prefetch_related('modules')
+    
+    # Apply filters
+    if search:
+        courses = courses.filter(
+            Q(title__icontains=search) |
+            Q(description__icontains=search) |
+            Q(short_description__icontains=search) |
+            Q(teacher__email__icontains=search) |
+            Q(teacher__first_name__icontains=search) |
+            Q(teacher__last_name__icontains=search)
+        )
+    
+    if status_filter:
+        courses = courses.filter(status=status_filter)
+    
+    if category_filter:
+        courses = courses.filter(category_id=category_filter)
+    
+    # Sorting options
+    valid_sort_fields = ['-created_at', 'created_at', '-updated_at', 'title', '-title', 
+                        '-price', 'price', 'status']
+    if sort_by in valid_sort_fields:
+        courses = courses.order_by(sort_by)
+    else:
+        courses = courses.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(courses, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get categories for filter
+    categories = Category.objects.filter(is_active=True).order_by('name')
+    
+    # Course statistics
+    total_courses = Course.objects.count()
+    published_courses = Course.objects.filter(status='published').count()
+    draft_courses = Course.objects.filter(status='draft').count()
+    archived_courses = Course.objects.filter(status='archived').count()
+    free_courses = Course.objects.filter(is_free=True).count()
+    paid_courses = Course.objects.filter(is_free=False).count()
+    
+    # Assignment statistics
+    total_assignments = CourseAssignment.objects.count()
+    pending_assignments = CourseAssignment.objects.filter(status='assigned').count()
+    accepted_assignments = CourseAssignment.objects.filter(status='accepted').count()
+    rejected_assignments = CourseAssignment.objects.filter(status='rejected').count()
+    
+    # Student enrollment statistics
+    total_enrollments = Enrollment.objects.count()
+    active_students = Enrollment.objects.values('student').distinct().count()
+    
+    # Revenue statistics
+    from apps.payments.models import Payment
+    total_revenue = Payment.objects.filter(
+        status='completed'
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    monthly_revenue = Payment.objects.filter(
+        status='completed',
+        created_at__gte=timezone.now() - timedelta(days=30)
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Annotate courses with student counts for the current page
+    for course in page_obj.object_list:
+        course.student_count = Enrollment.objects.filter(course=course).count()
+        course.assignment_count = CourseAssignment.objects.filter(course=course).count()
+        course.modules_count = course.modules.count()
+    
+    context = get_context_data(request)
+    context.update({
+        'page_obj': page_obj,
+        'courses': page_obj.object_list,
+        'search': search,
+        'status_filter': status_filter,
+        'category_filter': category_filter,
+        'sort_by': sort_by,
+        'categories': categories,
+        
+        # Course statistics
+        'total_courses': total_courses,
+        'published_courses': published_courses,
+        'draft_courses': draft_courses,
+        'archived_courses': archived_courses,
+        'free_courses': free_courses,
+        'paid_courses': paid_courses,
+        
+        # Assignment statistics
+        'total_assignments': total_assignments,
+        'pending_assignments': pending_assignments,
+        'accepted_assignments': accepted_assignments,
+        'rejected_assignments': rejected_assignments,
+        
+        # Student statistics
+        'total_enrollments': total_enrollments,
+        'active_students': active_students,
+        
+        # Revenue statistics
+        'total_revenue': total_revenue,
+        'monthly_revenue': monthly_revenue,
+        
+        # Feature flags
+        'can_create_course': True,
+        'can_assign_teachers': True,
+        'can_delete_courses': True,
+        'can_view_analytics': True,
+    })
+    
+    return render(request, 'platformadmin/courses_list.html', context)
+
+
+@platformadmin_required
+def admin_view_all_assignments(request):
+    """View all course assignments across platform with comprehensive analytics"""
+    from apps.platformadmin.models import CourseAssignment
+    
+    # Get filters
+    status_filter = request.GET.get('status', '')
+    teacher_filter = request.GET.get('teacher', '')
+    course_filter = request.GET.get('course', '')
+    
+    assignments = CourseAssignment.objects.select_related(
+        'course', 'course__category', 'teacher', 'assigned_by', 'teacher__teacher_profile'
+    )
+    
+    # Apply filters
+    if status_filter:
+        assignments = assignments.filter(status=status_filter)
+    
+    if teacher_filter:
+        assignments = assignments.filter(
+            Q(teacher__email__icontains=teacher_filter) |
+            Q(teacher__first_name__icontains=teacher_filter) |
+            Q(teacher__last_name__icontains=teacher_filter)
+        )
+    
+    if course_filter:
+        assignments = assignments.filter(course__title__icontains=course_filter)
+    
+    # Pagination
+    paginator = Paginator(assignments.order_by('-assigned_at'), 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Comprehensive statistics
+    total_assignments = CourseAssignment.objects.count()
+    pending_assignments = CourseAssignment.objects.filter(status='assigned').count()
+    accepted_assignments = CourseAssignment.objects.filter(status='accepted').count()
+    rejected_assignments = CourseAssignment.objects.filter(status='rejected').count()
+    revoked_assignments = CourseAssignment.objects.filter(status='revoked').count()
+    
+    # Teacher statistics
+    total_teachers_with_assignments = CourseAssignment.objects.values('teacher').distinct().count()
+    
+    # Course statistics
+    total_courses_assigned = CourseAssignment.objects.values('course').distinct().count()
+    
+    # Recent assignments
+    recent_assignments = CourseAssignment.objects.select_related(
+        'course', 'teacher', 'assigned_by'
+    ).order_by('-assigned_at')[:5]
+    
+    context = get_context_data(request)
+    context.update({
+        'page_obj': page_obj,
+        'assignments': page_obj.object_list,
+        'status_filter': status_filter,
+        'teacher_filter': teacher_filter,
+        'course_filter': course_filter,
+        
+        # Statistics
+        'total_assignments': total_assignments,
+        'pending_assignments': pending_assignments,
+        'accepted_assignments': accepted_assignments,
+        'rejected_assignments': rejected_assignments,
+        'revoked_assignments': revoked_assignments,
+        'total_teachers_with_assignments': total_teachers_with_assignments,
+        'total_courses_assigned': total_courses_assigned,
+        'recent_assignments': recent_assignments,
+        
+        # Pagination info
+        'is_paginated': page_obj.has_other_pages(),
+    })
+    
+    return render(request, 'platformadmin/assignments_list.html', context)
+
+
+@platformadmin_required
+def admin_category_management(request):
+    """Manage course categories and subcategories"""
+    search = request.GET.get('search', '')
+    parent_filter = request.GET.get('parent', '')
+    
+    categories = Category.objects.prefetch_related('subcategories')
+    
+    # Apply filters
+    if search:
+        categories = categories.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search)
+        )
+    
+    if parent_filter == 'main':
+        categories = categories.filter(parent__isnull=True)
+    elif parent_filter == 'sub':
+        categories = categories.filter(parent__isnull=False)
+    elif parent_filter:
+        categories = categories.filter(parent_id=parent_filter)
+    
+    categories = categories.order_by('display_order', 'name')
+    
+    # Get main categories for filter dropdown
+    main_categories = Category.objects.filter(parent__isnull=True, is_active=True)
+    
+    # Statistics
+    total_categories = Category.objects.count()
+    main_category_count = Category.objects.filter(parent__isnull=True).count()
+    subcategory_count = Category.objects.filter(parent__isnull=False).count()
+    active_categories = Category.objects.filter(is_active=True).count()
+    
+    # Courses per category
+    from django.db.models import Count
+    categories_with_counts = categories.annotate(
+        course_count=Count('courses', filter=Q(courses__status='published'))
+    )
+    
+    context = get_context_data(request)
+    context.update({
+        'categories': categories_with_counts,
+        'main_categories': main_categories,
+        'search': search,
+        'parent_filter': parent_filter,
+        'total_categories': total_categories,
+        'main_category_count': main_category_count,
+        'subcategory_count': subcategory_count,
+        'active_categories': active_categories,
+    })
+    
+    return render(request, 'platformadmin/category_management.html', context)
+
+
+@platformadmin_required
+def admin_category_create(request):
+    """Create a new category or subcategory"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description', '')
+        icon = request.POST.get('icon', '')
+        color = request.POST.get('color', '#667eea')
+        parent_id = request.POST.get('parent')
+        display_order = request.POST.get('display_order', 0)
+        is_active = request.POST.get('is_active') == 'on'
+        
+        try:
+            category = Category.objects.create(
+                name=name,
+                description=description,
+                icon=icon,
+                color=color,
+                parent_id=parent_id if parent_id else None,
+                display_order=display_order,
+                is_active=is_active
+            )
+            
+            # Log activity
+            AdminLog.objects.create(
+                admin=request.user,
+                action='create_category',
+                description=f'Created category: {category.name}',
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+            
+            messages.success(request, f'Category "{category.name}" created successfully!')
+            return redirect('platformadmin:admin_category_management')
+        
+        except Exception as e:
+            messages.error(request, f'Error creating category: {str(e)}')
+    
+    # Get main categories for parent selection
+    main_categories = Category.objects.filter(parent__isnull=True, is_active=True)
+    
+    context = get_context_data(request)
+    context['main_categories'] = main_categories
+    
+    return render(request, 'platformadmin/category_create.html', context)
+
+
+@platformadmin_required
+def admin_category_edit(request, category_id):
+    """Edit an existing category"""
+    category = get_object_or_404(Category, id=category_id)
+    
+    if request.method == 'POST':
+        category.name = request.POST.get('name')
+        category.description = request.POST.get('description', '')
+        category.icon = request.POST.get('icon', '')
+        category.color = request.POST.get('color', '#667eea')
+        category.display_order = request.POST.get('display_order', 0)
+        category.is_active = request.POST.get('is_active') == 'on'
+        
+        parent_id = request.POST.get('parent')
+        if parent_id:
+            # Prevent circular reference
+            if int(parent_id) != category.id:
+                category.parent_id = parent_id
+            else:
+                messages.error(request, 'A category cannot be its own parent!')
+                return redirect('platformadmin:admin_category_edit', category_id=category_id)
+        else:
+            category.parent = None
+        
+        try:
+            category.save()
+            
+            # Log activity
+            AdminLog.objects.create(
+                admin=request.user,
+                action='update_category',
+                description=f'Updated category: {category.name}',
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+            
+            messages.success(request, f'Category "{category.name}" updated successfully!')
+            return redirect('platformadmin:admin_category_management')
+        
+        except Exception as e:
+            messages.error(request, f'Error updating category: {str(e)}')
+    
+    # Get main categories for parent selection (excluding current category)
+    main_categories = Category.objects.filter(
+        parent__isnull=True, 
+        is_active=True
+    ).exclude(id=category_id)
+    
+    # Get category statistics
+    course_count = Course.objects.filter(category=category).count()
+    subcategory_count = category.subcategories.count()
+    
+    context = get_context_data(request)
+    context.update({
+        'category': category,
+        'main_categories': main_categories,
+        'course_count': course_count,
+        'subcategory_count': subcategory_count,
+    })
+    
+    return render(request, 'platformadmin/category_edit.html', context)
+
+
+@platformadmin_required
+def admin_category_delete(request, category_id):
+    """Delete a category"""
+    category = get_object_or_404(Category, id=category_id)
+
+
+# ==================== PLATFORM ADMIN MODULE MANAGEMENT ====================
+
+@platformadmin_required
+def admin_module_create(request, course_id):
+    """Create a new module for a course (Platform Admin)"""
+    from django.db.models import Max
+    
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        # Get the highest order number
+        max_order = Module.objects.filter(course=course).aggregate(Max('order'))['order__max'] or 0
+        
+        # Create module
+        module = Module.objects.create(
+            course=course,
+            title=request.POST.get('title'),
+            description=request.POST.get('description', ''),
+            order=max_order + 1,
+            is_published=request.POST.get('is_published') == 'on'
+        )
+        
+        # Log the action
+        AdminLog.objects.create(
+            admin=request.user,
+            action='create',
+            content_type='Module',
+            object_id=str(module.id),
+            object_repr=module.title,
+            old_values={},
+            new_values={
+                'title': module.title,
+                'course': course.title,
+            }
+        )
+        
+        messages.success(request, f'Module "{module.title}" created successfully!')
+        return redirect('platformadmin:admin_course_edit', course_id=course.id)
+    
+    return redirect('platformadmin:admin_course_edit', course_id=course.id)
+
+
+@platformadmin_required
+def admin_module_edit(request, module_id):
+    """Edit an existing module (Platform Admin)"""
+    module = get_object_or_404(Module, id=module_id)
+    
+    if request.method == 'POST':
+        old_values = {
+            'title': module.title,
+            'description': module.description,
+            'is_published': module.is_published,
+        }
+        
+        module.title = request.POST.get('title')
+        module.description = request.POST.get('description', '')
+        module.is_published = request.POST.get('is_published') == 'on'
+        module.save()
+        
+        # Log the action
+        AdminLog.objects.create(
+            admin=request.user,
+            action='update',
+            content_type='Module',
+            object_id=str(module.id),
+            object_repr=module.title,
+            old_values=old_values,
+            new_values={
+                'title': module.title,
+                'description': module.description,
+                'is_published': module.is_published,
+            }
+        )
+        
+        messages.success(request, f'Module "{module.title}" updated successfully!')
+        return redirect('platformadmin:admin_course_edit', course_id=module.course.id)
+    
+    return redirect('platformadmin:admin_course_edit', course_id=module.course.id)
+
+
+@platformadmin_required
+def admin_module_delete(request, module_id):
+    """Delete a module (Platform Admin)"""
+    module = get_object_or_404(Module, id=module_id)
+    course_id = module.course.id
+    module_title = module.title
+    
+    if request.method == 'POST':
+        # Log the action before deletion
+        AdminLog.objects.create(
+            admin=request.user,
+            action='delete',
+            content_type='Module',
+            object_id=str(module.id),
+            object_repr=module_title,
+            old_values={
+                'title': module.title,
+                'course': module.course.title,
+            },
+            new_values={}
+        )
+        
+        module.delete()
+        messages.success(request, f'Module "{module_title}" deleted successfully!')
+        return redirect('platformadmin:admin_course_edit', course_id=course_id)
+    
+    return redirect('platformadmin:admin_course_edit', course_id=course_id)
+
+
+@platformadmin_required
+def admin_module_reorder(request, course_id):
+    """Reorder modules (Platform Admin)"""
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            module_order = data.get('module_order', [])
+            
+            for index, module_id in enumerate(module_order):
+                Module.objects.filter(id=module_id, course=course).update(order=index)
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+
+# ==================== PLATFORM ADMIN LESSON MANAGEMENT ====================
+
+@platformadmin_required
+def admin_lesson_create(request, module_id):
+    """Create a new lesson for a module (Platform Admin)"""
+    from apps.courses.models import Lesson, LessonMedia
+    from django.db.models import Max
+    
+    module = get_object_or_404(Module, id=module_id)
+    
+    if request.method == 'POST':
+        # Get the highest order number
+        max_order = Lesson.objects.filter(module=module).aggregate(Max('order'))['order__max'] or 0
+        
+        # Get common lesson data
+        base_title = request.POST.get('title')
+        description = request.POST.get('description', '')
+        lesson_type = request.POST.get('lesson_type', 'audio')
+        is_free_preview = request.POST.get('is_free_preview') == 'on'
+        is_published = request.POST.get('is_published') == 'on'
+        text_content = request.POST.get('text_content', '')
+        
+        # Handle multiple media files - create separate lesson for each file
+        media_files = request.FILES.getlist('media_files')
+        if media_files:
+            created_lessons = []
+            for index, media_file in enumerate(media_files):
+                # Determine media type based on file extension
+                file_extension = media_file.name.split('.')[-1].lower()
+                if file_extension in ['mp4', 'avi', 'mov', 'mkv', 'webm']:
+                    media_type = 'video'
+                    actual_lesson_type = 'video'
+                else:
+                    media_type = 'audio'
+                    actual_lesson_type = 'audio'
+                
+                # Create individual lesson for each file
+                if len(media_files) > 1:
+                    lesson_title = f"{base_title} - Part {index + 1}"
+                else:
+                    lesson_title = base_title
+                
+                lesson = Lesson.objects.create(
+                    module=module,
+                    course=module.course,
+                    title=lesson_title,
+                    description=description,
+                    lesson_type=actual_lesson_type,
+                    order=max_order + index + 1,
+                    is_free_preview=is_free_preview,
+                    is_published=is_published,
+                    text_content=text_content
+                )
+                
+                # Attach media file to this lesson
+                LessonMedia.objects.create(
+                    lesson=lesson,
+                    media_file=media_file,
+                    media_type=media_type,
+                    file_size=media_file.size,
+                    order=0
+                )
+                
+                created_lessons.append(lesson)
+            
+            # Use the first lesson for logging
+            lesson = created_lessons[0]
+        else:
+            # Create single lesson without media files (for text lessons or legacy single file)
+            lesson = Lesson.objects.create(
+                module=module,
+                course=module.course,
+                title=base_title,
+                description=description,
+                lesson_type=lesson_type,
+                order=max_order + 1,
+                is_free_preview=is_free_preview,
+                is_published=is_published,
+                text_content=text_content
+            )
+            
+            # Handle file upload if provided (legacy single file)
+            if 'audio_file' in request.FILES:
+                audio_file = request.FILES['audio_file']
+                lesson.audio_file = audio_file
+                lesson.file_size = audio_file.size
+                lesson.save()
+        
+        # Log the action
+        AdminLog.objects.create(
+            admin=request.user,
+            action='create',
+            content_type='Lesson',
+            object_id=str(lesson.id),
+            object_repr=lesson.title,
+            old_values={},
+            new_values={
+                'title': lesson.title,
+                'module': module.title,
+                'course': module.course.title,
+            }
+        )
+        
+        if media_files and len(media_files) > 1:
+            messages.success(request, f'{len(media_files)} lessons created successfully from uploaded media files!')
+        else:
+            messages.success(request, f'Lesson "{lesson.title}" created successfully!')
+        return redirect('platformadmin:admin_course_edit', course_id=module.course.id)
+    
+    return redirect('platformadmin:admin_course_edit', course_id=module.course.id)
+
+
+@platformadmin_required
+def admin_lesson_edit(request, lesson_id):
+    """Edit an existing lesson (Platform Admin)"""
+    from apps.courses.models import Lesson, LessonMedia
+    from django.db.models import Max
+    
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    
+    if request.method == 'POST':
+        old_values = {
+            'title': lesson.title,
+            'description': lesson.description,
+            'lesson_type': lesson.lesson_type,
+        }
+        
+        lesson.title = request.POST.get('title')
+        lesson.description = request.POST.get('description', '')
+        lesson.lesson_type = request.POST.get('lesson_type', 'audio')
+        lesson.is_free_preview = request.POST.get('is_free_preview') == 'on'
+        lesson.is_published = request.POST.get('is_published') == 'on'
+        lesson.text_content = request.POST.get('text_content', '')
+        
+        # Handle file upload if provided (legacy single file)
+        if 'audio_file' in request.FILES:
+            audio_file = request.FILES['audio_file']
+            lesson.audio_file = audio_file
+            lesson.file_size = audio_file.size
+        
+        lesson.save()
+        
+        # Handle multiple media files
+        media_files = request.FILES.getlist('media_files')
+        if media_files:
+            # Get the current max order
+            max_order = LessonMedia.objects.filter(lesson=lesson).aggregate(Max('order'))['order__max'] or -1
+            
+            for index, media_file in enumerate(media_files):
+                # Determine media type based on file extension
+                file_extension = media_file.name.split('.')[-1].lower()
+                if file_extension in ['mp4', 'avi', 'mov', 'mkv', 'webm']:
+                    media_type = 'video'
+                else:
+                    media_type = 'audio'
+                
+                LessonMedia.objects.create(
+                    lesson=lesson,
+                    media_file=media_file,
+                    media_type=media_type,
+                    file_size=media_file.size,
+                    order=max_order + index + 1
+                )
+        
+        # Log the action
+        AdminLog.objects.create(
+            admin=request.user,
+            action='update',
+            content_type='Lesson',
+            object_id=str(lesson.id),
+            object_repr=lesson.title,
+            old_values=old_values,
+            new_values={
+                'title': lesson.title,
+                'description': lesson.description,
+                'lesson_type': lesson.lesson_type,
+            }
+        )
+        
+        messages.success(request, f'Lesson "{lesson.title}" updated successfully!')
+        return redirect('platformadmin:admin_course_edit', course_id=lesson.course.id)
+    
+    return redirect('platformadmin:admin_course_edit', course_id=lesson.course.id)
+
+
+@platformadmin_required
+def admin_lesson_delete(request, lesson_id):
+    """Delete a lesson (Platform Admin)"""
+    from apps.courses.models import Lesson
+    
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    course_id = lesson.course.id
+    lesson_title = lesson.title
+    
+    if request.method == 'POST':
+        # Log the action before deletion
+        AdminLog.objects.create(
+            admin=request.user,
+            action='delete',
+            content_type='Lesson',
+            object_id=str(lesson.id),
+            object_repr=lesson_title,
+            old_values={
+                'title': lesson.title,
+                'course': lesson.course.title,
+            },
+            new_values={}
+        )
+        
+        lesson.delete()
+        messages.success(request, f'Lesson "{lesson_title}" deleted successfully!')
+        return redirect('platformadmin:admin_course_edit', course_id=course_id)
+    
+    return redirect('platformadmin:admin_course_edit', course_id=course_id)
+
+
+@platformadmin_required
+def admin_lesson_reorder(request, module_id):
+    """Reorder lessons within a module (Platform Admin)"""
+    from apps.courses.models import Lesson
+    
+    module = get_object_or_404(Module, id=module_id)
+    
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            lesson_order = data.get('lesson_order', [])
+            
+            for index, lesson_id in enumerate(lesson_order):
+                Lesson.objects.filter(id=lesson_id, module=module).update(order=index)
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+
+@platformadmin_required
+def admin_lesson_media_delete(request, media_id):
+    """Delete a lesson media file (Platform Admin)"""
+    from apps.courses.models import LessonMedia
+    
+    media = get_object_or_404(LessonMedia, id=media_id)
+    
+    if request.method == 'POST':
+        lesson_id = media.lesson.course.id
+        
+        # Log the action before deletion
+        AdminLog.objects.create(
+            admin=request.user,
+            action='delete',
+            content_type='LessonMedia',
+            object_id=str(media.id),
+            object_repr=f'Media file for {media.lesson.title}',
+            old_values={
+                'lesson': media.lesson.title,
+                'media_type': media.media_type,
+            },
+            new_values={}
+        )
+        
+        media.delete()
+        messages.success(request, 'Media file deleted successfully!')
+        return JsonResponse({'success': True})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
+
 
 

@@ -20,6 +20,11 @@ urlpatterns = [
     path('lesson/<int:lesson_id>/complete/', views.mark_lesson_complete, name='mark_lesson_complete'),
     path('lesson/<int:lesson_id>/audio/', views.serve_lesson_audio, name='serve_lesson_audio'),
     
+    # Lesson Players
+    path('lessons/<int:lesson_id>/audio-player/', views.lesson_audio_player, name='lesson_audio_player'),
+    path('lessons/<int:lesson_id>/video-player/', views.lesson_video_player, name='lesson_video_player'),
+    path('lessons/<int:lesson_id>/progress/', views.lesson_update_progress, name='lesson_update_progress'),
+    
     # Notes
     path('lesson/<int:lesson_id>/note/', views.create_note, name='create_note'),
     path('note/<int:note_id>/delete/', views.delete_note, name='delete_note'),
@@ -67,4 +72,9 @@ urlpatterns = [
     path('teacher/lesson/<int:lesson_id>/delete/', views.teacher_lesson_delete, name='teacher_lesson_delete'),
     path('teacher/module/<int:module_id>/lessons/reorder/', views.teacher_lesson_reorder, name='teacher_lesson_reorder'),
     path('teacher/lesson-media/<int:media_id>/delete/', views.teacher_lesson_media_delete, name='teacher_lesson_media_delete'),
+    
+    # Course Assignment Management (Teacher)
+    path('teacher/assignments/', views.teacher_view_assignments, name='teacher_view_assignments'),
+    path('teacher/assignment/<uuid:assignment_id>/accept/', views.teacher_accept_assignment, name='teacher_accept_assignment'),
+    path('teacher/assignment/<uuid:assignment_id>/reject/', views.teacher_reject_assignment, name='teacher_reject_assignment'),
 ]

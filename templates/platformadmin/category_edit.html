@@ -1,0 +1,150 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Edit Category - {{ category.name }} - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-edit"></i> Edit Category</h2>
+                <p class="text-muted mb-0">{{ category.full_name }}</p>
+            </div>
+            <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h3>{{ course_count }}</h3>
+                        <p class="mb-0">Courses</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h3>{{ subcategory_count }}</h3>
+                        <p class="mb-0">Subcategories</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h3>{{ category.display_order }}</h3>
+                        <p class="mb-0">Display Order</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-folder"></i> Category Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ category.name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="parent" class="form-label">Parent Category</label>
+                        <select class="form-select" id="parent" name="parent">
+                            <option value="">None (Main Category)</option>
+                            {% for main_cat in main_categories %}
+                            <option value="{{ main_cat.id }}" {% if category.parent.id == main_cat.id %}selected{% endif %}>
+                                {{ main_cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Leave empty for main category, or select a parent for subcategory</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ category.description }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="icon" class="form-label">Icon Class</label>
+                            <input type="text" class="form-control" id="icon" name="icon" value="{{ category.icon }}">
+                            <small class="text-muted">Font Awesome icon class</small>
+                            {% if category.icon %}
+                            <div class="mt-2">
+                                <i class="{{ category.icon }} fa-2x category-icon" style="--color: {{ category.color }}"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="color" class="form-label">Color</label>
+                            <input type="color" class="form-control form-control-color" id="color" name="color" value="{{ category.color }}">
+                            <small class="text-muted">Primary color for the category</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="display_order" class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="display_order" name="display_order" value="{{ category.display_order }}" min="0">
+                            <small class="text-muted">Lower numbers appear first</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label d-block">Status</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       {% if category.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Active (visible to users)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    {% if course_count > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> 
+                        This category has {{ course_count }} course(s). Changes will affect all associated courses.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Update Category
+                        </button>
+                        <a href="{% url 'platformadmin:admin_category_management' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card mt-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Once you delete a category, there is no going back. Please be certain.</p>
+                <a href="{% url 'platformadmin:admin_category_delete' category.id %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete Category
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

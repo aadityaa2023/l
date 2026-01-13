@@ -8,10 +8,36 @@ from django.contrib.auth import get_user_model
 from apps.platformadmin.models import (
     AdminLog, CourseApproval, DashboardStat, PlatformSetting,
     LoginHistory, CMSPage, FAQ, Announcement, InstructorPayout,
-    VideoSettings
+    VideoSettings, CourseAssignment
 )
 
 User = get_user_model()
+
+
+@admin.register(CourseAssignment)
+class CourseAssignmentAdmin(admin.ModelAdmin):
+    """Admin interface for course assignments"""
+    list_display = ['course', 'teacher', 'status', 'assigned_by', 'assigned_at', 'can_edit_content']
+    list_filter = ['status', 'can_edit_content', 'can_edit_details', 'can_publish', 'assigned_at']
+    search_fields = ['course__title', 'teacher__email', 'assigned_by__email']
+    readonly_fields = ['id', 'assigned_at', 'accepted_at', 'rejected_at', 'revoked_at', 'updated_at']
+    date_hierarchy = 'assigned_at'
+    
+    fieldsets = (
+        ('Assignment Info', {
+            'fields': ('course', 'teacher', 'assigned_by', 'status')
+        }),
+        ('Permissions', {
+            'fields': ('can_edit_content', 'can_edit_details', 'can_publish')
+        }),
+        ('Notes', {
+            'fields': ('assignment_notes', 'rejection_reason')
+        }),
+        ('Timestamps', {
+            'fields': ('assigned_at', 'accepted_at', 'rejected_at', 'revoked_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 @admin.register(AdminLog)

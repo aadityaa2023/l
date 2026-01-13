@@ -1,0 +1,218 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Create Course - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-plus-circle"></i> Create New Course</h2>
+        <p class="text-muted mb-0">Create a new course and assign it to a teacher</p>
+    </div>
+    <a href="{% url 'platformadmin:admin_courses_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Courses
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Course Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Course Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="short_description" class="form-label">Short Description</label>
+                        <input type="text" class="form-control" id="short_description" name="short_description" 
+                               placeholder="Brief tagline for the course" maxlength="500">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Full Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="6" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="main_category" class="form-label">Main Category</label>
+                            <select class="form-select" id="main_category" name="main_category">
+                                <option value="">Select Main Category</option>
+                                {% for category in main_categories %}
+                                <option value="{{ category.id }}" data-color="{{ category.color }}" data-icon="{{ category.icon }}">
+                                    {% if category.icon %}<i class="{{ category.icon }}"></i> {% endif %}{{ category.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="subcategory" class="form-label">Subcategory (Optional)</label>
+                            <select class="form-select" id="subcategory" name="category" disabled>
+                                <option value="">Select Subcategory</option>
+                                {% for subcategory in subcategories %}
+                                <option value="{{ subcategory.id }}" data-parent="{{ subcategory.parent.id }}" data-color="{{ subcategory.color }}" data-icon="{{ subcategory.icon }}">
+                                    {% if subcategory.icon %}<i class="{{ subcategory.icon }}"></i> {% endif %}{{ subcategory.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">First select a main category</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="level" class="form-label">Level</label>
+                            <select class="form-select" id="level" name="level">
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="language" class="form-label">Language</label>
+                            <input type="text" class="form-control" id="language" name="language" value="English">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="thumbnail" class="form-label">Thumbnail Image</label>
+                            <input type="file" class="form-control" id="thumbnail" name="thumbnail" accept="image/*">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">Price (₹)</label>
+                            <input type="number" class="form-control" id="price" name="price" value="0" min="0" step="0.01">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="discount_price" class="form-label">Discount Price (₹)</label>
+                            <input type="number" class="form-control" id="discount_price" name="discount_price" min="0" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_free" name="is_free">
+                            <label class="form-check-label" for="is_free">
+                                This is a free course
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="allow_download" name="allow_download">
+                            <label class="form-check-label" for="allow_download">
+                                Allow students to download content
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Create Course
+                        </button>
+                        <a href="{% url 'platformadmin:admin_courses_list' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5><i class="fas fa-lightbulb"></i> Tips</h5>
+                <ul class="small">
+                    <li>The course will be created in <strong>Draft</strong> status</li>
+                    <li>After creation, you can assign it to a teacher</li>
+                    <li>Teachers can only edit courses assigned to them</li>
+                    <li>You can set granular permissions for each assignment</li>
+                    <li>Use clear, descriptive titles for better discoverability</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mainCategorySelect = document.getElementById('main_category');
+    const subcategorySelect = document.getElementById('subcategory');
+    const subcategoryOptions = Array.from(subcategorySelect.options);
+    
+    // Initially hide all subcategory options except the placeholder
+    subcategoryOptions.forEach(option => {
+        if (option.value !== '') {
+            option.style.display = 'none';
+        }
+    });
+    
+    mainCategorySelect.addEventListener('change', function() {
+        const selectedMainCategoryId = this.value;
+        
+        // Reset subcategory selection
+        subcategorySelect.value = '';
+        
+        if (selectedMainCategoryId) {
+            // Show only subcategories of the selected main category
+            subcategoryOptions.forEach(option => {
+                if (option.value === '') {
+                    // Always show the placeholder
+                    option.style.display = 'block';
+                } else if (option.getAttribute('data-parent') === selectedMainCategoryId) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+            
+            // Enable subcategory select
+            subcategorySelect.disabled = false;
+            
+            // Update placeholder text
+            subcategorySelect.options[0].text = 'Select Subcategory';
+        } else {
+            // Hide all subcategories and disable select
+            subcategoryOptions.forEach(option => {
+                if (option.value !== '') {
+                    option.style.display = 'none';
+                }
+            });
+            subcategorySelect.disabled = true;
+            subcategorySelect.options[0].text = 'Select Subcategory';
+        }
+    });
+    
+    // Handle free course checkbox
+    const isFreeCheckbox = document.getElementById('is_free');
+    const priceInput = document.getElementById('price');
+    const discountPriceInput = document.getElementById('discount_price');
+    
+    isFreeCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            priceInput.value = '0';
+            discountPriceInput.value = '';
+            priceInput.disabled = true;
+            discountPriceInput.disabled = true;
+        } else {
+            priceInput.disabled = false;
+            discountPriceInput.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

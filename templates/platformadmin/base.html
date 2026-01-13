@@ -83,6 +83,7 @@
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
               background-clip: text;
+              color: transparent;
           }
 
           .sidebar-menu {
@@ -444,11 +445,33 @@
           >
             <i class="fas fa-chalkboard-user"></i> Teachers
           </a>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title">Courses</div>
           <a
-            href="{% url 'platformadmin:course_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'course_management' %}active{% endif %}"
+            href="{% url 'platformadmin:admin_courses_list' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'admin_courses_list' %}active{% endif %}"
           >
-            <i class="fas fa-book"></i> Courses
+            <i class="fas fa-graduation-cap"></i> Course Management
+          </a>
+          <a
+            href="{% url 'platformadmin:admin_category_management' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'admin_category_management' %}active{% endif %}"
+          >
+            <i class="fas fa-folder-tree"></i> Categories
+          </a>
+          <a
+            href="{% url 'platformadmin:admin_view_all_assignments' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'admin_view_all_assignments' %}active{% endif %}"
+          >
+            <i class="fas fa-user-check"></i> All Assignments
+          </a>
+          <a
+            href="{% url 'platformadmin:admin_course_create' %}"
+            class="menu-item {% if request.resolver_match.url_name == 'admin_course_create' %}active{% endif %}"
+          >
+            <i class="fas fa-plus-circle"></i> Create Course
           </a>
         </div>
 
@@ -471,12 +494,7 @@
           >
             <i class="fas fa-credit-card"></i> Payments
           </a>
-          <a
-            href="{% url 'platformadmin:subscription_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'subscription_management' %}active{% endif %}"
-          >
-            <i class="fas fa-sync-alt"></i> Subscriptions
-          </a>
+          {# Subscriptions removed from UI; backend model/view retained but redirected. #}
           <a
             href="{% url 'platformadmin:instructor_earnings' %}"
             class="menu-item {% if request.resolver_match.url_name == 'instructor_earnings' %}active{% endif %}"
@@ -534,12 +552,6 @@
             <i class="fas fa-chart-bar"></i> Analytics
           </a>
           <a
-            href="{% url 'platformadmin:student_progress' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'student_progress' %}active{% endif %}"
-          >
-            <i class="fas fa-user-graduate"></i> Student Progress
-          </a>
-          <a
             href="{% url 'platformadmin:activity_logs' %}"
             class="menu-item {% if request.resolver_match.url_name == 'activity_logs' %}active{% endif %}"
           >
@@ -555,12 +567,7 @@
 
         <div class="menu-section">
           <div class="menu-section-title">Settings</div>
-          <a
-            href="{% url 'platformadmin:video_settings' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'video_settings' %}active{% endif %}"
-          >
-            <i class="fas fa-video"></i> Video Settings
-          </a>
+          {# Student Progress and Video Settings removed from UI; backend models/views retained. #}
           <a
             href="{% url 'platformadmin:notification_management' %}"
             class="menu-item {% if request.resolver_match.url_name == 'notification_management' %}active{% endif %}"

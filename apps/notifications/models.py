@@ -18,6 +18,7 @@ class Notification(models.Model):
         ('system', 'System'),
         ('message', 'Message'),
         ('question', 'Question'),
+        ('course_assignment', 'Course Assignment'),  # New type for course assignments
     )
     
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')

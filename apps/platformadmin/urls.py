@@ -22,6 +22,34 @@ urlpatterns = [
     path('courses/', views.course_management, name='course_management'),
     path('courses/<int:course_id>/approve/', views.course_approval, name='course_approval'),
     
+    # Platform Admin Course CRUD & Assignment
+    path('admin-courses/', views.admin_courses_list, name='admin_courses_list'),
+    path('admin-courses/create/', views.admin_course_create, name='admin_course_create'),
+    path('admin-courses/<int:course_id>/edit/', views.admin_course_edit, name='admin_course_edit'),
+    path('admin-courses/<int:course_id>/delete/', views.admin_course_delete, name='admin_course_delete'),
+    path('admin-courses/<int:course_id>/assign/', views.admin_course_assign, name='admin_course_assign'),
+    path('admin-courses/assignment/<uuid:assignment_id>/unassign/', views.admin_course_unassign, name='admin_course_unassign'),
+    path('admin-courses/assignments/', views.admin_view_all_assignments, name='admin_view_all_assignments'),
+    
+    # Platform Admin Module Management
+    path('admin-courses/<int:course_id>/module/create/', views.admin_module_create, name='admin_module_create'),
+    path('admin-courses/module/<int:module_id>/edit/', views.admin_module_edit, name='admin_module_edit'),
+    path('admin-courses/module/<int:module_id>/delete/', views.admin_module_delete, name='admin_module_delete'),
+    path('admin-courses/<int:course_id>/modules/reorder/', views.admin_module_reorder, name='admin_module_reorder'),
+    
+    # Platform Admin Lesson Management
+    path('admin-courses/module/<int:module_id>/lesson/create/', views.admin_lesson_create, name='admin_lesson_create'),
+    path('admin-courses/lesson/<int:lesson_id>/edit/', views.admin_lesson_edit, name='admin_lesson_edit'),
+    path('admin-courses/lesson/<int:lesson_id>/delete/', views.admin_lesson_delete, name='admin_lesson_delete'),
+    path('admin-courses/module/<int:module_id>/lessons/reorder/', views.admin_lesson_reorder, name='admin_lesson_reorder'),
+    path('admin-courses/lesson-media/<int:media_id>/delete/', views.admin_lesson_media_delete, name='admin_lesson_media_delete'),
+    
+    # Category Management
+    path('categories/', views.admin_category_management, name='admin_category_management'),
+    path('categories/create/', views.admin_category_create, name='admin_category_create'),
+    path('categories/<int:category_id>/edit/', views.admin_category_edit, name='admin_category_edit'),
+    path('categories/<int:category_id>/delete/', views.admin_category_delete, name='admin_category_delete'),
+    
     # Payment Management
     path('payments/', views.payment_management, name='payment_management'),
     path('payments/<uuid:payment_id>/', views.payment_detail, name='payment_detail'),

@@ -1,0 +1,131 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Unassign Teacher - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0"><i class="fas fa-user-times"></i> Unassign Teacher Confirmation</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Warning!</h5>
+                    <p class="mb-0">You are about to remove a teacher's assignment from a course. This will revoke their access to edit the course.</p>
+                </div>
+                
+                <h5>Assignment Details:</h5>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Course</h6>
+                                {% if assignment.course.thumbnail %}
+                                <img src="{{ assignment.course.thumbnail.url }}" alt="{{ assignment.course.title }}" 
+                                     class="img-thumbnail mb-2" style="max-height: 100px;">
+                                {% endif %}
+                                <h5>{{ assignment.course.title }}</h5>
+                                <p class="text-muted small">{{ assignment.course.short_description }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Teacher</h6>
+                                <h5>{{ assignment.teacher.get_full_name|default:assignment.teacher.email }}</h5>
+                                <p class="text-muted">{{ assignment.teacher.email }}</p>
+                                <p class="mb-0">
+                                    <small>
+                                        <strong>Status:</strong> 
+                                        {% if assignment.status == 'assigned' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif assignment.status == 'accepted' %}
+                                            <span class="badge bg-success">Accepted</span>
+                                        {% elif assignment.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ assignment.status|title }}</span>
+                                        {% endif %}
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Assignment Date</h6>
+                                <p>{{ assignment.assigned_at|date:"M d, Y h:i A" }}</p>
+                                
+                                <h6 class="text-muted">Assigned By</h6>
+                                <p>{{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.email }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Permissions Granted</h6>
+                                <p>
+                                    {% if assignment.can_edit_content %}<span class="badge bg-primary">Edit Content</span>{% endif %}
+                                    {% if assignment.can_edit_details %}<span class="badge bg-info">Edit Details</span>{% endif %}
+                                    {% if assignment.can_publish %}<span class="badge bg-success">Publish</span>{% endif %}
+                                    {% if not assignment.can_edit_content and not assignment.can_edit_details and not assignment.can_publish %}
+                                        <span class="text-muted">No permissions</span>
+                                    {% endif %}
+                                </p>
+                                
+                                {% if assignment.status == 'accepted' and assignment.accepted_at %}
+                                <h6 class="text-muted">Accepted On</h6>
+                                <p>{{ assignment.accepted_at|date:"M d, Y h:i A" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h5>Impact of Unassignment:</h5>
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> What will happen:</h6>
+                    <ul class="mb-0">
+                        <li>Teacher will lose access to edit this course</li>
+                        <li>Teacher will be notified about the unassignment</li>
+                        <li>Course content created by the teacher will remain intact</li>
+                        <li>Assignment status will be changed to "revoked"</li>
+                        <li>Teacher will no longer see this course in their dashboard</li>
+                    </ul>
+                </div>
+                
+                {% if assignment.status == 'accepted' %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle"></i> <strong>Note:</strong> This teacher has accepted this assignment 
+                    and may have already started working on the course content. Make sure to communicate with them before removing access.
+                </div>
+                {% endif %}
+                
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for Unassignment (Optional)</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" 
+                                  placeholder="Provide a reason that will be sent to the teacher..."></textarea>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirm_checkbox" required>
+                        <label class="form-check-label" for="confirm_checkbox">
+                            I understand this will remove the teacher's access to this course
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-warning flex-grow-1">
+                            <i class="fas fa-user-times"></i> Unassign Teacher
+                        </button>
+                        <a href="{% url 'platformadmin:admin_course_edit' assignment.course.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends 'users/teacher_base.html' %}
+{% load static %}
+
+{% block title %}My Course Assignments{% endblock %}
+
+{% block teacher_content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-clipboard-list"></i> My Course Assignments</h2>
+            <p class="text-muted">View and manage courses assigned to you by the platform admin</p>
+        </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h3>{{ pending_count }}</h3>
+                    <p class="mb-0"><i class="fas fa-clock"></i> Pending Assignments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h3>{{ accepted_count }}</h3>
+                    <p class="mb-0"><i class="fas fa-check-circle"></i> Accepted</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h3>{{ total_courses }}</h3>
+                    <p class="mb-0"><i class="fas fa-book"></i> Total Courses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h3>{{ total_students }}</h3>
+                    <p class="mb-0"><i class="fas fa-users"></i> Total Students</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending Assignments -->
+    {% if pending_assignments %}
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-exclamation-circle"></i> Pending Assignments ({{ pending_count }})</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">These courses have been assigned to you. Please review and accept or reject them.</p>
+            {% for assignment in pending_assignments %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            {% if assignment.course.thumbnail %}
+                            <img src="{{ assignment.course.thumbnail.url }}" alt="{{ assignment.course.title }}" 
+                                 class="img-fluid rounded">
+                            {% else %}
+                            <div class="bg-light rounded p-3 text-center">
+                                <i class="fas fa-book fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h5>{{ assignment.course.title }}</h5>
+                            <p class="text-muted mb-2">{{ assignment.course.short_description }}</p>
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-tag"></i> {{ assignment.course.category.name|default:"Uncategorized" }}
+                                    &nbsp;|&nbsp;
+                                    <i class="fas fa-signal"></i> {{ assignment.course.level|title }}
+                                    &nbsp;|&nbsp;
+                                    <i class="fas fa-calendar"></i> Assigned {{ assignment.assigned_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+                            <p class="mb-1"><strong>Assigned by:</strong> {{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.email }}</p>
+                            <p class="mb-0">
+                                <strong>Your Permissions:</strong>
+                                {% if assignment.can_edit_content %}
+                                    <span class="badge bg-primary">Edit Content</span>
+                                {% endif %}
+                                {% if assignment.can_edit_details %}
+                                    <span class="badge bg-info">Edit Details</span>
+                                {% endif %}
+                                {% if assignment.can_publish %}
+                                    <span class="badge bg-success">Can Publish</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <form method="post" action="{% url 'courses:teacher_accept_assignment' assignment.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success mb-2 w-100">
+                                    <i class="fas fa-check"></i> Accept Assignment
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" 
+                                    data-bs-target="#rejectModal{{ assignment.id }}">
+                                <i class="fas fa-times"></i> Reject Assignment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reject Modal -->
+            <div class="modal fade" id="rejectModal{{ assignment.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">Reject Assignment</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="post" action="{% url 'courses:teacher_reject_assignment' assignment.id %}">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <p>Are you sure you want to reject this course assignment?</p>
+                                <p><strong>{{ assignment.course.title }}</strong></p>
+                                <div class="mb-3">
+                                    <label for="reason{{ assignment.id }}" class="form-label">Reason (Optional)</label>
+                                    <textarea class="form-control" id="reason{{ assignment.id }}" name="reason" rows="3" 
+                                              placeholder="Provide a reason for rejection..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Accepted Assignments -->
+    {% if accepted_assignments %}
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Accepted Assignments ({{ accepted_count }})</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">You have accepted these course assignments and can now work on them.</p>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Category</th>
+                            <th>Permissions</th>
+                            <th>Accepted On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in accepted_assignments %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if assignment.course.thumbnail %}
+                                    <img src="{{ assignment.course.thumbnail.url }}" alt="{{ assignment.course.title }}" 
+                                         class="me-2" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ assignment.course.title }}</strong><br>
+                                        <small class="text-muted">{{ assignment.course.short_description|truncatewords:10 }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ assignment.course.category.name|default:"Uncategorized" }}</span><br>
+                                <small class="text-muted">{{ assignment.course.level|title }}</small>
+                            </td>
+                            <td>
+                                {% if assignment.can_edit_content %}
+                                    <span class="badge bg-primary">Content</span>
+                                {% endif %}
+                                {% if assignment.can_edit_details %}
+                                    <span class="badge bg-info">Details</span>
+                                {% endif %}
+                                {% if assignment.can_publish %}
+                                    <span class="badge bg-success">Publish</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ assignment.accepted_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td>
+                                <a href="{% url 'courses:teacher_course_edit' assignment.course.id %}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-edit"></i> Manage Course
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Rejected Assignments -->
+    {% if rejected_assignments %}
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-ban"></i> Rejected Assignments</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Course</th>
+                            <th>Rejected On</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in rejected_assignments %}
+                        <tr>
+                            <td>{{ assignment.course.title }}</td>
+                            <td><small>{{ assignment.rejected_at|date:"M d, Y" }}</small></td>
+                            <td><small class="text-muted">{{ assignment.rejection_reason|default:"No reason provided" }}</small></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- No Assignments -->
+    {% if not pending_assignments and not accepted_assignments and not rejected_assignments %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-inbox fa-5x text-muted mb-3"></i>
+            <h4>No Course Assignments Yet</h4>
+            <p class="text-muted">You haven't been assigned any courses by the platform admin yet.</p>
+            <p class="text-muted">Once assigned, you'll be able to view and accept course assignments here.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

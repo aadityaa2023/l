@@ -26,3 +26,4 @@ celerybeat-schedule
 
 # Environment files (production/staging)
 .env.production
+.env.local

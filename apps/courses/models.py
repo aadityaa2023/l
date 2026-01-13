@@ -7,12 +7,26 @@ import uuid
 
 
 class Category(models.Model):
-    """Category for courses"""
+    """Category for courses with hierarchical subcategory support"""
     
-    name = models.CharField(_('name'), max_length=100, unique=True)
+    name = models.CharField(_('name'), max_length=100)
     slug = models.SlugField(_('slug'), unique=True, blank=True)
     description = models.TextField(_('description'), blank=True)
-    icon = models.CharField(_('icon class'), max_length=50, blank=True, help_text="CSS icon class")
+    icon = models.CharField(_('icon class'), max_length=50, blank=True, help_text="CSS icon class (e.g., fas fa-code)")
+    
+    # Hierarchical structure
+    parent = models.ForeignKey(
+        'self', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='subcategories',
+        help_text="Leave empty for main category, select a category to create subcategory"
+    )
+    
+    # Display settings
+    display_order = models.IntegerField(_('display order'), default=0, help_text="Lower numbers appear first")
+    color = models.CharField(_('color code'), max_length=7, default='#667eea', help_text="Hex color code for UI")
     
     is_active = models.BooleanField(_('active'), default=True)
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
@@ -21,15 +35,71 @@ class Category(models.Model):
     class Meta:
         verbose_name = _('category')
         verbose_name_plural = _('categories')
-        ordering = ['name']
+        ordering = ['display_order', 'name']
+        unique_together = [['name', 'parent']]
 
     def __str__(self):
+        if self.parent:
+            return f"{self.parent.name} > {self.name}"
         return self.name
     
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            if self.parent:
+                self.slug = f"{slugify(self.parent.name)}-{base_slug}"
+            else:
+                self.slug = base_slug
         super().save(*args, **kwargs)
+    
+    @property
+    def full_name(self):
+        """Get full category path"""
+        if self.parent:
+            return f"{self.parent.name} > {self.name}"
+        return self.name
+    
+    @property
+    def is_subcategory(self):
+        """Check if this is a subcategory"""
+        return self.parent is not None
+    
+    @property
+    def rgba_background(self):
+        """Get rgba color for background with alpha 0.125"""
+        hex_color = self.color.lstrip('#')
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        return f'rgba({r}, {g}, {b}, 0.125)'
+    
+    @property
+    def rgba_border(self):
+        """Get rgba color for border with alpha 0.25"""
+        hex_color = self.color.lstrip('#')
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        return f'rgba({r}, {g}, {b}, 0.25)'
+    
+    @property
+    def r(self):
+        """Red component"""
+        return int(self.color[1:3], 16)
+    
+    @property
+    def g(self):
+        """Green component"""
+        return int(self.color[3:5], 16)
+    
+    @property
+    def b(self):
+        """Blue component"""
+        return int(self.color[5:7], 16)
+    
+    def get_all_subcategories(self):
+        """Get all subcategories recursively"""
+        return self.subcategories.filter(is_active=True)
 
 
 class Course(models.Model):
@@ -56,9 +126,20 @@ class Course(models.Model):
     # Relations
     teacher = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='courses',
-        limit_choices_to={'role': 'teacher'}
+        limit_choices_to={'role': 'teacher'},
+        help_text="Assigned teacher for this course (assigned by platform admin)"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_courses',
+        help_text="Platform admin who created this course"
     )
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='courses')
     
