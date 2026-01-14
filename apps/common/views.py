@@ -97,3 +97,62 @@ class BannerViewSet(viewsets.ReadOnlyModelViewSet):
             'count': queryset.count(),
             'results': serializer.data
         })
+
+
+# ---------------------------------------------------------------------------
+# Static site pages (About / Contact / Policies)
+# ---------------------------------------------------------------------------
+from django.shortcuts import render, redirect
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib import messages
+
+
+def about_view(request):
+    """Render About Us page"""
+    return render(request, 'pages/about.html')
+
+
+def contact_view(request):
+    """Render Contact Us page and handle simple contact form POST"""
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        subject = request.POST.get('subject', 'Website contact').strip()
+        message = request.POST.get('message', '').strip()
+
+        if not (name and email and message):
+            messages.error(request, 'Please fill in all required fields.')
+            return render(request, 'pages/contact.html', {'name': name, 'email': email, 'subject': subject, 'message': message})
+
+        # Send email to site admin / support
+        try:
+            full_message = f"From: {name} <{email}>\n\n{message}"
+            send_mail(
+                subject=f"[Contact] {subject}",
+                message=full_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[getattr(settings, 'SUPPORT_EMAIL', settings.DEFAULT_FROM_EMAIL)],
+                fail_silently=False,
+            )
+            messages.success(request, 'Your message has been sent. We will contact you shortly.')
+            return redirect('contact')
+        except Exception:
+            messages.error(request, 'Failed to send message. Please try again later or contact support via email.')
+
+    return render(request, 'pages/contact.html')
+
+
+def privacy_view(request):
+    """Render Privacy Policy page"""
+    return render(request, 'pages/privacy.html')
+
+
+def terms_view(request):
+    """Render Terms & Conditions page"""
+    return render(request, 'pages/terms.html')
+
+
+def refund_policy_view(request):
+    """Render Refund / Cancellation Policy page"""
+    return render(request, 'pages/refund_policy.html')

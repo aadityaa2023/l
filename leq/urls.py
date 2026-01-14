@@ -14,6 +14,7 @@ from apps.users.otp_views import (
     OTPLoginView,
     OTPLogoutView,
 )
+from apps.common import views as common_views
 
 # Django admin disabled - using custom platformadmin instead
 # admin.site.site_header = "Audio Learning Platform Admin"
@@ -54,6 +55,13 @@ urlpatterns = [
     path('courses/', include('apps.courses.urls')),
     path('payments/', include('apps.payments.urls')),
     path('notifications/', include('apps.notifications.urls')),
+
+    # Static informational pages
+    path('about/', common_views.about_view, name='about'),
+    path('contact/', common_views.contact_view, name='contact'),
+    path('privacy/', common_views.privacy_view, name='privacy'),
+    path('terms/', common_views.terms_view, name='terms'),
+    path('refund-policy/', common_views.refund_policy_view, name='refund_policy'),
 ]
 
 

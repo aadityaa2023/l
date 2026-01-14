@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Terms &amp; Conditions - LeQ{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<section class="py-5" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="fw-bold mb-3 text-white"><i class="fas fa-file-contract me-3"></i>Terms &amp; Conditions</h1>
+                <p class="lead text-white opacity-90">Please read these terms carefully</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card-custom p-5 bg-dark text-white">
+                    <div class="alert bg-dark text-white" style="background: linear-gradient(135deg, rgba(17,17,17,0.6), rgba(20,20,20,0.6)); border-left: 4px solid var(--primary-color);">
+                        <p class="mb-0 text-white" style="line-height: 1.8;"><i class="fas fa-info-circle me-2" style="color: var(--primary-color);"></i>Welcome to LeQ. By accessing or using our services, you agree to be bound by these Terms &amp; Conditions. Please read them carefully.</p>
+                    </div>
+
+                    <div class="mt-5">
+                        <div class="d-flex align-items-start mb-4">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-user-check text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-2 text-white">Using the Service</h5>
+                                <p class="text-white-50" style="line-height: 1.8;">You must be at least 13 years old to create an account. You agree not to misuse the service or attempt to access other users' accounts.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start mb-4">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-credit-card text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-2 text-white">Payments and Subscriptions</h5>
+                                <p class="text-white-50" style="line-height: 1.8;">All payments are processed through our payment provider. Subscription cancellations and refunds are subject to our Refund Policy.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start mb-4">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #4facfe, #00f2fe); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-copyright text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-2 text-white">Intellectual Property</h5>
+                                <p class="text-white-50" style="line-height: 1.8;">All content on LeQ is owned by the platform or its licensors. You may not redistribute or copy content without permission.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #fa709a, #fee140); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-envelope text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-2 text-white">Contact</h5>
+                                <p class="text-white-50" style="line-height: 1.8;">Questions about these terms should be sent to <a href="mailto:legal@leq.example" class="text-white text-decoration-underline">legal@leq.example</a>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

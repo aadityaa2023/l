@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Refund &amp; Cancellation Policy - LeQ{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<section class="py-5" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="fw-bold mb-3 text-white"><i class="fas fa-undo me-3"></i>Refund &amp; Cancellation Policy</h1>
+                <p class="lead text-white opacity-90">Important information about refunds</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card-custom p-5 bg-dark text-white">
+                    <div class="alert bg-dark text-white" style="border-left: 4px solid #ffc107; background: linear-gradient(135deg, rgba(17,17,17,0.6), rgba(20,20,20,0.6));">
+                        <p class="mb-0 text-white"><i class="fas fa-exclamation-triangle me-2"></i><strong>Last updated:</strong> Jan 1, 2024</p>
+                    </div>
+
+                    <div class="card-custom p-4 mb-4" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05)); border: 2px solid #ffc107;">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 60px; height: 60px; background: #ffc107; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-info-circle fa-2x text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-2 text-dark">Summary</h5>
+                                <p class="mb-0 text-dark" style="line-height: 1.8;">All sales are final. Once a course is purchased, refunds are not provided under normal circumstances. Refunds may only be considered in exceptional cases at our sole discretion.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <div class="d-flex align-items-start mb-4">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-check-circle text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-3 text-white">Eligibility</h5>
+                                <ul class="text-white-50" style="line-height: 1.8;">
+                                    <li>No refunds are provided for course purchases once completed.</li>
+                                    <li>Refunds may be considered only in special circumstances such as technical issues preventing access to purchased content, duplicate purchases, or other exceptional cases.</li>
+                                    <li>All refund requests are subject to review and approval by our support team.</li>
+                                    <li>Subscription cancellations will remain active until the current billing period ends; no refunds for unused portions.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start mb-4">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-paper-plane text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-2 text-white">How to Request a Refund</h5>
+                                <p class="text-white-50" style="line-height: 1.8;">If you believe your situation qualifies for a refund under special circumstances, please contact our support team directly at <a href="mailto:support@leq.example" class="text-white text-decoration-underline">support@leq.example</a> with detailed information about your case. Refund requests are reviewed on a case-by-case basis.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-start">
+                            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #4facfe, #00f2fe); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-clock text-white"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h5 class="fw-bold mb-2 text-white">Processing Time</h5>
+                                <p class="text-white-50" style="line-height: 1.8;">If a refund is approved, it will typically be processed within 5-7 business days. Please note that approval is not guaranteed and depends on the specific circumstances of each case.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

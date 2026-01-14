@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Contact Us - LeQ{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<section class="py-5" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="fw-bold mb-3 text-white"><i class="fas fa-envelope me-3"></i>Contact Us</h1>
+                <p class="lead text-white opacity-90">We'd love to hear from you</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card-custom p-5 bg-dark text-white">
+                    <div class="text-center mb-4">
+                        <div style="width: 80px; height: 80px; margin: 0 auto; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-comments fa-2x text-white"></i>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-3 text-center text-white">Get In Touch</h3>
+                    <p class="text-white-50 mb-4 text-center">Have a question, feedback, or need help? Fill out the form below or reach us directly using the contact details.</p>
+
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-semibold text-white">Your Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required value="{{ name|default:'' }}" placeholder="Enter your full name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold text-white">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required value="{{ email|default:'' }}" placeholder="your.email@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="subject" class="form-label fw-semibold text-white">Subject</label>
+                            <input type="text" class="form-control" id="subject" name="subject" value="{{ subject|default:'' }}" placeholder="What is this regarding?">
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label fw-semibold text-white">Message</label>
+                            <textarea id="message" name="message" rows="6" class="form-control" required placeholder="Tell us how we can help you...">{{ message|default:'' }}</textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary-custom btn-lg">
+                                <i class="fas fa-paper-plane me-2"></i>Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="row g-4 mt-3">
+                    <div class="col-md-4">
+                        <div class="card-custom p-4 text-center h-100 bg-dark text-white">
+                            <div class="mb-3">
+                                <div style="width: 60px; height: 60px; margin: 0 auto; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-map-marker-alt fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <h6 class="fw-bold mb-2">Address</h6>
+                            <p class="text-white-50 small mb-0">123 Learning Lane<br>Study City, ST 12345</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-custom p-4 text-center h-100 bg-dark text-white">
+                            <div class="mb-3">
+                                <div style="width: 60px; height: 60px; margin: 0 auto; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-envelope fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <h6 class="fw-bold mb-2">Email</h6>
+                            <p class="text-white-50 small mb-0"><a href="mailto:support@leq.example" class="text-white text-decoration-underline">support@leq.example</a></p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-custom p-4 text-center h-100 bg-dark text-white">
+                            <div class="mb-3">
+                                <div style="width: 60px; height: 60px; margin: 0 auto; background: linear-gradient(135deg, #4facfe, #00f2fe); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-phone fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <h6 class="fw-bold mb-2">Phone</h6>
+                            <p class="text-white-50 small mb-0">+91 98765 43210</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
