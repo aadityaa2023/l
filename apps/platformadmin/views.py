@@ -1487,6 +1487,44 @@ def admin_category_delete(request, category_id):
     """Delete a category"""
     category = get_object_or_404(Category, id=category_id)
 
+    if request.method == 'POST':
+        category_name = category.name
+
+        # Capture old values for audit
+        old_vals = {
+            'name': category.name,
+            'description': category.description,
+            'parent_id': category.parent_id,
+            'is_active': category.is_active,
+        }
+
+        # Delete the category
+        category.delete()
+
+        # Log the action
+        try:
+            AdminLog.objects.create(
+                admin=request.user,
+                action='delete_category',
+                content_type='Category',
+                object_id=str(category_id),
+                object_repr=category_name,
+                old_values=old_vals,
+                new_values={},
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+        except Exception:
+            # Ensure deletion still succeeds even if logging fails
+            pass
+
+        messages.success(request, f'Category "{category_name}" deleted successfully!')
+        return redirect('platformadmin:admin_category_management')
+
+    context = get_context_data(request)
+    context['category'] = category
+
+    return render(request, 'platformadmin/category_delete_confirm.html', context)
+
 
 # ==================== PLATFORM ADMIN MODULE MANAGEMENT ====================
 
