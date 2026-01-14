@@ -13,6 +13,9 @@ PassengerStartupFile passenger_wsgi.py
 # Set environment to production
 SetEnv DJANGO_SETTINGS_MODULE leq.settings
 SetEnv PYTHON_ENV production
+# Tell Django where media files will be served from on this host
+# Adjust the path if your account uses a different home directory
+SetEnv MEDIA_ROOT /home9/leqaudio/public_html/media
 
 # Serve static files directly (bypass Django)
 <IfModule mod_rewrite.c>
