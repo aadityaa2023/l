@@ -282,8 +282,15 @@ else:
 # WhiteNoise configuration for static files on shared hosting
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Media files (user uploaded content)
+# Allow overriding via environment variable on shared hosts (e.g. point to
+# `/home/<user>/public_html/media`), otherwise default to project `media/`.
+MEDIA_URL = env('MEDIA_URL', default='/media/')
+_media_root_env = env('MEDIA_ROOT', default=None)
+if _media_root_env:
+    MEDIA_ROOT = Path(_media_root_env)
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
