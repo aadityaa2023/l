@@ -285,11 +285,14 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Media files (user uploaded content)
 # Allow overriding via environment variable on shared hosts (e.g. point to
 # `/home/<user>/public_html/media`), otherwise default to project `media/`.
-MEDIA_URL = env('MEDIA_URL', default='/media/')
-# Ensure MEDIA_ROOT matches the hosting `SetEnv MEDIA_ROOT` path from .htaccess.
-# Prefer an explicit environment variable when provided, otherwise use the
-# shared-host default path used in Apache: `/home9/leqaudio/public_html/media`.
-MEDIA_ROOT = Path(env('MEDIA_ROOT', default='/home9/leqaudio/public_html/media'))
+# Force MEDIA_URL to the canonical media URL path used by Apache on this host.
+# Do NOT allow overriding via environment variables to keep routing consistent
+# with the `.htaccess` rewrite rules that serve `/media/` directly.
+MEDIA_URL = '/media/'
+# Force MEDIA_ROOT to the shared-host path used in Apache `.htaccess`.
+# Do NOT allow overriding via environment variables to ensure media
+# files are always served from the public_html media directory on this host.
+MEDIA_ROOT = Path('/home9/leqaudio/public_html/media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
