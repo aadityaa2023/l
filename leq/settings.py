@@ -294,8 +294,8 @@ MEDIA_URL = '/media/'
 # files are always served from the public_html media directory on this host.
 MEDIA_ROOT = Path('/home9/leqaudio/public_html/media')
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
