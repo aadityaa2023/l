@@ -67,6 +67,7 @@
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border-color);
             padding: 0.75rem 0;
+            z-index: 1030; /* keep navbar above other sticky elements */
         }
         
         .navbar-brand {
@@ -180,6 +181,25 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        /* Course list image overlay to improve badge/text contrast */
+        .card-image-overlay {
+            position: absolute;
+            inset: 0 0 0 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%);
+            border-radius: 12px 12px 0 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .card-custom .card-img-top {
+            position: relative;
+            z-index: 0;
+        }
+
+        .card-custom .card-badge {
+            z-index: 2; /* badges should be above the overlay */
         }
         
         .audio-card-play {
@@ -514,7 +534,7 @@
                     <h5 class="fw-bold mb-3" style="color: var(--primary-color);">
                         <i class="fas fa-headphones-alt me-2"></i>LeQ
                     </h5>
-                    <p class="text-muted" style="font-size: 0.9rem;">
+                    <p style="font-size: 0.9rem; color: #FFFFFF !important;">
                         Your ultimate destination for audio learning. Transform every moment into a learning opportunity.
                     </p>
                     <div class="social-links mt-3 d-flex gap-3">

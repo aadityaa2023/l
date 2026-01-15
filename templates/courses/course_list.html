@@ -102,22 +102,25 @@
                     <div class="col-md-6 col-lg-4">
                         <div class="card-custom h-100">
                             <!-- Course Thumbnail -->
-                            <div class="position-relative">
+                            <div class="position-relative" style="border-radius:12px 12px 0 0; overflow:hidden;">
                                 {% if course.thumbnail %}
-                                    <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}" style="height: 200px; object-fit: cover; border-radius: 12px 12px 0 0;">
+                                    <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}" style="width:100%; max-width:600px; aspect-ratio:1/1; object-fit:cover; display:block; border-radius: 0;">
                                 {% else %}
-                                    <div class="bg-gradient text-white d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;">
+                                    <div class="bg-gradient text-white d-flex align-items-center justify-content-center" style="width:100%; max-width:600px; aspect-ratio:1/1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                         <i class="fas fa-headphones fa-4x opacity-50"></i>
                                     </div>
                                 {% endif %}
-                                
+
+                                <!-- subtle bottom overlay for better contrast with badges/text -->
+                                <div class="card-image-overlay"></div>
+
                                 {% if course.is_free %}
-                                <span class="badge bg-success position-absolute top-0 start-0 m-3">FREE</span>
+                                <span class="badge bg-success card-badge position-absolute top-0 start-0 m-3">FREE</span>
                                 {% elif course.discount_price %}
-                                <span class="badge bg-danger position-absolute top-0 start-0 m-3">SALE</span>
+                                <span class="badge bg-danger card-badge position-absolute top-0 start-0 m-3">SALE</span>
                                 {% endif %}
-                                
-                                <span class="badge bg-dark position-absolute top-0 end-0 m-3">
+
+                                <span class="badge bg-dark card-badge position-absolute top-0 end-0 m-3">
                                     {{ course.level|title }}
                                 </span>
                             </div>
@@ -144,10 +147,19 @@
                                 
                                 <!-- Teacher Info -->
                                 <div class="d-flex align-items-center mb-3">
-                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
-                                        {{ course.teacher.first_name.0|default:course.teacher.email.0|upper }}
-                                    </div>
-                                    <small class="text-muted">{{ course.teacher.get_full_name|default:course.teacher.email }}</small>
+                                    {% if course.teacher %}
+                                        {% with display_name=course.teacher.first_name|default:course.teacher.email %}
+                                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                                {{ display_name|default:''|slice:":1"|upper }}
+                                            </div>
+                                            <small class="text-muted">{{ course.teacher.get_full_name|default:course.teacher.email }}</small>
+                                        {% endwith %}
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                            {{ course.title|default:""|slice:":1"|upper }}
+                                        </div>
+                                        <small class="text-muted">Unknown Instructor</small>
+                                    {% endif %}
                                 </div>
                                 
                                 <!-- Course Stats -->

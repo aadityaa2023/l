@@ -2,6 +2,7 @@
 Course views for browsing, enrollment, and learning
 """
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
@@ -298,7 +299,12 @@ def lesson_view(request, slug):
 
     # Allow access if enrolled, or lesson is marked free preview, or lesson is first lesson
     if not (is_enrolled or lesson.is_free_preview or (first_lesson and lesson.id == first_lesson.id)):
-        # If user is not authenticated, direct to login to encourage enrollment
+        # If user is not authenticated, send them to login with next
+        if not request.user.is_authenticated:
+            messages.info(request, 'Please log in to access this lesson.')
+            return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+
+        # Otherwise, encourage enrollment and send to course detail
         messages.info(request, 'Please enroll to access this lesson.')
         return redirect('courses:course_detail', slug=course.slug)
     
@@ -326,11 +332,14 @@ def lesson_view(request, slug):
             lesson=lesson
         ).order_by('-created_at')
     
-    # Get listening sessions for this lesson
-    sessions = ListeningSession.objects.filter(
-        user=request.user,
-        lesson=lesson
-    ).order_by('-started_at')[:5]
+    # Get listening sessions for this lesson (only for authenticated users)
+    if request.user.is_authenticated:
+        sessions = ListeningSession.objects.filter(
+            user=request.user,
+            lesson=lesson
+        ).order_by('-started_at')[:5]
+    else:
+        sessions = []
     
     # Get all media files for this lesson
     media_files = lesson.media_files.all().order_by('order')
@@ -402,6 +411,10 @@ def lesson_audio_player(request, slug):
         first_lesson = None
 
     if not (is_enrolled or lesson.is_free_preview or (first_lesson and lesson.id == first_lesson.id)):
+        if not request.user.is_authenticated:
+            messages.info(request, 'Please log in to access this lesson.')
+            return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+
         messages.info(request, 'Please enroll to access this lesson.')
         return redirect('courses:course_detail', slug=course.slug)
     
@@ -461,6 +474,10 @@ def lesson_video_player(request, slug):
         first_lesson = None
 
     if not (is_enrolled or lesson.is_free_preview or (first_lesson and lesson.id == first_lesson.id)):
+        if not request.user.is_authenticated:
+            messages.info(request, 'Please log in to access this lesson.')
+            return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+
         messages.info(request, 'Please enroll to access this lesson.')
         return redirect('courses:course_detail', slug=course.slug)
     
