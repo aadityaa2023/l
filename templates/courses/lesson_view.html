@@ -16,6 +16,18 @@ footer { display: none !important; }
 .list-group-item:hover { background-color: var(--bg-card-hover) !important; }
 .btn-outline-primary { border-color: var(--primary-color) !important; color: var(--primary-color) !important; }
 .btn-outline-primary:hover { background-color: var(--primary-color) !important; color: white !important; }
+
+/* Sidebar tweaks for dark mode and UX */
+.sidebar { background: var(--bg-secondary); color: var(--text-primary); }
+.sidebar a { color: var(--text-secondary); }
+.sidebar a:hover { color: var(--text-primary); text-decoration: none; }
+
+@media (max-width: 991px) {
+    .sidebar { max-height: 40vh; overflow-y: auto; }
+}
+
+.prose { color: var(--text-primary); }
+
 </style>
 {% endblock %}
 
@@ -23,8 +35,8 @@ footer { display: none !important; }
 <div class="container-fluid px-0">
     <div class="row g-0">
         <!-- Sidebar -->
-        <div class="col-lg-3 bg-dark border-end" style="height: calc(100vh - 76px); overflow-y: auto;">
-            <div class="p-4">
+        <div class="col-lg-3 sidebar border-end" style="height: calc(100vh - 76px); overflow-y: auto;">
+            <div class="p-3 p-lg-4">
                 <a href="{% url 'courses:course_learn' lesson.module.course.id %}" class="btn btn-outline-primary btn-sm mb-3">
                     <i class="fas fa-arrow-left me-2"></i>Back to Course
                 </a>
@@ -41,8 +53,8 @@ footer { display: none !important; }
                 <!-- Media Players -->
                 {% if lesson.lesson_type == 'video' or lesson.lesson_type == 'audio' %}
                     <!-- Main Lesson Content - Click to Open Player -->
-                    {% if lesson.audio_file or media_files %}
-                    <div class="card mb-4 border-0 shadow-sm overflow-hidden" style="cursor: pointer; transition: all 0.3s;" onclick="window.open('{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.id %}{% else %}{% url 'courses:lesson_audio_player' lesson.id %}{% endif %}', '_blank')">
+                    {% if lesson.audio_file or media_files.exists %}
+                    <div class="card mb-4 border-0 shadow-sm overflow-hidden" style="cursor: pointer; transition: all 0.3s;" onclick="window.open('{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}', '_blank')">
                         <div class="position-relative">
                             <!-- Thumbnail/Cover -->
                             <div class="ratio ratio-16x9 bg-dark">
@@ -117,7 +129,7 @@ footer { display: none !important; }
                             <div class="list-group">
                                 {% for media in media_files %}
                                     {% if forloop.counter > 1 %}
-                                    <a href="{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.id %}{% else %}{% url 'courses:lesson_audio_player' lesson.id %}{% endif %}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <a href="{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-{% if media.media_type == 'video' %}video{% else %}headphones{% endif %} me-2 text-primary"></i>
                                             <span>{{ forloop.counter }}. {% if media.title %}{{ media.title }}{% else %}{{ media.get_media_type_display }} File{% endif %}</span>

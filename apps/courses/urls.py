@@ -16,17 +16,17 @@ urlpatterns = [
     
     # Learning Interface
     path('<int:course_id>/learn/', views.course_learn, name='course_learn'),
-    path('lesson/<int:lesson_id>/', views.lesson_view, name='lesson_view'),
-    path('lesson/<int:lesson_id>/complete/', views.mark_lesson_complete, name='mark_lesson_complete'),
-    path('lesson/<int:lesson_id>/audio/', views.serve_lesson_audio, name='serve_lesson_audio'),
+    path('lesson/<slug:slug>/', views.lesson_view, name='lesson_view'),
+    path('lesson/<slug:slug>/complete/', views.mark_lesson_complete, name='mark_lesson_complete'),
+    path('lesson/<slug:slug>/audio/', views.serve_lesson_audio, name='serve_lesson_audio'),
     
     # Lesson Players
-    path('lessons/<int:lesson_id>/audio-player/', views.lesson_audio_player, name='lesson_audio_player'),
-    path('lessons/<int:lesson_id>/video-player/', views.lesson_video_player, name='lesson_video_player'),
-    path('lessons/<int:lesson_id>/progress/', views.lesson_update_progress, name='lesson_update_progress'),
+    path('lessons/<slug:slug>/audio-player/', views.lesson_audio_player, name='lesson_audio_player'),
+    path('lessons/<slug:slug>/video-player/', views.lesson_video_player, name='lesson_video_player'),
+    path('lessons/<slug:slug>/progress/', views.lesson_update_progress, name='lesson_update_progress'),
     
     # Notes
-    path('lesson/<int:lesson_id>/note/', views.create_note, name='create_note'),
+    path('lesson/<slug:slug>/note/', views.create_note, name='create_note'),
     path('note/<int:note_id>/delete/', views.delete_note, name='delete_note'),
     
     # Reviews

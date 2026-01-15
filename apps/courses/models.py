@@ -248,6 +248,7 @@ class Lesson(models.Model):
     
     # Basic Info
     title = models.CharField(_('title'), max_length=255)
+    slug = models.SlugField(_('slug'), max_length=255, blank=True)
     description = models.TextField(_('description'), blank=True)
     lesson_type = models.CharField(_('lesson type'), max_length=10, choices=LESSON_TYPE_CHOICES, default='audio')
     order = models.PositiveIntegerField(_('order'), default=0)
@@ -274,13 +275,29 @@ class Lesson(models.Model):
         verbose_name_plural = _('lessons')
         ordering = ['module', 'order']
         unique_together = [['module', 'order']]
+        constraints = [
+            models.UniqueConstraint(fields=['course', 'slug'], name='unique_lesson_slug_per_course')
+        ]
         indexes = [
             models.Index(fields=['course', 'is_published']),
             models.Index(fields=['module', 'order']),
+            models.Index(fields=['course', 'slug']),
         ]
 
     def __str__(self):
         return f"{self.module.title} - {self.title}"
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            while Lesson.objects.filter(course=self.course, slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
     
     @property
     def get_audio_url(self):

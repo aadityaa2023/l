@@ -66,11 +66,19 @@
                 
                 <div class="d-flex align-items-center text-white">
                     <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                        {{ course.teacher.first_name.0|default:course.teacher.email.0|upper }}
+                        {% if course.teacher %}
+                            {{ course.teacher.first_name|default:course.teacher.email|slice:":1"|upper }}
+                        {% else %}
+                            ?
+                        {% endif %}
                     </div>
                     <div>
                         <small class="d-block text-white-50">Created by</small>
-                        <strong>{{ course.teacher.get_full_name|default:course.teacher.email }}</strong>
+                        {% if course.teacher %}
+                            <strong>{{ course.teacher.get_full_name|default:course.teacher.email }}</strong>
+                        {% else %}
+                            <strong>Unknown</strong>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -140,10 +148,10 @@
                                     {% for lesson in module.lessons.all %}
                                     {% comment %}Make the whole lesson row clickable. If lesson has no duration_seconds, fall back to first media file's duration.{% endcomment %}
                                     <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                                        {% if lesson.is_free_preview or is_enrolled %}
-                                        <a href="{% url 'courses:lesson_view' lesson.id %}" class="w-100 d-flex justify-content-between align-items-center text-decoration-none text-dark">
+                                        {% if is_enrolled or lesson.is_free_preview or lesson.id in visible_lesson_ids %}
+                                        <a href="{% url 'courses:lesson_view' lesson.slug %}" class="w-100 d-flex justify-content-between align-items-center text-decoration-none text-dark">
                                         {% else %}
-                                        <a href="{% url 'account_login' %}?next={% url 'courses:lesson_view' lesson.id %}" class="w-100 d-flex justify-content-between align-items-center text-decoration-none text-muted">
+                                        <a href="{% url 'account_login' %}?next={% url 'courses:lesson_view' lesson.slug %}" class="w-100 d-flex justify-content-between align-items-center text-decoration-none text-muted">
                                         {% endif %}
                                             <div class="d-flex align-items-center gap-2">
                                                 {% if lesson.lesson_type == 'video' %}

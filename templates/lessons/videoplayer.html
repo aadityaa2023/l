@@ -564,10 +564,25 @@
         // Initialize Video
         function initVideo() {
             console.log('[VideoPlayer] Initializing with URL:', videoUrl);
+            console.log('[VideoPlayer] Lesson ID:', lessonId);
             
             if (!videoUrl) {
                 console.error('[VideoPlayer] No video URL provided');
-                alert('No video file available for this lesson. Please contact support.');
+                hideLoader();
+                
+                // Show user-friendly error message
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; color: #fff; padding: 20px; text-align: center;';
+                errorDiv.innerHTML = `
+                    <div style="max-width: 400px;">
+                        <i data-lucide="video-off" style="width: 64px; height: 64px; margin-bottom: 20px; color: #ef4444;"></i>
+                        <h2 style="font-size: 24px; margin-bottom: 12px;">No Video Available</h2>
+                        <p style="color: #a1a1aa; margin-bottom: 24px;">This lesson doesn't have a video file uploaded yet. Please check back later or contact your instructor.</p>
+                        <button onclick="window.close()" style="background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px;">Close Player</button>
+                    </div>
+                `;
+                container.appendChild(errorDiv);
+                lucide.createIcons();
                 return;
             }
             

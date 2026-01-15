@@ -19,8 +19,8 @@ footer { display: none !important; }
 <div class="container-fluid px-0">
     <div class="row g-0">
         <!-- Sidebar - Course Content -->
-        <div class="col-lg-3 bg-dark border-end text-white" style="height: calc(100vh - 76px); overflow-y: auto;">
-            <div class="p-4">
+        <div class="col-lg-3 sidebar border-end" style="height: calc(100vh - 76px); overflow-y: auto;">
+            <div class="p-3 p-lg-4">
                 <h5 class="fw-bold mb-3">{{ course.title }}</h5>
                 <div class="progress mb-4" style="height: 8px;">
                     <div class="progress-bar" role="progressbar" style="width: {{ enrollment.progress_percentage }}%; background-color: var(--primary-color);" 
@@ -33,7 +33,7 @@ footer { display: none !important; }
                     {% for module in modules %}
                     <div class="accordion-item border-0">
                         <h2 class="accordion-header">
-                                    <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} px-0" type="button" 
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} px-0" type="button" 
                                     data-bs-toggle="collapse" data-bs-target="#module{{ module.id }}">
                                 <div class="w-100">
                                     <div class="fw-semibold">{{ module.title }}</div>
@@ -45,8 +45,8 @@ footer { display: none !important; }
                              data-bs-parent="#modulesAccordion">
                             <div class="accordion-body px-0">
                                 {% for lesson in module.lessons.all %}
-                                          <a href="{% url 'courses:lesson_view' lesson.id %}" 
-                                              class="d-block text-decoration-none py-2 px-3 rounded mb-1 {% if lesson.id == current_lesson.id %}bg-primary text-white{% else %}text-white-50{% endif %} lesson-item">
+                                <a href="{% url 'courses:lesson_view' lesson.slug %}" 
+                                    class="d-block text-decoration-none py-2 px-3 rounded mb-1 lesson-item {% if lesson.id == current_lesson.id %}current-lesson{% else %}text-white-50{% endif %}">
                                     <div class="d-flex align-items-center justify-content-between">
                                         <div class="d-flex align-items-center">
                                             {% if lesson.id in completed_lessons %}
@@ -56,13 +56,13 @@ footer { display: none !important; }
                                             {% endif %}
                                             <div class="d-flex align-items-center gap-2">
                                                 {% if lesson.lesson_type == 'video' %}
-                                                    <i class="fas fa-play-circle" style="opacity: 0.5; font-size: 0.85rem;"></i>
+                                                    <i class="fas fa-play-circle" style="opacity: 0.6; font-size: 0.85rem;"></i>
                                                 {% elif lesson.lesson_type == 'audio' %}
-                                                    <i class="fas fa-volume-up" style="opacity: 0.5; font-size: 0.85rem;"></i>
+                                                    <i class="fas fa-volume-up" style="opacity: 0.6; font-size: 0.85rem;"></i>
                                                 {% elif lesson.lesson_type == 'text' %}
-                                                    <i class="fas fa-file-alt" style="opacity: 0.5; font-size: 0.85rem;"></i>
+                                                    <i class="fas fa-file-alt" style="opacity: 0.6; font-size: 0.85rem;"></i>
                                                 {% elif lesson.lesson_type == 'quiz' %}
-                                                    <i class="fas fa-question-circle" style="opacity: 0.5; font-size: 0.85rem;"></i>
+                                                    <i class="fas fa-question-circle" style="opacity: 0.6; font-size: 0.85rem;"></i>
                                                 {% endif %}
                                                 <span class="small">{{ lesson.title }}</span>
                                             </div>
@@ -70,13 +70,12 @@ footer { display: none !important; }
                                         <small class="text-white-50">{{ lesson.duration_minutes|default:0 }}m</small>
                                     </div>
                                 </a>
-                                {% endfor %}
 
                                 {# Show media files nested under each lesson in the sidebar (like Udemy) #}
-                                {% if module.lessons.count and lesson.media_files.count > 0 %}
-                                <div class="ms-3">
+                                {% if lesson.media_files.count > 0 %}
+                                <div class="ms-3 mb-2">
                                     {% for media in lesson.media_files.all %}
-                                    <a href="{% url 'courses:lesson_view' lesson.id %}#media{{ media.id }}" class="d-block small text-decoration-none py-1 px-3 rounded mb-1 {% if lesson.id == current_lesson.id %}text-white{% else %}text-white-50{% endif %}">
+                                    <a href="{% url 'courses:lesson_view' lesson.slug %}#media{{ media.id }}" class="d-block small text-decoration-none py-1 px-3 rounded mb-1 {% if lesson.id == current_lesson.id %}text-white{% else %}text-white-50{% endif %}">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div>
                                                 <i class="fas fa-file me-2" style="opacity:0.6"></i>
@@ -88,6 +87,7 @@ footer { display: none !important; }
                                     {% endfor %}
                                 </div>
                                 {% endif %}
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
@@ -117,7 +117,7 @@ footer { display: none !important; }
                     {% if current_lesson.lesson_type == 'video' or current_lesson.lesson_type == 'audio' %}
                         <!-- Click to Open Dedicated Player -->
                         {% if current_lesson.audio_file or current_lesson.media_files.all %}
-                        <div class="position-relative overflow-hidden rounded-3" style="cursor: pointer; transition: all 0.3s;" onclick="window.open('{% if current_lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' current_lesson.id %}{% else %}{% url 'courses:lesson_audio_player' current_lesson.id %}{% endif %}', '_blank')">
+                        <div class="position-relative overflow-hidden rounded-3" style="cursor: pointer; transition: all 0.3s;" onclick="window.open('{% if current_lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' current_lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' current_lesson.slug %}{% endif %}', '_blank')">
                             <!-- Thumbnail/Cover -->
                             <div class="ratio ratio-16x9 bg-dark">
                                 {% if course.thumbnail %}
@@ -188,14 +188,14 @@ footer { display: none !important; }
                 <!-- Lesson Navigation -->
                 <div class="d-flex justify-content-between mb-4">
                     {% if previous_lesson %}
-                    <a href="{% url 'courses:lesson_view' previous_lesson.id %}" class="btn btn-outline-custom">
+                    <a href="{% url 'courses:lesson_view' previous_lesson.slug %}" class="btn btn-outline-custom">
                         <i class="fas fa-chevron-left me-2"></i>Previous Lesson
                     </a>
                     {% else %}
                     <div></div>
                     {% endif %}
                     
-                    <form method="post" action="{% url 'courses:mark_lesson_complete' current_lesson.id %}" class="d-inline">
+                    <form method="post" action="{% url 'courses:mark_lesson_complete' current_lesson.slug %}" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success">
                             <i class="fas fa-check me-2"></i>Mark as Complete
@@ -203,7 +203,7 @@ footer { display: none !important; }
                     </form>
                     
                     {% if next_lesson %}
-                    <a href="{% url 'courses:lesson_view' next_lesson.id %}" class="btn btn-primary-custom">
+                    <a href="{% url 'courses:lesson_view' next_lesson.slug %}" class="btn btn-primary-custom">
                         Next Lesson<i class="fas fa-chevron-right ms-2"></i>
                     </a>
                     {% else %}
@@ -255,7 +255,7 @@ footer { display: none !important; }
                             <h5 class="fw-bold mb-4">My Notes</h5>
                             
                             <!-- Add Note Form -->
-                            <form method="post" action="{% url 'courses:create_note' current_lesson.id %}" class="mb-4">
+                            <form method="post" action="{% url 'courses:create_note' current_lesson.slug %}" class="mb-4">
                                 {% csrf_token %}
                                 <div class="mb-3">
                                     <textarea name="content" class="form-control" rows="4" placeholder="Take notes here..." required></textarea>
@@ -335,14 +335,69 @@ footer { display: none !important; }
 </div>
 
 <style>
+    /* Sidebar styles */
+    .sidebar {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .sidebar h5 {
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    .sidebar .accordion-button {
+        background: transparent;
+        color: var(--text-primary);
+        padding: 0.5rem 0;
+        border-radius: 6px;
+    }
+
+    .sidebar .accordion-button:focus {
+        box-shadow: none;
+    }
+
     .lesson-item {
-        transition: all 0.2s ease;
+        transition: all 0.18s ease;
+        padding-left: 0.6rem;
     }
-    
+
+    .lesson-item .fa-play-circle,
+    .lesson-item .fa-volume-up,
+    .lesson-item .fa-file-alt,
+    .lesson-item .fa-question-circle {
+        opacity: 0.7;
+    }
+
     .lesson-item:hover {
-        background-color: rgba(91, 81, 216, 0.1) !important;
+        background-color: rgba(139,92,246,0.08) !important;
+        color: var(--text-primary) !important;
     }
-    
+
+    /* Active/current lesson */
+    .lesson-item.current-lesson {
+        background: linear-gradient(90deg, rgba(139,92,246,0.15), rgba(139,92,246,0.06));
+        color: var(--text-primary) !important;
+        border-left: 4px solid var(--primary-color);
+        padding-left: 0.4rem;
+    }
+
+    .lesson-item.current-lesson .small {
+        color: var(--text-primary) !important;
+    }
+
+    /* Smaller nested media links */
+    .sidebar a.small {
+        font-size: 0.85rem;
+    }
+
+    /* Sidebar scrollbar tweaks */
+    .sidebar::-webkit-scrollbar {
+        width: 8px;
+    }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 6px; }
+
     /* Player Card Hover Effects */
     [onclick*="player"]:hover {
         transform: scale(1.02);
@@ -365,6 +420,14 @@ footer { display: none !important; }
     [onclick*="player"] * {
         transition: all 0.3s ease;
     }
+
+    /* Responsive: make sidebar collapsible on small screens */
+    @media (max-width: 991px) {
+        .sidebar { height: auto; max-height: 40vh; overflow-y: auto; }
+        .col-lg-9 { padding-top: 1rem; }
+    }
+
+    .prose { color: var(--text-primary); }
 </style>
 
 <script>

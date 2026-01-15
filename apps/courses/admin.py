@@ -28,6 +28,14 @@ class ModuleInline(TabularInline):
     fields = ('title', 'order', 'is_published')
 
 
+class LessonMediaInline(TabularInline):
+    model = LessonMedia
+    extra = 1
+    fields = ('media_type', 'title', 'media_file', 'duration_seconds', 'order')
+    verbose_name = "Media File"
+    verbose_name_plural = "Media Files"
+
+
 class LessonInline(TabularInline):
     model = Lesson
     extra = 1
@@ -93,10 +101,12 @@ class ModuleAdmin(ModelAdmin):
 
 # @admin.register(Lesson)
 class LessonAdmin(ModelAdmin):
-    list_display = ('title', 'module', 'course', 'lesson_type', 'order', 'duration_seconds', 'is_published', 'is_free_preview')
+    list_display = ('title', 'slug', 'module', 'course', 'lesson_type', 'order', 'duration_seconds', 'is_published', 'is_free_preview')
     list_filter = ('lesson_type', 'is_published', 'is_free_preview', 'created_at')
-    search_fields = ('title', 'module__title', 'course__title')
+    search_fields = ('title', 'slug', 'module__title', 'course__title')
     readonly_fields = ('created_at', 'updated_at')
+    prepopulated_fields = {"slug": ("title",)}
+    inlines = [LessonMediaInline]
     
     # Unfold customizations
     list_filter_submit = True
@@ -107,7 +117,7 @@ class LessonAdmin(ModelAdmin):
     }
     
     fieldsets = (
-        (_('Basic Information'), {'fields': ('module', 'course', 'title', 'description', 'lesson_type', 'order')}),
+        (_('Basic Information'), {'fields': ('module', 'course', 'title', 'slug', 'description', 'lesson_type', 'order')}),
         (_('Audio Details'), {'fields': ('audio_file', 'duration_seconds', 'file_size')}),
         (_('Content'), {'fields': ('text_content',)}),
         (_('Settings'), {'fields': ('is_free_preview', 'is_published')}),

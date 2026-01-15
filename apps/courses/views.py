@@ -126,7 +126,26 @@ class CourseDetailView(DetailView):
         ).exclude(id=course.id).annotate(
             student_count=Count('enrollments')
         )[:4]
-        
+        # Determine visible lessons for non-enrolled users: only allow free previews + first lesson
+        # Build a set of lesson ids that should be visible without enrollment
+        visible_lesson_ids = set()
+        try:
+            # Query modules ordered to find the first lesson in the course
+            first_module = Module.objects.filter(course=course).order_by('order').prefetch_related('lessons').first()
+            if first_module:
+                first_lesson = first_module.lessons.order_by('order').first()
+                if first_lesson:
+                    visible_lesson_ids.add(first_lesson.id)
+        except Exception:
+            # fallback: no first lesson
+            first_lesson = None
+
+        # Add any lessons marked as free preview
+        free_preview_ids = Lesson.objects.filter(module__course=course, is_free_preview=True).values_list('id', flat=True)
+        visible_lesson_ids.update(list(free_preview_ids))
+
+        context['visible_lesson_ids'] = visible_lesson_ids
+
         return context
 
 
@@ -171,13 +190,21 @@ def course_learn(request, course_id):
     """Main learning interface for enrolled students"""
     course = get_object_or_404(Course, id=course_id)
     
-    # Check enrollment
-    enrollment = get_object_or_404(
-        Enrollment,
+    # Check enrollment - handle missing enrollment gracefully
+    enrollment = Enrollment.objects.filter(
         student=request.user,
         course=course,
         status='active'
-    )
+    ).first()
+
+    if not enrollment:
+        # Not enrolled: direct user to enroll or course detail with a friendly message
+        if course.price == 0 or getattr(course, 'is_free', False):
+            messages.info(request, 'This is a free course. Enrolling you now.')
+            return redirect('courses:enroll_course', course_id=course.id)
+        else:
+            messages.info(request, 'Please enroll to access this course.')
+            return redirect('courses:course_detail', slug=course.slug)
     
     # Get course modules and lessons
     modules = Module.objects.filter(course=course).prefetch_related(
@@ -244,39 +271,60 @@ def course_learn(request, course_id):
     return render(request, 'courses/course_learn.html', context)
 
 
-@login_required
-def lesson_view(request, lesson_id):
+def lesson_view(request, slug):
     """View a specific lesson"""
-    lesson = get_object_or_404(Lesson.objects.prefetch_related('media_files'), id=lesson_id)
+    lesson = get_object_or_404(Lesson.objects.prefetch_related('media_files'), slug=slug)
     course = lesson.module.course
+
+    # Determine enrollment (if user is authenticated)
+    enrollment = None
+    is_enrolled = False
+    if request.user.is_authenticated:
+        enrollment = Enrollment.objects.filter(
+            student=request.user,
+            course=course,
+            status='active'
+        ).first()
+        is_enrolled = bool(enrollment)
+
+    # Determine first lesson in course to allow preview
+    first_lesson = None
+    try:
+        first_module = Module.objects.filter(course=course).order_by('order').prefetch_related('lessons').first()
+        if first_module:
+            first_lesson = first_module.lessons.order_by('order').first()
+    except Exception:
+        first_lesson = None
+
+    # Allow access if enrolled, or lesson is marked free preview, or lesson is first lesson
+    if not (is_enrolled or lesson.is_free_preview or (first_lesson and lesson.id == first_lesson.id)):
+        # If user is not authenticated, direct to login to encourage enrollment
+        messages.info(request, 'Please enroll to access this lesson.')
+        return redirect('courses:course_detail', slug=course.slug)
     
-    # Check enrollment
-    enrollment = get_object_or_404(
-        Enrollment,
-        student=request.user,
-        course=course,
-        status='active'
-    )
+    # Get or create lesson progress for enrolled users
+    progress = None
+    if enrollment:
+        progress, created = LessonProgress.objects.get_or_create(
+            enrollment=enrollment,
+            lesson=lesson
+        )
     
-    # Get or create lesson progress
-    progress, created = LessonProgress.objects.get_or_create(
-        enrollment=enrollment,
-        lesson=lesson
-    )
-    
-    # Format resume time
-    if progress.last_position_seconds:
+    # Format resume time (only available for enrolled users with progress)
+    if progress and getattr(progress, 'last_position_seconds', 0):
         minutes = progress.last_position_seconds // 60
         seconds = progress.last_position_seconds % 60
         resume_time = f"{minutes}:{seconds:02d}"
     else:
         resume_time = None
     
-    # Get user's notes for this lesson
-    notes = Note.objects.filter(
-        enrollment=enrollment,
-        lesson=lesson
-    ).order_by('-created_at')
+    # Get user's notes for this lesson (only if enrolled)
+    notes = []
+    if enrollment:
+        notes = Note.objects.filter(
+            enrollment=enrollment,
+            lesson=lesson
+        ).order_by('-created_at')
     
     # Get listening sessions for this lesson
     sessions = ListeningSession.objects.filter(
@@ -296,16 +344,17 @@ def lesson_view(request, lesson_id):
         'notes': notes,
         'sessions': sessions,
         'media_files': media_files,
+        'is_preview': not is_enrolled,
     }
     
     return render(request, 'courses/lesson_view.html', context)
 
 
 @login_required
-def mark_lesson_complete(request, lesson_id):
+def mark_lesson_complete(request, slug):
     """Mark a lesson as complete"""
     if request.method == 'POST':
-        lesson = get_object_or_404(Lesson, id=lesson_id)
+        lesson = get_object_or_404(Lesson, slug=slug)
         enrollment = get_object_or_404(
             Enrollment,
             student=request.user,
@@ -327,25 +376,41 @@ def mark_lesson_complete(request, lesson_id):
     return JsonResponse({'success': False}, status=400)
 
 
-@login_required
-def lesson_audio_player(request, lesson_id):
+def lesson_audio_player(request, slug):
     """Dedicated audio player view for lessons"""
-    lesson = get_object_or_404(Lesson.objects.select_related('module__course'), id=lesson_id)
+    lesson = get_object_or_404(Lesson.objects.select_related('module__course'), slug=slug)
     course = lesson.module.course
+
+    # Determine enrollment (if user is authenticated)
+    enrollment = None
+    is_enrolled = False
+    if request.user.is_authenticated:
+        enrollment = Enrollment.objects.filter(
+            student=request.user,
+            course=course,
+            status='active'
+        ).first()
+        is_enrolled = bool(enrollment)
+
+    # Allow preview for first lesson or free preview
+    first_lesson = None
+    try:
+        first_module = Module.objects.filter(course=course).order_by('order').prefetch_related('lessons').first()
+        if first_module:
+            first_lesson = first_module.lessons.order_by('order').first()
+    except Exception:
+        first_lesson = None
+
+    if not (is_enrolled or lesson.is_free_preview or (first_lesson and lesson.id == first_lesson.id)):
+        messages.info(request, 'Please enroll to access this lesson.')
+        return redirect('courses:course_detail', slug=course.slug)
     
-    # Check enrollment
-    enrollment = get_object_or_404(
-        Enrollment,
-        student=request.user,
-        course=course,
-        status='active'
-    )
-    
-    # Get or create lesson progress
-    progress, created = LessonProgress.objects.get_or_create(
-        enrollment=enrollment,
-        lesson=lesson
-    )
+    progress = None
+    if enrollment:
+        progress, created = LessonProgress.objects.get_or_create(
+            enrollment=enrollment,
+            lesson=lesson
+        )
     
     # Select the best audio URL: prefer Lesson.audio_file, then media_files of type 'audio'
     audio_url = None
@@ -370,25 +435,41 @@ def lesson_audio_player(request, lesson_id):
     return render(request, 'lessons/audioplayer.html', context)
 
 
-@login_required
-def lesson_video_player(request, lesson_id):
+def lesson_video_player(request, slug):
     """Dedicated video player view for lessons"""
-    lesson = get_object_or_404(Lesson.objects.select_related('module__course'), id=lesson_id)
+    lesson = get_object_or_404(Lesson.objects.select_related('module__course').prefetch_related('media_files'), slug=slug)
     course = lesson.module.course
+
+    # Determine enrollment (if user is authenticated)
+    enrollment = None
+    is_enrolled = False
+    if request.user.is_authenticated:
+        enrollment = Enrollment.objects.filter(
+            student=request.user,
+            course=course,
+            status='active'
+        ).first()
+        is_enrolled = bool(enrollment)
+
+    # Allow preview for first lesson or free preview
+    first_lesson = None
+    try:
+        first_module = Module.objects.filter(course=course).order_by('order').prefetch_related('lessons').first()
+        if first_module:
+            first_lesson = first_module.lessons.order_by('order').first()
+    except Exception:
+        first_lesson = None
+
+    if not (is_enrolled or lesson.is_free_preview or (first_lesson and lesson.id == first_lesson.id)):
+        messages.info(request, 'Please enroll to access this lesson.')
+        return redirect('courses:course_detail', slug=course.slug)
     
-    # Check enrollment
-    enrollment = get_object_or_404(
-        Enrollment,
-        student=request.user,
-        course=course,
-        status='active'
-    )
-    
-    # Get or create lesson progress
-    progress, created = LessonProgress.objects.get_or_create(
-        enrollment=enrollment,
-        lesson=lesson
-    )
+    progress = None
+    if enrollment:
+        progress, created = LessonProgress.objects.get_or_create(
+            enrollment=enrollment,
+            lesson=lesson
+        )
     
     # Select the best video URL from Lesson.media_files with media_type 'video'
     video_url = None
@@ -396,7 +477,16 @@ def lesson_video_player(request, lesson_id):
         video_media = lesson.media_files.filter(media_type='video').order_by('order').first()
         if video_media:
             video_url = video_media.get_media_url
-    except Exception:
+            print(f"[Video Player] Found video for lesson '{lesson.title}': {video_url}")
+        else:
+            print(f"[Video Player] No video media found for lesson '{lesson.title}' (ID: {lesson.id})")
+            # Check if there are any media files at all
+            all_media = lesson.media_files.all()
+            print(f"[Video Player] Total media files for lesson: {all_media.count()}")
+            for media in all_media:
+                print(f"  - Media ID {media.id}: {media.media_type} - {media.media_file.name if media.media_file else 'No file'}")
+    except Exception as e:
+        print(f"[Video Player] Error getting video URL: {e}")
         video_url = None
 
     context = {
@@ -411,12 +501,12 @@ def lesson_video_player(request, lesson_id):
 
 
 @login_required
-def lesson_update_progress(request, lesson_id):
+def lesson_update_progress(request, slug):
     """Update lesson progress via AJAX"""
     if request.method == 'POST':
         import json
         
-        lesson = get_object_or_404(Lesson, id=lesson_id)
+        lesson = get_object_or_404(Lesson, slug=slug)
         enrollment = get_object_or_404(
             Enrollment,
             student=request.user,
@@ -458,10 +548,10 @@ def lesson_update_progress(request, lesson_id):
 
 # Notes
 @login_required
-def create_note(request, lesson_id):
+def create_note(request, slug):
     """Create a note for a lesson"""
     if request.method == 'POST':
-        lesson = get_object_or_404(Lesson, id=lesson_id)
+        lesson = get_object_or_404(Lesson, slug=slug)
         enrollment = get_object_or_404(
             Enrollment,
             student=request.user,
@@ -1164,12 +1254,12 @@ def teacher_lesson_media_delete(request, media_id):
 
 @login_required
 @require_http_methods(["GET", "HEAD"])
-def serve_lesson_audio(request, lesson_id):
+def serve_lesson_audio(request, slug):
     """
     Serve audio files with proper headers for browser playback.
     Supports range requests for seeking.
     """
-    lesson = get_object_or_404(Lesson, id=lesson_id)
+    lesson = get_object_or_404(Lesson, slug=slug)
     
     # Check if user has access to this lesson
     # Either enrolled or it's a free preview
