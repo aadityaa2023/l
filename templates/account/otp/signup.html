@@ -60,18 +60,18 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-                            <input type="tel" 
-                                   name="phone" 
-                                   class="form-control form-control-lg{% if form.phone.errors %} is-invalid{% endif %}" 
-                                   placeholder="+91XXXXXXXXXX" 
-                                   value="{{ form.phone.value|default:'' }}"
-                                   pattern="\+91[0-9]{10}"
-                                   required>
-                            {% if form.phone.errors %}
-                            <div class="invalid-feedback">{{ form.phone.errors }}</div>
-                            {% endif %}
-                            <small class="text-muted">Enter phone number starting with +91 followed by 10 digits</small>
+                               <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                <input type="tel" 
+                                    name="phone" 
+                                    class="form-control form-control-lg{% if form.phone.errors %} is-invalid{% endif %}" 
+                                    placeholder="XXXXXXXXXX" 
+                                    value="{{ form.phone.value|default:'' }}"
+                                    pattern="[0-9]{10}"
+                                    required>
+                                {% if form.phone.errors %}
+                                <div class="invalid-feedback">{{ form.phone.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">Enter a 10-digit mobile number (e.g. 9876543210)</small>
                         </div>
 
                         <div class="mb-3">

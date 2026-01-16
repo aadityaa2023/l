@@ -90,24 +90,21 @@ class OTPSignupForm(AllauthSignupForm):
         label=_('Phone Number'),
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-lg',
-            'placeholder': '+91XXXXXXXXXX',
-            'pattern': '\+91[0-9]{10}',
+            'placeholder': 'XXXXXXXXXX',
+            'pattern': r'[0-9]{10}',
         }),
-        help_text=_('Enter phone number starting with +91 followed by 10 digits')
+        help_text=_('Enter a 10-digit mobile number (e.g. 9876543210)')
     )
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '').strip()
         if not phone:
             raise forms.ValidationError(_('Phone number is required.'))
-        if not phone.startswith('+91'):
-            raise forms.ValidationError(_('Phone number must start with +91'))
-        if len(phone) != 13:  # +91 + 10 digits
-            raise forms.ValidationError(_('Phone number must be +91 followed by 10 digits'))
-        # Check if remaining characters are digits
-        digits_part = phone[3:]
-        if not digits_part.isdigit():
-            raise forms.ValidationError(_('Phone number must contain only digits after +91'))
+        # Only allow exactly 10 digits (no country prefix)
+        if len(phone) != 10:
+            raise forms.ValidationError(_('Phone number must contain exactly 10 digits.'))
+        if not phone.isdigit():
+            raise forms.ValidationError(_('Phone number must contain only digits.'))
         return phone
     
     def __init__(self, *args, **kwargs):
