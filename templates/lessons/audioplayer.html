@@ -608,9 +608,9 @@
         <div class="content-wrapper">
             <!-- Header -->
             <div class="header">
-                <button class="back-btn" onclick="window.history.back()">
-                    <i data-lucide="arrow-left"></i>
-                </button>
+                    <button class="back-btn" onclick="goBack()">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
                 <button class="menu-btn">
                     <i data-lucide="more-vertical"></i>
                 </button>
@@ -1328,6 +1328,28 @@
         }
         
         console.log('[AudioPlayer] Ready');
+    </script>
+    <script>
+        // Robust back navigation: try history, then referrer, then a sensible fallback.
+        function goBack(fallbackUrl) {
+            try {
+                if (window.history.length > 1) {
+                    window.history.back();
+                    return;
+                }
+
+                if (document.referrer) {
+                    window.location.href = document.referrer;
+                    return;
+                }
+
+                // final fallback
+                window.location.href = fallbackUrl || '/courses/';
+            } catch (e) {
+                console.warn('goBack failed, redirecting to fallback', e);
+                window.location.href = fallbackUrl || '/courses/';
+            }
+        }
     </script>
 </body>
 </html>

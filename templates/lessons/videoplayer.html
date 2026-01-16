@@ -91,6 +91,9 @@
             left: 0;
             right: 0;
             padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
             background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
             transition: opacity 0.3s;
             z-index: 5;
@@ -420,7 +423,10 @@
         
         <!-- Title Bar -->
         <div id="titleBar" class="title-bar">
-            <h1>{% if lesson %}{{ lesson.title }}{% else %}Video Player{% endif %}</h1>
+            <button class="control-btn" id="backBtn" onclick="goBack()" style="margin-left:0;">
+                <i data-lucide="arrow-left"></i>
+            </button>
+            <h1 style="flex:1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{% if lesson %}{{ lesson.title }}{% else %}Video Player{% endif %}</h1>
         </div>
         
         <!-- Central Play Button -->
@@ -845,6 +851,26 @@
             icon.setAttribute('data-lucide', isFullscreen ? 'minimize' : 'maximize');
             lucide.createIcons();
         });
+
+        // Robust back navigation: try history, then referrer, then fallback to courses list
+        function goBack(fallbackUrl) {
+            try {
+                if (window.history.length > 1) {
+                    window.history.back();
+                    return;
+                }
+
+                if (document.referrer) {
+                    window.location.href = document.referrer;
+                    return;
+                }
+
+                window.location.href = fallbackUrl || '/courses/';
+            } catch (e) {
+                console.warn('goBack failed, redirecting to fallback', e);
+                window.location.href = fallbackUrl || '/courses/';
+            }
+        }
         
         // Control Event Listeners
         playBtn.addEventListener('click', togglePlay);
