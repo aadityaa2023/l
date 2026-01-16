@@ -455,11 +455,6 @@
                     </li>
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'courses:my_courses' %}">
-                                <i class="fas fa-bookmark me-1"></i> My Library
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'users:dashboard' %}">
                                 <i class="fas fa-chart-line me-1"></i> Dashboard
                             </a>

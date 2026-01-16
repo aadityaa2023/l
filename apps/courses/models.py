@@ -208,6 +208,13 @@ class Course(models.Model):
     def is_on_sale(self):
         """Check if course is on sale"""
         return self.discount_price is not None and self.discount_price < self.price
+    
+    @property
+    def discount_percentage(self):
+        """Calculate discount percentage"""
+        if self.is_on_sale and self.price > 0:
+            return ((self.price - self.discount_price) / self.price) * 100
+        return 0
 
 
 class Module(models.Model):

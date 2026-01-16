@@ -1,15 +1,15 @@
 from django.shortcuts import render
-from django.db.models import Count, Avg, Q
+from django.db.models import Count, Avg, Q, Prefetch
 from django.contrib.auth import get_user_model
 
 from apps.courses.models import Course, Category, Enrollment, Review
 
 
 def home_view(request):
-    """Render the site's homepage template with real course data.
+    """Render the site's homepage template with category-wise course grouping.
 
-    Supplies `trending_courses`, `categories` and `stats` to the template so
-    the home page shows real content instead of dummy/sample cards.
+    Supplies category-grouped courses, trending courses, and stats to enable
+    KukuFM-style horizontal scrolling UI pattern.
     """
     User = get_user_model()
 
@@ -21,8 +21,40 @@ def home_view(request):
         .order_by('-active_students', '-created_at')[:12]
     )
 
-    # Active categories
-    categories = Category.objects.filter(is_active=True).order_by('name')[:20]
+    # Featured courses: manually curated featured courses
+    featured_courses = (
+        Course.objects.filter(status='published', is_featured=True)
+        .select_related('teacher', 'category')
+        .order_by('-created_at')[:12]
+    )
+
+    # Category-wise courses for horizontal scrolling sections
+    # Get active categories with published courses
+    categories_with_courses = []
+    active_categories = Category.objects.filter(
+        is_active=True,
+        parent=None  # Only main categories (not subcategories)
+    ).prefetch_related(
+        Prefetch(
+            'courses',
+            queryset=Course.objects.filter(status='published')
+            .select_related('teacher', 'category')
+            .order_by('-created_at')  # Limit applied per-category in Python
+        )
+    ).order_by('display_order', 'name')
+
+    # Build list of categories that have at least one published course
+    for category in active_categories:
+        # Use the prefetched queryset, convert to list and apply per-category limit in Python
+        prefetched_courses = list(category.courses.all())
+        if prefetched_courses:
+            categories_with_courses.append({
+                'category': category,
+                'courses': prefetched_courses[:15]
+            })
+
+    # All active categories for category filter pills
+    all_categories = Category.objects.filter(is_active=True).order_by('display_order', 'name')[:20]
 
     # Basic platform stats
     total_students = Enrollment.objects.filter(status='active').values('student').distinct().count()
@@ -41,7 +73,9 @@ def home_view(request):
 
     context = {
         'trending_courses': trending_courses,
-        'categories': categories,
+        'featured_courses': featured_courses,
+        'categories_with_courses': categories_with_courses,
+        'categories': all_categories,
         'stats': stats,
     }
 

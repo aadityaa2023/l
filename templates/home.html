@@ -4,7 +4,7 @@
 
 {% block extra_css %}
 <style>
-    /* Hero Gradient Background */
+    /* ==================== Hero Section ==================== */
     .hero-gradient {
         background: linear-gradient(135deg, #1A1A1A 0%, #0F0F0F 100%);
         position: relative;
@@ -31,7 +31,6 @@
         background: radial-gradient(ellipse at bottom left, rgba(167, 139, 250, 0.1), transparent);
     }
     
-    /* Floating Animation */
     @keyframes float {
         0%, 100% { transform: translateY(0px); }
         50% { transform: translateY(-20px); }
@@ -40,25 +39,333 @@
     .floating {
         animation: float 6s ease-in-out infinite;
     }
-    
-    /* Section Headers */
-    .section-header {
-        margin-bottom: 2rem;
+
+    /* ==================== Category Row Sections ==================== */
+    .category-row-section {
+        padding: 3rem 0;
+        position: relative;
     }
-    
-    .section-title {
+
+    .category-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .category-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--category-color), rgba(167, 139, 250, 0.8));
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .category-title {
         font-size: 1.75rem;
         font-weight: 700;
         color: var(--text-primary);
+        margin: 0;
+    }
+
+    .category-subtitle {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .view-all-link {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .view-all-link:hover {
+        color: var(--secondary-color);
+        transform: translateX(4px);
+    }
+
+    /* ==================== Horizontal Scroll Container ==================== */
+    .horizontal-scroll-wrapper {
+        position: relative;
+        margin: 0 -8px;
+    }
+
+    .horizontal-scroll-container {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .horizontal-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* ==================== Scroll Arrows ==================== */
+    .scroll-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 48px;
+        height: 48px;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        color: white;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.3s ease;
+        opacity: 0;
+    }
+
+    .horizontal-scroll-wrapper:hover .scroll-arrow {
+        opacity: 1;
+    }
+
+    .scroll-arrow:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .scroll-arrow-left {
+        left: 0;
+    }
+
+    .scroll-arrow-right {
+        right: 0;
+    }
+
+    /* Hide arrows on mobile */
+    @media (max-width: 768px) {
+        .scroll-arrow {
+            display: none !important;
+        }
+    }
+
+    /* ==================== Course Cards ==================== */
+    .course-card-wrapper {
+        flex: 0 0 auto;
+        width: 280px;
+    }
+
+    @media (max-width: 576px) {
+        .course-card-wrapper {
+            width: 200px;
+        }
+    }
+
+    @media (min-width: 1400px) {
+        .course-card-wrapper {
+            width: 300px;
+        }
+    }
+
+    .course-card {
+        background: var(--bg-card);
+        border-radius: 14px;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid var(--border-color);
+        height: 100%;
+    }
+
+    .course-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+        border-color: var(--primary-color);
+    }
+
+    .course-card-image {
+        position: relative;
+        width: 100%;
+        padding-top: 100%;
+        background: linear-gradient(135deg, #1A1A1A, #2A2A2A);
+        overflow: hidden;
+    }
+
+    .course-thumbnail {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .course-card:hover .course-thumbnail {
+        transform: scale(1.05);
+    }
+
+    .course-placeholder {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .course-play-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .course-card:hover .course-play-overlay {
+        opacity: 1;
+    }
+
+    .play-button {
+        width: 56px;
+        height: 56px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.3rem;
+        padding-left: 4px;
+        transform: scale(0.8);
+        transition: transform 0.3s ease;
+    }
+
+    .course-card:hover .play-button {
+        transform: scale(1);
+    }
+
+    .course-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        z-index: 2;
+        backdrop-filter: blur(10px);
+    }
+
+    .badge-free {
+        background: rgba(16, 185, 129, 0.9);
+        color: white;
+    }
+
+    .badge-discount {
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+    }
+
+    .course-card-body {
+        padding: 1rem;
+        flex: 1;
+        display: none;
+        flex-direction: column;
+    }
+
+    .course-card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        min-height: 2.8rem;
+    }
+
+    .course-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
         margin-bottom: 0.5rem;
     }
-    
-    .section-subtitle {
-        color: var(--text-muted);
-        font-size: 0.95rem;
+
+    .course-teacher {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
     }
-    
-    /* Badge Styles */
+
+    .course-stats {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: auto;
+        padding-top: 0.5rem;
+    }
+
+    .course-stats span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .course-rating {
+        color: var(--secondary-color);
+        font-weight: 600;
+    }
+
+    .course-rating i {
+        color: #FDB022;
+    }
+
+    .course-price {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .price-current {
+        font-size: 1.1rem;
+        color: var(--primary-color);
+    }
+
+    .price-original {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-decoration: line-through;
+    }
+
+    .price-free {
+        font-size: 1.1rem;
+        color: var(--success-color);
+    }
+
+    /* ==================== Badge & Feature Styles ==================== */
     .badge-custom {
         background: rgba(139, 92, 246, 0.15);
         color: var(--primary-color);
@@ -68,7 +375,6 @@
         font-weight: 600;
     }
     
-    /* Feature Icon */
     .feature-icon {
         width: 56px;
         height: 56px;
@@ -80,6 +386,35 @@
         color: white;
         font-size: 1.5rem;
         margin-bottom: 1rem;
+    }
+
+    /* ==================== Responsive Adjustments ==================== */
+    @media (max-width: 768px) {
+        .category-row-section {
+            padding: 2rem 0;
+        }
+
+        .category-title {
+            font-size: 1.4rem;
+        }
+
+        .category-header {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 0.75rem !important;
+        }
+
+        .view-all-link {
+            font-size: 0.85rem;
+        }
+
+        .course-card-body {
+            padding: 0.75rem;
+        }
+
+        .course-card-title {
+            font-size: 0.9rem;
+        }
     }
 </style>
 {% endblock %}
@@ -184,17 +519,17 @@
 {% endif %}
 
 <!-- Categories Section -->
-<section id="categories" style="padding: 4rem 0; background: var(--bg-primary);">
+<section id="categories" style="padding: 2rem 0 1rem; background: var(--bg-primary);">
     <div class="container-fluid px-lg-5">
-        <div class="section-header mb-4">
+        <div class="section-header mb-3">
             <h2 class="section-title">Browse by Category</h2>
-            <p class="section-subtitle">Explore thousands of audio courses across various topics</p>
+            <p class="section-subtitle">Explore audio courses across various topics</p>
         </div>
         
         <!-- Horizontal Scrollable Categories -->
         <div class="category-scroll d-flex gap-3 pb-3">
             <a href="{% url 'courses:course_list' %}" class="category-pill active">
-                <i class="fas fa-fire me-2"></i>Trending
+                <i class="fas fa-fire me-2"></i>All Courses
             </a>
             {% for category in categories %}
             <a href="{% url 'courses:course_list' %}?category={{ category.slug }}" class="category-pill">
@@ -208,62 +543,196 @@
     </div>
 </section>
 
-<!-- Trending Courses Section -->
-<section style="padding: 4rem 0; background: var(--bg-primary);">
+<!-- Featured Courses Section -->
+{% if featured_courses %}
+<section style="padding: 2rem 0; background: var(--bg-primary);">
     <div class="container-fluid px-lg-5">
-        <div class="section-header d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 class="section-title">
-                    <i class="fas fa-fire me-2" style="color: var(--primary-color);"></i>Trending Now
-                </h2>
-                <p class="section-subtitle">Most popular audio courses this week</p>
+        <div class="category-header d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="category-icon-wrapper" style="--category-color: var(--accent-color);">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div>
+                    <h2 class="category-title mb-1">Featured Courses</h2>
+                    <p class="category-subtitle mb-0">Hand-picked premium courses for you</p>
+                </div>
             </div>
-            <a href="{% url 'courses:course_list' %}" class="text-decoration-none" style="color: var(--primary-color); font-weight: 600;">
+            <a href="{% url 'courses:course_list' %}?featured=true" class="view-all-link text-decoration-none">
                 View All <i class="fas fa-arrow-right ms-1"></i>
             </a>
         </div>
         
-        <div class="row g-3">
-            {% if trending_courses %}
-                {% for course in trending_courses %}
-                <div class="col-lg-2 col-md-3 col-sm-4 col-6">
+        <div class="horizontal-scroll-wrapper">
+            <div class="horizontal-scroll-container">
+                {% for course in featured_courses %}
+                <div class="course-card-wrapper">
                     <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none">
-                        <div class="audio-card" style="aspect-ratio:1/1; overflow:hidden; position:relative; border-radius:12px;">
-                            <div class="audio-card-img" style="width:100%; height:100%;">
+                        <div class="course-card">
+                            <div class="course-card-image">
                                 {% if course.thumbnail %}
-                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" style="width:100%; height:100%; object-fit:contain; object-position:center top; display:block; background:var(--bg-card, #111);">
+                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" loading="lazy" class="course-thumbnail">
                                 {% else %}
-                                <img src="https://via.placeholder.com/600x600/1A1A1A/FF6B35?text={{ course.title|slice:':10' }}" alt="{{ course.title }}" style="width:100%; height:100%; object-fit:contain; object-position:center top; display:block; background:var(--bg-card, #111);">
-                                {% endif %}
-                                <div class="audio-card-play" style="position:absolute; top:8px; right:8px;">
-                                    <i class="fas fa-play" style="color: white; font-size: 0.85rem; margin-left: 2px;"></i>
+                                <div class="course-placeholder" style="background: linear-gradient(135deg, var(--accent-color), var(--primary-color));">
+                                    <i class="fas fa-crown" style="font-size: 3rem; opacity: 0.3; color: white;"></i>
                                 </div>
+                                {% endif %}
+                                
+                                <div class="course-play-overlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+
+                                <span class="course-badge" style="background: linear-gradient(135deg, var(--accent-color), #D946EF);">
+                                    <i class="fas fa-crown me-1"></i>Featured
+                                </span>
                             </div>
-                            <div class="audio-card-body" style="position:absolute; left:0; right:0; bottom:0; padding:10px; background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 80%); color:white;">
-                                <h6 class="audio-card-title" style="margin:0; font-size:0.9rem; font-weight:700;">{{ course.title|truncatewords:6 }}</h6>
-                                <div class="audio-card-meta" style="font-size:0.8rem; color: rgba(255,255,255,0.9);">
-                                    {% if course.duration_hours %}
-                                    <i class="fas fa-clock me-1"></i>{{ course.duration_hours }}h
-                                    <span class="mx-2">•</span>
+
+                            <div class="course-card-body">
+                                <h6 class="course-card-title">{{ course.title|truncatechars:50 }}</h6>
+                                
+                                <div class="course-meta">
+                                    {% if course.teacher %}
+                                    <span class="course-teacher">
+                                        <i class="fas fa-user-circle me-1"></i>{{ course.teacher.get_full_name|default:course.teacher.email|truncatechars:20 }}
+                                    </span>
                                     {% endif %}
-                                    <i class="fas fa-star me-1" style="color: var(--secondary-color);"></i>
-                                    {% if course.average_rating > 0 %}{{ course.average_rating }}{% else %}New{% endif %}
+                                </div>
+
+                                <div class="course-stats">
+                                    {% if course.average_rating > 0 %}
+                                    <span class="course-rating">
+                                        <i class="fas fa-star"></i>{{ course.average_rating|floatformat:1 }}
+                                    </span>
+                                    {% endif %}
+                                    {% if course.duration_hours %}
+                                    <span class="course-duration">
+                                        <i class="fas fa-clock"></i>{{ course.duration_hours }}h
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="course-price mt-2">
+                                    {% if course.is_free %}
+                                    <span class="price-free">Free</span>
+                                    {% elif course.discount_price %}
+                                    <span class="price-current">₹{{ course.discount_price }}</span>
+                                    <span class="price-original">₹{{ course.price }}</span>
+                                    {% else %}
+                                    <span class="price-current">₹{{ course.price }}</span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                     </a>
                 </div>
                 {% endfor %}
-            {% else %}
-                <div class="col-12">
-                    <div class="text-center py-4">
-                        <p class="mb-0" style="color: #FFFFFF;">No trending courses available at the moment.</p>
-                    </div>
-                </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 </section>
+{% endif %}
+
+<!-- Trending Courses Section -->
+{% if trending_courses %}
+<section style="padding: 2rem 0; background: var(--bg-primary);">
+    <div class="container-fluid px-lg-5">
+        <div class="category-header d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="category-icon-wrapper" style="--category-color: #EF4444;">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div>
+                    <h2 class="category-title mb-1">Trending Now</h2>
+                    <p class="category-subtitle mb-0">Most popular courses this week</p>
+                </div>
+            </div>
+            <a href="{% url 'courses:course_list' %}?sort=trending" class="view-all-link text-decoration-none">
+                View All <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="horizontal-scroll-wrapper">
+            <div class="horizontal-scroll-container">
+                {% for course in trending_courses %}
+                <div class="course-card-wrapper">
+                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none">
+                        <div class="course-card">
+                            <div class="course-card-image">
+                                {% if course.thumbnail %}
+                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" loading="lazy" class="course-thumbnail">
+                                {% else %}
+                                <div class="course-placeholder" style="background: linear-gradient(135deg, #EF4444, #F97316);">
+                                    <i class="fas fa-fire" style="font-size: 3rem; opacity: 0.3; color: white;"></i>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="course-play-overlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+
+                                {% if course.is_free %}
+                                <span class="course-badge badge-free">
+                                    <i class="fas fa-gift me-1"></i>Free
+                                </span>
+                                {% elif course.discount_price %}
+                                <span class="course-badge badge-discount">
+                                    {{ course.discount_percentage|floatformat:0 }}% OFF
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="course-card-body">
+                                <h6 class="course-card-title">{{ course.title|truncatechars:50 }}</h6>
+                                
+                                <div class="course-meta">
+                                    {% if course.teacher %}
+                                    <span class="course-teacher">
+                                        <i class="fas fa-user-circle me-1"></i>{{ course.teacher.get_full_name|default:course.teacher.email|truncatechars:20 }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="course-stats">
+                                    {% if course.average_rating > 0 %}
+                                    <span class="course-rating">
+                                        <i class="fas fa-star"></i>{{ course.average_rating|floatformat:1 }}
+                                    </span>
+                                    {% endif %}
+                                    {% if course.duration_hours %}
+                                    <span class="course-duration">
+                                        <i class="fas fa-clock"></i>{{ course.duration_hours }}h
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="course-price mt-2">
+                                    {% if course.is_free %}
+                                    <span class="price-free">Free</span>
+                                    {% elif course.discount_price %}
+                                    <span class="price-current">₹{{ course.discount_price }}</span>
+                                    <span class="price-original">₹{{ course.price }}</span>
+                                    {% else %}
+                                    <span class="price-current">₹{{ course.price }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Category-wise Course Sections -->
+{% for category_data in categories_with_courses %}
+{% include 'components/category_row.html' with category=category_data.category courses=category_data.courses %}
+{% endfor %}
 
 <!-- Features Section -->
 {% if not user.is_authenticated %}
@@ -398,4 +867,211 @@
     </div>
 </section>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all horizontal scroll containers
+    const scrollWrappers = document.querySelectorAll('.horizontal-scroll-wrapper');
+    
+    scrollWrappers.forEach(wrapper => {
+        const container = wrapper.querySelector('.horizontal-scroll-container');
+        const leftArrow = wrapper.querySelector('.scroll-arrow-left');
+        const rightArrow = wrapper.querySelector('.scroll-arrow-right');
+        
+        if (!container || !leftArrow || !rightArrow) return;
+
+        // Scroll amount (one card width + gap)
+        const scrollAmount = 300;
+
+        // Arrow click handlers
+        leftArrow.addEventListener('click', () => {
+            container.scrollBy({
+                left: -scrollAmount,
+                behavior: 'smooth'
+            });
+        });
+
+        rightArrow.addEventListener('click', () => {
+            container.scrollBy({
+                left: scrollAmount,
+                behavior: 'smooth'
+            });
+        });
+
+        // Update arrow visibility based on scroll position
+        function updateArrows() {
+            const scrollLeft = container.scrollLeft;
+            const maxScroll = container.scrollWidth - container.clientWidth;
+
+            // Show/hide left arrow
+            if (scrollLeft <= 0) {
+                leftArrow.style.display = 'none';
+            } else {
+                leftArrow.style.display = 'flex';
+            }
+
+            // Show/hide right arrow
+            if (scrollLeft >= maxScroll - 5) { // -5 for tolerance
+                rightArrow.style.display = 'none';
+            } else {
+                rightArrow.style.display = 'flex';
+            }
+        }
+
+        // Initial arrow state
+        updateArrows();
+
+        // Update arrows on scroll
+        container.addEventListener('scroll', updateArrows);
+
+        // Update arrows on resize
+        window.addEventListener('resize', updateArrows);
+
+        // Mouse drag scrolling (desktop)
+        let isDown = false;
+        let startX;
+        let scrollLeftStart;
+
+        container.addEventListener('mousedown', (e) => {
+            // Only enable drag if not clicking on a link/button
+            if (e.target.closest('a') || e.target.closest('button')) return;
+            
+            isDown = true;
+            container.style.cursor = 'grabbing';
+            container.style.userSelect = 'none';
+            startX = e.pageX - container.offsetLeft;
+            scrollLeftStart = container.scrollLeft;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            isDown = false;
+            container.style.cursor = 'grab';
+            container.style.userSelect = 'auto';
+        });
+
+        container.addEventListener('mouseup', () => {
+            isDown = false;
+            container.style.cursor = 'grab';
+            container.style.userSelect = 'auto';
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - container.offsetLeft;
+            const walk = (x - startX) * 2; // Scroll speed multiplier
+            container.scrollLeft = scrollLeftStart - walk;
+        });
+
+        // Set initial cursor style
+        container.style.cursor = 'grab';
+
+        // Prevent default link behavior during drag
+        let dragDistance = 0;
+        container.addEventListener('mousedown', (e) => {
+            dragDistance = 0;
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (isDown) {
+                dragDistance += Math.abs(e.movementX);
+            }
+        });
+
+        container.addEventListener('click', (e) => {
+            // If dragged more than 5px, prevent link clicks
+            if (dragDistance > 5) {
+                e.preventDefault();
+                e.stopPropagation();
+                dragDistance = 0;
+            }
+        }, true);
+    });
+
+    // Lazy loading for course images (Intersection Observer)
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                    observer.unobserve(img);
+                }
+            }
+        });
+    }, {
+        rootMargin: '100px' // Start loading 100px before entering viewport
+    });
+
+    // Observe all lazy images
+    document.querySelectorAll('img[data-src]').forEach(img => {
+        imageObserver.observe(img);
+    });
+
+    // Smooth scroll for category filter pills
+    const categoryScroll = document.querySelector('.category-scroll');
+    if (categoryScroll) {
+        categoryScroll.style.cursor = 'grab';
+        
+        let isScrolling = false;
+        let scrollStart;
+        let scrollLeftStart;
+
+        categoryScroll.addEventListener('mousedown', (e) => {
+            if (e.target.closest('a')) return;
+            
+            isScrolling = true;
+            categoryScroll.style.cursor = 'grabbing';
+            scrollStart = e.pageX - categoryScroll.offsetLeft;
+            scrollLeftStart = categoryScroll.scrollLeft;
+        });
+
+        categoryScroll.addEventListener('mouseleave', () => {
+            isScrolling = false;
+            categoryScroll.style.cursor = 'grab';
+        });
+
+        categoryScroll.addEventListener('mouseup', () => {
+            isScrolling = false;
+            categoryScroll.style.cursor = 'grab';
+        });
+
+        categoryScroll.addEventListener('mousemove', (e) => {
+            if (!isScrolling) return;
+            e.preventDefault();
+            const x = e.pageX - categoryScroll.offsetLeft;
+            const walk = (x - scrollStart) * 2;
+            categoryScroll.scrollLeft = scrollLeftStart - walk;
+        });
+    }
+
+    // Performance optimization: Debounce scroll updates
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Apply debounce to scroll handlers
+    scrollWrappers.forEach(wrapper => {
+        const container = wrapper.querySelector('.horizontal-scroll-container');
+        if (container) {
+            const debouncedUpdate = debounce(() => {
+                wrapper.querySelector('.scroll-arrow-left')?.dispatchEvent(new Event('update'));
+            }, 100);
+            
+            container.addEventListener('scroll', debouncedUpdate);
+        }
+    });
+});
+</script>
 {% endblock %}

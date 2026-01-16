@@ -60,6 +60,9 @@ class CourseListView(ListView):
         sort = self.request.GET.get('sort', '-created_at')
         if sort == 'popular':
             queryset = queryset.order_by('-student_count')
+        elif sort == 'trending':
+            # Trending: combine popularity with recency
+            queryset = queryset.order_by('-student_count', '-created_at')
         elif sort == 'rating':
             queryset = queryset.order_by('-avg_rating')
         elif sort == 'price_low':

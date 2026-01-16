@@ -1,0 +1,132 @@
+<!-- Category Row Component - Horizontal Scrollable Course List -->
+{% load static %}
+
+<section class="category-row-section" data-category-id="{{ category.id }}">
+    <div class="container-fluid px-lg-5">
+        <!-- Category Header -->
+        <div class="category-header d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-3">
+                {% if category.icon %}
+                <div class="category-icon-wrapper" style="--category-color: {{ category.color }};">
+                    <i class="{{ category.icon }}"></i>
+                </div>
+                {% endif %}
+                <div>
+                    <h2 class="category-title mb-1">{{ category.name }}</h2>
+                    {% if category.description %}
+                    <p class="category-subtitle mb-0">{{ category.description|truncatewords:12 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <a href="{% url 'courses:course_list' %}?category={{ category.slug }}" 
+               class="view-all-link text-decoration-none">
+                View All <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <!-- Horizontal Scrollable Course List -->
+        <div class="horizontal-scroll-wrapper" data-scroll-container>
+            <!-- Navigation Arrows -->
+            <button class="scroll-arrow scroll-arrow-left" 
+                    data-scroll-direction="left" 
+                    aria-label="Scroll left"
+                    style="display: none;">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="scroll-arrow scroll-arrow-right" 
+                    data-scroll-direction="right" 
+                    aria-label="Scroll right">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
+            <!-- Courses Container -->
+            <div class="horizontal-scroll-container" data-scroll-content>
+                {% for course in courses %}
+                <div class="course-card-wrapper">
+                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none">
+                        <div class="course-card">
+                            <!-- Course Thumbnail -->
+                            <div class="course-card-image">
+                                {% if course.thumbnail %}
+                                <img src="{{ course.thumbnail.url }}" 
+                                     alt="{{ course.title }}" 
+                                     loading="lazy"
+                                     class="course-thumbnail">
+                                {% else %}
+                                <div class="course-placeholder" style="background: linear-gradient(135deg, {{ category.color }}, #667eea);">
+                                    <i class="{{ category.icon|default:'fas fa-book' }}" style="font-size: 3rem; opacity: 0.3; color: white;"></i>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Play Overlay -->
+                                <div class="course-play-overlay">
+                                    <div class="play-button">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Course Badges -->
+                                {% if course.is_free %}
+                                <span class="course-badge badge-free">
+                                    <i class="fas fa-gift me-1"></i>Free
+                                </span>
+                                {% elif course.discount_price %}
+                                <span class="course-badge badge-discount">
+                                    {{ course.discount_percentage|floatformat:0 }}% OFF
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Course Info -->
+                            <div class="course-card-body">
+                                <h6 class="course-card-title">{{ course.title|truncatechars:50 }}</h6>
+                                
+                                <div class="course-meta">
+                                    {% if course.teacher %}
+                                    <span class="course-teacher">
+                                        <i class="fas fa-user-circle me-1"></i>{{ course.teacher.get_full_name|default:course.teacher.email|truncatechars:20 }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="course-stats">
+                                    {% if course.average_rating > 0 %}
+                                    <span class="course-rating">
+                                        <i class="fas fa-star"></i>
+                                        {{ course.average_rating|floatformat:1 }}
+                                    </span>
+                                    {% endif %}
+                                    {% if course.duration_hours %}
+                                    <span class="course-duration">
+                                        <i class="fas fa-clock"></i>
+                                        {{ course.duration_hours }}h
+                                    </span>
+                                    {% endif %}
+                                    {% if course.total_enrollments > 0 %}
+                                    <span class="course-students">
+                                        <i class="fas fa-users"></i>
+                                        {{ course.total_enrollments|default:0 }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Price -->
+                                <div class="course-price mt-2">
+                                    {% if course.is_free %}
+                                    <span class="price-free">Free</span>
+                                    {% elif course.discount_price %}
+                                    <span class="price-current">₹{{ course.discount_price }}</span>
+                                    <span class="price-original">₹{{ course.price }}</span>
+                                    {% else %}
+                                    <span class="price-current">₹{{ course.price }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
