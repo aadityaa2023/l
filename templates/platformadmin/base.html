@@ -608,10 +608,12 @@
         </div>
 
         <div class="topbar-right">
-          <div class="topbar-icon">
+          <a href="{% url 'platformadmin:notification_management' %}" class="topbar-icon" title="Notifications">
             <i class="fas fa-bell"></i>
-            <span class="notification-badge">3</span>
-          </div>
+            {% if unread_notifications_count and unread_notifications_count > 0 %}
+            <span class="notification-badge">{{ unread_notifications_count }}</span>
+            {% endif %}
+          </a>
 
           <div class="dropdown">
             <button

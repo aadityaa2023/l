@@ -77,10 +77,26 @@
         border-radius: 5px;
         margin-bottom: 20px;
     }
+    .filter-badges {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .filter-badges .badge {
+        background: #eef2ff;
+        color: #3730a3;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+    }
+    .stat-item .value { color: #111827; }
+    .teacher-card h3 { display:flex; align-items:center; gap:10px; }
+    .teacher-avatar { background: linear-gradient(135deg,#667eea,#764ba2); }
 </style>
 {% endblock %}
 
-{% block content %}
+{% block platformadmin_content %}
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-md-12">
@@ -107,10 +123,16 @@
             </select>
             <button type="submit" class="btn btn-primary">Apply</button>
             <a href="{% url 'platformadmin:teacher_analytics' %}" class="btn btn-secondary ml-2">Reset</a>
-            <a href="?export=csv" class="btn btn-success ml-auto">
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}export=csv" class="btn btn-success ml-auto">
                 <i class="fas fa-download"></i> Export CSV
             </a>
         </form>
+        <div class="filter-badges">
+            <span class="badge">Sort: {{ sort_by|capfirst }}</span>
+            <span class="badge">Period: {{ period|capfirst }}</span>
+            <span class="badge">Teachers: {{ total_teachers }}</span>
+            <span class="badge">Revenue: ₹{{ total_revenue }}</span>
+        </div>
     </div>
 
     <!-- Overall Statistics -->

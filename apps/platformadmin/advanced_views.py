@@ -6,7 +6,9 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods, require_POST
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
+from datetime import timedelta
 
 from apps.platformadmin.decorators import platformadmin_required
 from apps.platformadmin.permissions import permission_required, AdminPermissions
@@ -258,32 +260,149 @@ def advanced_analytics(request):
 @permission_required(AdminPermissions.VIEW_ANALYTICS)
 def teacher_analytics(request):
     """Teacher performance analytics"""
-    teachers = User.objects.filter(role='teacher', is_active=True).select_related('teacher_profile')
-    
-    # Get teacher stats
-    teacher_stats = []
-    for teacher in teachers:
-        courses = Course.objects.filter(teacher=teacher) if hasattr(Course, 'objects') else []
-        total_revenue = Payment.objects.filter(
+    teachers_qs = User.objects.filter(role='teacher', is_active=True).select_related('teacher_profile')
+
+    # GET params for optional sorting/period filtering
+    sort_by = request.GET.get('sort_by', 'revenue')
+    period = request.GET.get('period', 'all')
+
+    # Determine start date based on period
+    start_dt = None
+    if period == 'month':
+        start_dt = timezone.now() - timedelta(days=30)
+    elif period == 'quarter':
+        start_dt = timezone.now() - timedelta(days=90)
+    elif period == 'year':
+        start_dt = timezone.now() - timedelta(days=365)
+
+    # Build enriched teacher objects with attached stats so template can reference attributes
+    enriched_teachers = []
+    for teacher in teachers_qs:
+        # Courses and enrollments
+        courses_qs = Course.objects.filter(teacher=teacher)
+        if start_dt is not None:
+            # filter courses created within the period if created_at exists
+            try:
+                courses_qs = courses_qs.filter(created_at__gte=start_dt)
+            except Exception:
+                pass
+        course_count = courses_qs.count()
+        published_count = courses_qs.filter(status='published').count()
+        total_enrollments_qs = Enrollment.objects.filter(course__teacher=teacher)
+        if start_dt is not None:
+            try:
+                total_enrollments_qs = total_enrollments_qs.filter(created_at__gte=start_dt)
+            except Exception:
+                pass
+        total_enrollments = total_enrollments_qs.count()
+
+        # Revenue
+        payments_qs = Payment.objects.filter(
             course__teacher=teacher,
             status='completed'
-        ).aggregate(total=Sum('amount'))['total'] or 0
-        
-        teacher_stats.append({
-            'teacher': teacher,
-            'total_courses': courses.count() if courses else 0,
-            'published_courses': courses.filter(status='published').count() if courses else 0,
-            'total_students': teacher.teacher_profile.total_students if hasattr(teacher, 'teacher_profile') else 0,
-            'total_revenue': total_revenue,
-            'is_verified': teacher.teacher_profile.is_verified if hasattr(teacher, 'teacher_profile') else False,
-        })
-    
-    # Sort by total revenue
-    teacher_stats.sort(key=lambda x: x['total_revenue'], reverse=True)
-    
+        )
+        if start_dt is not None:
+            try:
+                payments_qs = payments_qs.filter(created_at__gte=start_dt)
+            except Exception:
+                pass
+
+        total_revenue = payments_qs.aggregate(total=Sum('amount'))['total'] or 0
+
+        # Basic rating / verification data
+        total_students = getattr(teacher, 'total_students', None)
+        if hasattr(teacher, 'teacher_profile'):
+            total_students = teacher.teacher_profile.total_students if getattr(teacher.teacher_profile, 'total_students', None) is not None else total_students
+            is_verified = getattr(teacher.teacher_profile, 'is_verified', False)
+        else:
+            is_verified = False
+
+        # Simple performance score: weighted revenue + enrollments (scaled)
+        performance_score = 0
+        try:
+            performance_score = int(min(100, (total_revenue / 1000) + (total_enrollments * 0.5)))
+        except Exception:
+            performance_score = 0
+
+        # Attach attributes to teacher instance for template use
+        setattr(teacher, 'course_count', course_count)
+        setattr(teacher, 'total_enrollments', total_enrollments)
+        setattr(teacher, 'total_revenue', total_revenue)
+        setattr(teacher, 'avg_rating', getattr(teacher, 'avg_rating', 0))
+        setattr(teacher, 'performance_score', performance_score)
+
+        enriched_teachers.append(teacher)
+
+    # Sort according to requested sort_by
+    if sort_by == 'revenue':
+        enriched_teachers.sort(key=lambda t: getattr(t, 'total_revenue', 0), reverse=True)
+    elif sort_by == 'enrollments':
+        enriched_teachers.sort(key=lambda t: getattr(t, 'total_enrollments', 0), reverse=True)
+    elif sort_by == 'courses':
+        enriched_teachers.sort(key=lambda t: getattr(t, 'course_count', 0), reverse=True)
+
+    # Overall metrics
+    total_teachers = teachers_qs.count()
+    active_teachers = teachers_qs.filter(is_active=True).count()
+    verified_teachers = sum(1 for t in teachers_qs if hasattr(t, 'teacher_profile') and getattr(t.teacher_profile, 'is_verified', False))
+    total_courses_qs = Course.objects.filter(teacher__in=teachers_qs)
+    total_payments_qs = Payment.objects.filter(course__teacher__in=teachers_qs, status='completed')
+    if start_dt is not None:
+        try:
+            total_courses_qs = total_courses_qs.filter(created_at__gte=start_dt)
+        except Exception:
+            pass
+        try:
+            total_payments_qs = total_payments_qs.filter(created_at__gte=start_dt)
+        except Exception:
+            pass
+
+    total_courses = total_courses_qs.count()
+    total_revenue_all = total_payments_qs.aggregate(total=Sum('amount'))['total'] or 0
+    avg_rating = 0
+
+    # Performance distribution and top earners
+    perf_counts = {'excellent': 0, 'good': 0, 'average': 0, 'poor': 0}
+    top_earners = enriched_teachers[:5]
+    for t in enriched_teachers:
+        score = getattr(t, 'performance_score', 0)
+        if score >= 80:
+            perf_counts['excellent'] += 1
+        elif score >= 60:
+            perf_counts['good'] += 1
+        elif score >= 40:
+            perf_counts['average'] += 1
+        else:
+            perf_counts['poor'] += 1
+
+    performance_distribution = [perf_counts['excellent'], perf_counts['good'], perf_counts['average'], perf_counts['poor']]
+    top_earner_names = [t.get_full_name() for t in top_earners]
+    top_earner_revenue = [getattr(t, 'total_revenue', 0) for t in top_earners]
+
+    # Recent activities - try to use ActivityLog if available
+    recent_activities = []
+    try:
+        recent_activities = ActivityLog.get_recent_teacher_activities() if hasattr(ActivityLog, 'get_recent_teacher_activities') else []
+    except Exception:
+        recent_activities = []
+
     context = get_context_data(request)
-    context['teacher_stats'] = teacher_stats
-    
+    context.update({
+        'teachers': enriched_teachers,
+        'total_teachers': total_teachers,
+        'active_teachers': active_teachers,
+        'verified_teachers': verified_teachers,
+        'total_courses': total_courses,
+        'total_revenue': total_revenue_all,
+        'avg_rating': avg_rating,
+        'performance_distribution': performance_distribution,
+        'top_earner_names': top_earner_names,
+        'top_earner_revenue': top_earner_revenue,
+        'recent_activities': recent_activities,
+        'sort_by': sort_by,
+        'period': period,
+    })
+
     return render(request, 'platformadmin/teacher_analytics.html', context)
 
 
