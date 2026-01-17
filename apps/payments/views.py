@@ -70,7 +70,7 @@ def course_payment(request, course_id):
 
 @login_required
 def verify_payment(request):
-    """Verify Razorpay payment signature"""
+    """Verify Razorpay payment signature and fetch payment details"""
     if request.method == 'POST':
         data = json.loads(request.body)
         
@@ -90,28 +90,72 @@ def verify_payment(request):
         )
         
         if is_valid:
+            # Fetch payment details from Razorpay to get payment method info
+            payment_details = razorpay_handler.fetch_payment(razorpay_payment_id)
+            
             # Update payment
             payment.razorpay_payment_id = razorpay_payment_id
             payment.razorpay_signature = razorpay_signature
             payment.status = 'completed'
+            
+            # Extract and encrypt payment method details
+            if payment_details:
+                payment_method = payment_details.get('method', '')
+                payment.payment_method = payment_method
+                
+                # Encrypt sensitive payment method information (256-bit AES)
+                if payment_method == 'card':
+                    card_info = payment_details.get('card', {})
+                    payment.set_card_details(
+                        last4=card_info.get('last4'),
+                        card_type=card_info.get('network')  # Visa, Mastercard, etc.
+                    )
+                elif payment_method == 'upi':
+                    upi_info = payment_details.get('vpa')  # Virtual Payment Address
+                    if upi_info:
+                        payment.set_upi_id(upi_info)
+                elif payment_method == 'wallet':
+                    wallet_info = payment_details.get('wallet')
+                    if wallet_info:
+                        payment.set_wallet_name(wallet_info)
+                elif payment_method == 'netbanking':
+                    bank_info = payment_details.get('bank')
+                    if bank_info:
+                        payment.set_bank_name(bank_info)
+            
+            from django.utils import timezone
+            payment.completed_at = timezone.now()
             payment.save()
             
-            # Create enrollment
-            Enrollment.objects.get_or_create(
+            # Create enrollment and unlock course
+            enrollment, created = Enrollment.objects.get_or_create(
                 student=request.user,
                 course=payment.course,
-                defaults={'is_active': True}
+                defaults={
+                    'status': 'active',
+                    'payment_amount': payment.amount,
+                    'payment_reference': str(payment.id)
+                }
             )
             
-            logger.info(f"Payment successful: {payment.id}")
+            # Update enrollment if it already existed
+            if not created and enrollment.status != 'active':
+                enrollment.status = 'active'
+                enrollment.payment_amount = payment.amount
+                enrollment.payment_reference = str(payment.id)
+                enrollment.save()
+            
+            logger.info(f"Payment successful: {payment.id} - Course unlocked for user {request.user.id}")
             
             return JsonResponse({
                 'status': 'success',
-                'payment_id': payment.id,
-                'message': 'Payment successful!'
+                'payment_id': str(payment.id),
+                'message': 'Payment successful! Course unlocked.',
+                'redirect_url': f'/courses/{payment.course.slug}/'
             })
         else:
             payment.status = 'failed'
+            payment.failure_reason = 'Payment signature verification failed'
             payment.save()
             
             logger.warning(f"Payment verification failed: {payment.id}")
@@ -161,16 +205,46 @@ def razorpay_webhook(request):
                 payment = Payment.objects.get(razorpay_order_id=order_id)
                 payment.razorpay_payment_id = payment_id
                 payment.status = 'completed'
+                
+                # Extract and encrypt payment method details
+                payment_method = payment_entity.get('method', '')
+                payment.payment_method = payment_method
+                
+                if payment_method == 'card':
+                    card_info = payment_entity.get('card', {})
+                    payment.set_card_details(
+                        last4=card_info.get('last4'),
+                        card_type=card_info.get('network')
+                    )
+                elif payment_method == 'upi':
+                    upi_info = payment_entity.get('vpa')
+                    if upi_info:
+                        payment.set_upi_id(upi_info)
+                elif payment_method == 'wallet':
+                    wallet_info = payment_entity.get('wallet')
+                    if wallet_info:
+                        payment.set_wallet_name(wallet_info)
+                elif payment_method == 'netbanking':
+                    bank_info = payment_entity.get('bank')
+                    if bank_info:
+                        payment.set_bank_name(bank_info)
+                
+                from django.utils import timezone
+                payment.completed_at = timezone.now()
                 payment.save()
                 
-                # Create enrollment if not exists
+                # Create enrollment if not exists and unlock course
                 Enrollment.objects.get_or_create(
                     student=payment.user,
                     course=payment.course,
-                    defaults={'is_active': True}
+                    defaults={
+                        'status': 'active',
+                        'payment_amount': payment.amount,
+                        'payment_reference': str(payment.id)
+                    }
                 )
                 
-                logger.info(f"Webhook processed: payment captured {payment_id}")
+                logger.info(f"Webhook processed: payment captured {payment_id} - Course unlocked")
             except Payment.DoesNotExist:
                 logger.error(f"Payment not found for order: {order_id}")
         

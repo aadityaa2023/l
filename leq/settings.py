@@ -485,6 +485,10 @@ RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
 RAZORPAY_KEY_SECRET = env('RAZORPAY_KEY_SECRET', default='')
 RAZORPAY_WEBHOOK_SECRET = env('RAZORPAY_WEBHOOK_SECRET', default='')
 
+# ==================== PAYMENT ENCRYPTION ====================
+# 256-bit AES encryption for sensitive payment data
+PAYMENT_ENCRYPTION_KEY = env('PAYMENT_ENCRYPTION_KEY', default=SECRET_KEY)
+
 # ==================== CELERY ====================
 
 CELERY_BROKER_URL = env('REDIS_URL', default='redis://localhost:6379/0')

@@ -71,8 +71,8 @@
         </div>
         
         <div class="row">
-            <!-- Main Content -->
-            <div class="col-lg-8 mb-4">
+            <!-- Main Content (expanded) -->
+            <div class="col-lg-9 mb-4">
                 <!-- Continue Learning -->
                 <div class="mb-5">
                     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -84,34 +84,27 @@
                     <div class="row g-4">
                         {% for enrollment in enrollments %}
                         <div class="col-md-6">
-                            <div class="card-custom h-100">
-                                <div class="row g-0 h-100">
-                                    <div class="col-4">
-                                        {% if enrollment.course.thumbnail %}
-                                            <img src="{{ enrollment.course.thumbnail.url }}" class="img-fluid h-100 w-100" 
-                                                 alt="{{ enrollment.course.title }}" style="object-fit: cover; border-radius: 12px 0 0 12px;">
-                                        {% else %}
-                                            <div class="h-100 d-flex align-items-center justify-content-center" 
-                                                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 0 0 12px;">
-                                                <i class="fas fa-headphones fa-2x text-white opacity-50"></i>
-                                            </div>
-                                        {% endif %}
+                            <div class="card-custom h-100 continue-card">
+                                {% if enrollment.course.thumbnail %}
+                                    <img src="{{ enrollment.course.thumbnail.url }}" alt="{{ enrollment.course.title }}" class="thumb">
+                                {% else %}
+                                    <div class="thumb" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                                {% endif %}
+                                <div class="body">
+                                    <h6 class="fw-bold">{{ enrollment.course.title|truncatewords:8 }}</h6>
+                                    <p class="small text-muted mb-2">{{ enrollment.course.teacher.get_full_name }}</p>
+
+                                    <div class="progress mb-2" style="height: 8px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,0.03);">
+                                        <div class="progress-bar" style="width: {{ enrollment.progress_percentage }}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));"></div>
                                     </div>
-                                    <div class="col-8">
-                                        <div class="card-body">
-                                            <h6 class="fw-bold mb-2">{{ enrollment.course.title|truncatewords:6 }}</h6>
-                                            <p class="small text-muted mb-2">{{ enrollment.course.teacher.get_full_name }}</p>
-                                            
-                                            <div class="progress mb-2" style="height: 6px;">
-                                                <div class="progress-bar" style="width: {{ enrollment.progress_percentage }}%; background-color: var(--primary-color);"></div>
-                                            </div>
-                                            <p class="small text-muted mb-3">{{ enrollment.progress_percentage }}% complete</p>
-                                            
-                                            <a href="{% url 'courses:course_learn' enrollment.course.id %}" class="btn btn-sm btn-primary-custom w-100">
-                                                Continue
-                                            </a>
-                                        </div>
+                                    <div class="d-flex gap-2 align-items-center mb-2">
+                                        <small class="small text-muted">{{ enrollment.progress_percentage }}% complete</small>
+                                        <small class="small text-muted">•</small>
+                                        <small class="small text-muted">{{ enrollment.course.total_lessons }} lessons</small>
                                     </div>
+                                    <a href="{% url 'courses:course_learn' enrollment.course.id %}" class="btn btn-sm btn-primary-custom w-100">
+                                        Continue
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -128,7 +121,7 @@
                 </div>
                 
                 <!-- Recent Activity -->
-                <div>
+                <div class="recent-activity">
                     <h4 class="fw-bold mb-4">Recent Activity</h4>
                     
                     {% if recent_sessions %}
@@ -163,42 +156,9 @@
             </div>
             
             <!-- Sidebar -->
-            <div class="col-lg-4">
-                <!-- Learning Goals -->
-                <div class="card-custom p-4 mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="fw-bold mb-0">Weekly Goal</h5>
-                        <a href="{% url 'users:student_learning_goals' %}" class="text-decoration-none small">
-                            <i class="fas fa-cog me-1"></i>Settings
-                        </a>
-                    </div>
-                    <div class="text-center mb-3">
-                        <div class="position-relative d-inline-block">
-                            <svg width="120" height="120">
-                                <circle cx="60" cy="60" r="50" fill="none" stroke="#E5E7EB" stroke-width="10"/>
-                                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--primary-color)" stroke-width="10" 
-                                        stroke-dasharray="{{ weekly_goal_progress|default:0 }} 314" 
-                                        stroke-linecap="round" transform="rotate(-90 60 60)"/>
-                            </svg>
-                            <div class="position-absolute top-50 start-50 translate-middle">
-                                <h3 class="fw-bold mb-0">{{ weekly_goal_progress|default:0|floatformat:0 }}%</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-center text-muted mb-2">
-                        {% if weekly_goal_progress >= 100 %}
-                        🎉 Goal achieved! Amazing work!
-                        {% elif weekly_goal_progress >= 50 %}
-                        Keep it up! You're halfway there
-                        {% else %}
-                        You can do it! Keep learning
-                        {% endif %}
-                    </p>
-                    <a href="{% url 'users:student_learning_goals' %}" class="btn btn-sm btn-outline-custom w-100">
-                        View Details
-                    </a>
-                </div>
-                
+            <div class="col-lg-3">
+                <!-- Learning Goals removed as per request -->
+
                 <!-- Active Subscriptions -->
                 {% if active_subscriptions %}
                 <div class="card-custom p-4 mb-4">
@@ -218,30 +178,10 @@
                 </div>
                 {% endif %}
                 
-                <!-- Quick Actions -->
-                <div class="card-custom p-4 mb-4">
-                    <h5 class="fw-bold mb-3">Quick Actions</h5>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'notifications:student_questions' %}" class="btn btn-outline-custom text-start">
-                            <i class="fas fa-question-circle me-2"></i>My Questions
-                            {% if unread_questions %}
-                            <span class="badge bg-warning float-end">{{ unread_questions }}</span>
-                            {% endif %}
-                        </a>
-                        <a href="{% url 'notifications:student_messages' %}" class="btn btn-outline-custom text-start">
-                            <i class="fas fa-envelope me-2"></i>Messages
-                            {% if unread_messages %}
-                            <span class="badge bg-danger float-end">{{ unread_messages }}</span>
-                            {% endif %}
-                        </a>
-                        <a href="{% url 'users:student_achievements' %}" class="btn btn-outline-custom text-start">
-                            <i class="fas fa-trophy me-2"></i>Achievements
-                        </a>
-                    </div>
-                </div>
-                
+                <!-- Quick Actions removed as per request -->
+
                 <!-- Recommended -->
-                <div class="card-custom p-4">
+                <div class="card-custom p-4 recommended">
                     <h5 class="fw-bold mb-4">Recommended for You</h5>
                     {% if recommendations %}
                     {% for course in recommendations|slice:":3" %}

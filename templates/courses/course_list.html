@@ -38,7 +38,7 @@
                     <div class="mb-4">
                         <h6 class="fw-semibold mb-3">Categories</h6>
                         <div class="list-group list-group-flush">
-                            <a href="?{{ request.GET.urlencode }}" class="list-group-item list-group-item-action border-0 {% if not request.GET.category %}active{% endif %}">
+                            <a href="{% url 'courses:course_list' %}?{% for k,v in request.GET.items %}{% if k != 'category' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}" class="list-group-item list-group-item-action border-0 {% if not request.GET.category %}active{% endif %}">
                                 All Categories
                             </a>
                             {% for category in categories %}
@@ -53,7 +53,7 @@
                     <!-- Level Filter -->
                     <div class="mb-4">
                         <h6 class="fw-semibold mb-3">Level</h6>
-                        <select name="level" class="form-select" onchange="this.form.submit()">
+                        <select name="level" class="form-select" onchange="window.location.href = updateQueryStringParameter(window.location.search, 'level', this.value);">
                             <option value="">All Levels</option>
                             <option value="beginner" {% if request.GET.level == 'beginner' %}selected{% endif %}>Beginner</option>
                             <option value="intermediate" {% if request.GET.level == 'intermediate' %}selected{% endif %}>Intermediate</option>
@@ -64,14 +64,11 @@
                     <!-- Price Filter -->
                     <div class="mb-4">
                         <h6 class="fw-semibold mb-3">Price</h6>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" id="free">
-                            <label class="form-check-label" for="free">Free Courses</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="paid">
-                            <label class="form-check-label" for="paid">Paid Courses</label>
-                        </div>
+                        <select name="price" class="form-select" onchange="window.location.href = updateQueryStringParameter(window.location.search, 'price', this.value);">
+                            <option value="">All Prices</option>
+                            <option value="free" {% if request.GET.price == 'free' %}selected{% endif %}>Free Courses</option>
+                            <option value="paid" {% if request.GET.price == 'paid' %}selected{% endif %}>Paid Courses</option>
+                        </select>
                     </div>
                     
                     <button type="button" class="btn btn-outline-danger w-100" onclick="window.location.href='{% url 'courses:course_list' %}'">
@@ -86,7 +83,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="mb-0">{{ page_obj.paginator.count }} Courses Found</h5>
                     <div class="d-flex gap-2">
-                        <select class="form-select form-select-sm" name="sort" style="width: auto;" onchange="window.location.href='?sort=' + this.value">
+                        <select class="form-select form-select-sm" name="sort" style="width: auto;" onchange="window.location.href = updateQueryStringParameter(window.location.search, 'sort', this.value)">
                             <option value="-created_at" {% if request.GET.sort == '-created_at' or not request.GET.sort %}selected{% endif %}>Latest</option>
                             <option value="popular" {% if request.GET.sort == 'popular' %}selected{% endif %}>Most Popular</option>
                             <option value="rating" {% if request.GET.sort == 'rating' %}selected{% endif %}>Highest Rated</option>
@@ -241,4 +238,26 @@
         </div>
     </div>
 </section>
+
+<script>
+function updateQueryStringParameter(search, key, value) {
+    try {
+        const params = new URLSearchParams(search);
+        if (value) {
+            params.set(key, value);
+        } else {
+            params.delete(key);
+        }
+        const qs = params.toString();
+        return window.location.pathname + (qs ? '?' + qs : '');
+    } catch (e) {
+        // Fallback: simple replace
+        const url = new URL(window.location.href);
+        if (value) url.searchParams.set(key, value);
+        else url.searchParams.delete(key);
+        return url.pathname + (url.search ? url.search : '');
+    }
+}
+</script>
+
 {% endblock %}

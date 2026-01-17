@@ -149,6 +149,180 @@
             transform: translateY(-4px);
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
         }
+
+        /* Ensure readable text color inside card-like panels */
+        .card-custom, .card-custom * {
+            color: var(--text-primary) !important;
+        }
+
+        /* If specific muted styling is needed within cards,
+           use this selector to reduce contrast slightly while
+           keeping text readable on dark backgrounds. */
+        .card-custom .text-muted {
+            color: var(--text-secondary) !important;
+        }
+
+        /* Make list groups, selects and form controls inside card panels dark */
+        .card-custom .list-group {
+            background: transparent;
+        }
+
+        .card-custom .list-group-item {
+            background: transparent;
+            color: var(--text-primary) !important;
+            border-color: transparent;
+        }
+
+        .card-custom .list-group-item.active {
+            background: rgba(139,92,246,0.15) !important; /* subtle purple */
+            color: var(--text-primary) !important;
+            border-radius: 8px;
+        }
+
+        .card-custom .list-group-item-action:hover {
+            background: var(--bg-card-hover) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .card-custom .form-select,
+        .card-custom select {
+            background: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .card-custom .form-select:focus {
+            box-shadow: none !important;
+            border-color: var(--primary-color) !important;
+        }
+
+        .card-custom .form-check-label {
+            color: var(--text-primary) !important;
+        }
+
+        .card-custom .form-check-input {
+            background: var(--bg-secondary) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        /* Course card improvements */
+        .card-custom {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-custom .card-body {
+            padding: 1rem 1rem 1.25rem 1rem;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.02) 100%);
+        }
+
+        .card-custom .card-title a {
+            color: var(--text-primary) !important;
+            text-decoration: none;
+            display: inline-block;
+            line-height: 1.2;
+        }
+
+        .card-custom .card-title a:hover {
+            color: var(--primary-color) !important;
+            text-decoration: none;
+        }
+
+        .card-custom .card-text {
+            color: var(--text-secondary) !important;
+        }
+
+        .card-custom .badge.bg-light {
+            background: rgba(255,255,255,0.06) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid rgba(255,255,255,0.04) !important;
+        }
+        /* Make Bootstrap accordions inside dark cards match the dark theme */
+        .card-custom .accordion .accordion-item {
+            background: transparent;
+            border: none;
+        }
+
+        .card-custom .accordion-button {
+            background: transparent;
+            color: var(--text-primary) !important;
+            border: 0;
+            box-shadow: none;
+        }
+
+        .card-custom .accordion-button:not(.collapsed) {
+            background: rgba(139,92,246,0.06) !important; /* subtle purple when opened */
+            color: var(--text-primary) !important;
+        }
+
+        .card-custom .accordion-button::after {
+            filter: invert(1) !important; /* invert chevron so it's visible on dark bg */
+        }
+
+        .card-custom .accordion-body {
+            background: transparent;
+            color: var(--text-primary) !important;
+        }
+
+        .card-custom .accordion .accordion-collapse {
+            border-top: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .card-custom .card-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 999px;
+        }
+
+        .card-custom img.card-img-top {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 12px 12px 0 0;
+            object-fit: cover;
+        }
+
+        .card-custom .card-image-overlay {
+            background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.6) 100%);
+        }
+
+        .card-custom .d-flex .rounded-circle {
+            flex: 0 0 auto;
+        }
+
+        /* Price & CTA spacing */
+        .card-custom .btn-primary-custom {
+            padding: 0.45rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Small tweaks for stats and badges */
+        .card-custom .small.text-muted { color: var(--text-secondary) !important; }
+        .card-custom .text-success { color: var(--success-color) !important; }
+
+        /* Student dashboard specific tweaks */
+        .stats-grid { gap: 1rem; }
+        .stats-grid .card-custom { padding: 1.25rem; text-align: center; }
+        .stats-grid .card-custom h3 { font-size: 1.5rem; }
+
+        /* Continue learning card */
+        .continue-card { display: flex; gap: 0; overflow: hidden; border-radius: 12px; }
+        .continue-card .thumb { width: 34%; min-width: 120px; aspect-ratio: 1/1; object-fit: cover; }
+        .continue-card .body { padding: 0.9rem; flex: 1; }
+        .continue-card h6 { margin-bottom: 0.25rem; }
+
+        /* Recent activity improvement */
+        .recent-activity .list-group-item { cursor: default; }
+        .recent-activity .list-group-item:hover { background: var(--bg-card-hover); }
+
+        /* Recommended list compact layout */
+        .recommended .rounded { flex: 0 0 60px; height: 60px; object-fit: cover; }
+        .recommended h6 { margin-bottom: 0.15rem; }
+
+        /* Make buttons slightly taller and consistent */
+        .btn-primary-custom { min-height: 38px; padding-top: 0.45rem; padding-bottom: 0.45rem; }
+
         
         /* Audio Course Card */
         .audio-card {

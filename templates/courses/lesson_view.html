@@ -5,29 +5,125 @@
 {% block extra_css %}
 <style>
 footer { display: none !important; }
-.bg-white { background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
-.text-dark { color: var(--text-primary) !important; }
-.text-muted { color: var(--text-secondary) !important; }
-.card { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
-.breadcrumb { background-color: var(--bg-card) !important; }
-.breadcrumb-item a { color: var(--text-secondary) !important; }
-.breadcrumb-item.active { color: var(--text-primary) !important; }
-.list-group-item { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; color: var(--text-primary) !important; }
-.list-group-item:hover { background-color: var(--bg-card-hover) !important; }
-.btn-outline-primary { border-color: var(--primary-color) !important; color: var(--primary-color) !important; }
-.btn-outline-primary:hover { background-color: var(--primary-color) !important; color: white !important; }
 
-/* Sidebar tweaks for dark mode and UX */
-.sidebar { background: var(--bg-secondary); color: var(--text-primary); }
-.sidebar a { color: var(--text-secondary); }
-.sidebar a:hover { color: var(--text-primary); text-decoration: none; }
-
-@media (max-width: 991px) {
-    .sidebar { max-height: 40vh; overflow-y: auto; }
+/* ==================== DARK THEME OVERRIDES ==================== */
+.bg-white { 
+    background-color: #0F0F0F !important; 
+    color: #FFFFFF !important; 
+}
+.text-dark { color: #FFFFFF !important; }
+.text-muted { color: #9CA3AF !important; }
+.card { 
+    background-color: #1A1A1A !important; 
+    border: 1px solid #2A2A2A !important;
+    border-radius: 12px !important;
+}
+.card-body {
+    color: #FFFFFF !important;
+}
+.breadcrumb { 
+    background-color: transparent !important;
+    padding: 0;
+}
+.breadcrumb-item a { 
+    color: #9CA3AF !important;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.breadcrumb-item a:hover { 
+    color: #8B5CF6 !important; 
+}
+.breadcrumb-item.active { 
+    color: #FFFFFF !important; 
+}
+.breadcrumb-item + .breadcrumb-item::before {
+    color: #4B5563 !important;
 }
 
-.prose { color: var(--text-primary); }
+.list-group-item { 
+    background-color: #0F0F0F !important; 
+    border: 1px solid #2A2A2A !important; 
+    color: #FFFFFF !important;
+    border-radius: 10px !important;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+.list-group-item:hover { 
+    background-color: #1A1A1A !important;
+    border-color: #8B5CF6 !important;
+    transform: translateX(4px);
+}
 
+.btn-outline-primary { 
+    border: 1px solid #2A2A2A !important;
+    background: #1A1A1A !important;
+    color: #FFFFFF !important;
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.btn-outline-primary:hover { 
+    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%) !important;
+    border-color: #8B5CF6 !important;
+    color: #FFFFFF !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.4);
+}
+
+/* ==================== SIDEBAR STYLES ==================== */
+.sidebar { 
+    background: #0F0F0F; 
+    color: #FFFFFF;
+    border-right: 1px solid #1F1F1F !important;
+}
+.sidebar a { 
+    color: #9CA3AF;
+    transition: color 0.2s;
+}
+.sidebar a:hover { 
+    color: #FFFFFF; 
+    text-decoration: none; 
+}
+.sidebar h6 {
+    color: #FFFFFF;
+    font-size: 1.1rem;
+}
+
+/* Sidebar Scrollbar */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: #2A2A2A;
+    border-radius: 10px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #3A3A3A;
+}
+
+/* ==================== MAIN CONTENT ==================== */
+.main-content-area {
+    background: #0F0F0F;
+    min-height: calc(100vh - 76px);
+}
+
+.prose { 
+    color: #D1D5DB;
+    line-height: 1.8;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 991px) {
+    .sidebar { 
+        max-height: 40vh; 
+        overflow-y: auto;
+        border-right: none !important;
+        border-bottom: 1px solid #1F1F1F !important;
+    }
+}
 </style>
 {% endblock %}
 
@@ -46,119 +142,171 @@ footer { display: none !important; }
         </div>
         
         <!-- Main Content -->
-        <div class="col-lg-9">
-            <div class="p-5">
-                <h2 class="fw-bold mb-4">{{ lesson.title }}</h2>
+        <div class="col-lg-9 main-content-area">
+            <div class="p-4 p-lg-5" style="height: calc(100vh - 76px); overflow-y: auto;">
+                <!-- Lesson Header -->
+                <div class="mb-4">
+                    <h2 class="fw-bold text-white mb-3" style="font-size: 1.75rem; line-height: 1.3;">
+                        {{ lesson.title }}
+                    </h2>
+                    <div class="d-flex align-items-center gap-3" style="font-size: 0.875rem;">
+                        {% if lesson.duration_minutes %}
+                        <span style="color: #9CA3AF;">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ lesson.duration_minutes }} minutes
+                        </span>
+                        {% endif %}
+                        <span style="color: #9CA3AF;">
+                            <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% elif lesson.lesson_type == 'audio' %}headphones{% else %}book{% endif %} me-1"></i>
+                            {{ lesson.get_lesson_type_display }}
+                        </span>
+                    </div>
+                </div>
                 
                 <!-- Media Players -->
                 {% if lesson.lesson_type == 'video' or lesson.lesson_type == 'audio' %}
                     <!-- Main Lesson Content - Click to Open Player -->
                     {% if lesson.audio_file or media_files.exists %}
-                    <div class="card mb-4 border-0 shadow-sm overflow-hidden" style="cursor: pointer; transition: all 0.3s;" onclick="window.open('{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}', '_blank')">
-                        <div class="position-relative">
+                    <div class="player-card mb-4" 
+                         style="background: #1A1A1A; 
+                                border: 1px solid #2A2A2A; 
+                                border-radius: 16px; 
+                                overflow: hidden;
+                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);">
+                        <div class="p-4">
+                        <div class="position-relative overflow-hidden rounded-3 player-preview" 
+                             style="cursor: pointer;" 
+                             onclick="window.open('{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}', '_blank')">
                             <!-- Thumbnail/Cover -->
-                            <div class="ratio ratio-16x9 bg-dark">
+                            <div class="ratio ratio-16x9" style="background: linear-gradient(135deg, #1F1F1F 0%, #2A2A2A 100%);">
                                 {% if course.thumbnail %}
-                                    <img src="{{ course.thumbnail.url }}" alt="{{ lesson.title }}" class="object-fit-cover">
+                                    <img src="{{ course.thumbnail.url }}" 
+                                         alt="{{ lesson.title }}" 
+                                         class="object-fit-cover player-thumbnail"
+                                         style="transition: transform 0.4s ease;">
                                 {% else %}
                                     <div class="d-flex align-items-center justify-content-center">
-                                        <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} fa-5x text-white opacity-25"></i>
+                                        <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}headphones{% endif %} fa-5x" 
+                                           style="color: #4B5563; opacity: 0.3;"></i>
                                     </div>
                                 {% endif %}
                                 
                                 <!-- Play Overlay -->
-                                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background: rgba(0,0,0,0.4);">
+                                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center player-overlay" 
+                                     style="background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%);">
                                     <div class="text-center">
-                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; transition: all 0.3s;">
-                                            <i class="fas fa-play text-primary" style="font-size: 32px; margin-left: 5px;"></i>
+                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center play-button" 
+                                             style="width: 90px; height: 90px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);">
+                                            <i class="fas fa-play" style="color: #8B5CF6; font-size: 36px; margin-left: 6px;"></i>
                                         </div>
-                                        <p class="text-white mt-3 mb-0 fw-bold">
+                                        <p class="text-white mt-4 mb-0 fw-bold" style="font-size: 1.1rem; letter-spacing: 0.5px;">
                                             {% if lesson.lesson_type == 'video' %}
-                                                Click to Watch in Full Screen
+                                                Open Video Player
                                             {% else %}
-                                                Click to Listen in Immersive Player
+                                                Open Audio Player
                                             {% endif %}
                                         </p>
+                                        {% if lesson.duration_minutes %}
+                                        <p class="mb-0 mt-2" style="color: #D1D5DB; font-size: 0.9rem;">
+                                            <i class="fas fa-clock me-1" style="font-size: 0.85rem;"></i>{{ lesson.duration_minutes }} minutes
+                                        </p>
+                                        {% endif %}
+                                        {% if progress.last_position_seconds %}
+                                        <p class="mb-0 mt-1" style="color: #A78BFA; font-size: 0.85rem;">
+                                            <i class="fas fa-history me-1"></i>Resume from {{ resume_time }}
+                                        </p>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="card-body bg-gradient-primary text-white">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">
-                                        <i class="fas fa-{% if lesson.lesson_type == 'video' %}play-circle{% else %}headphones{% endif %} me-2"></i>
-                                        {{ lesson.title }}
-                                    </h5>
-                                    <p class="mb-0 small opacity-75">
-                                        {% if lesson.duration_minutes %}
-                                            <i class="fas fa-clock me-1"></i>{{ lesson.duration_minutes }} minutes
-                                        {% endif %}
-                                        {% if progress.last_position_seconds %}
-                                            <span class="ms-3"><i class="fas fa-history me-1"></i>Resume from {{ resume_time }}</span>
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div>
-                                    <span class="badge bg-secondary text-primary">
-                                        <i class="fas fa-external-link-alt me-1"></i>Open Player
-                                    </span>
-                                </div>
+                        <!-- Progress Info -->
+                        {% if progress.completion_percentage > 0 %}
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small style="color: #9CA3AF; font-weight: 500;">Your Progress</small>
+                                <small style="color: #FFFFFF; font-weight: 600;">{{ progress.completion_percentage|floatformat:0 }}%</small>
                             </div>
-                            
-                            <!-- Progress Bar -->
-                            {% if progress.completion_percentage > 0 %}
-                            <div class="mt-3">
-                                <div class="progress" style="height: 4px; background: rgba(255,255,255,0.3);">
-                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ progress.completion_percentage }}%"></div>
-                                </div>
-                                <small class="opacity-75 d-block mt-1">{{ progress.completion_percentage|floatformat:0 }}% completed</small>
+                            <div class="progress" style="height: 8px; background-color: #1F1F1F; border-radius: 10px; overflow: hidden;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ progress.completion_percentage }}%; 
+                                            background: linear-gradient(90deg, #8B5CF6 0%, #A78BFA 100%);
+                                            border-radius: 10px;"></div>
                             </div>
-                            {% endif %}
+                        </div>
+                        {% endif %}
                         </div>
                     </div>
                     
                     <!-- Additional Media Files (if any) -->
                     {% if media_files.count > 1 %}
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <h6 class="fw-bold mb-3">
-                                <i class="fas fa-list me-2"></i>Additional Media Files
-                            </h6>
-                            <div class="list-group">
-                                {% for media in media_files %}
-                                    {% if forloop.counter > 1 %}
-                                    <a href="{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <i class="fas fa-{% if media.media_type == 'video' %}video{% else %}headphones{% endif %} me-2 text-primary"></i>
-                                            <span>{{ forloop.counter }}. {% if media.title %}{{ media.title }}{% else %}{{ media.get_media_type_display }} File{% endif %}</span>
+                    <div class="content-card mb-4" 
+                         style="background: #1A1A1A; 
+                                border: 1px solid #2A2A2A; 
+                                border-radius: 12px; 
+                                padding: 1.5rem;">
+                        <h6 class="fw-bold mb-3 text-white" style="font-size: 1.1rem;">
+                            <i class="fas fa-list me-2" style="color: #8B5CF6;"></i>Additional Media Files
+                        </h6>
+                        <div class="list-group list-group-flush">
+                            {% for media in media_files %}
+                                {% if forloop.counter > 1 %}
+                                <a href="{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}" 
+                                   target="_blank" 
+                                   class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3" 
+                                             style="width: 40px; 
+                                                    height: 40px; 
+                                                    background: rgba(139, 92, 246, 0.15); 
+                                                    border-radius: 8px; 
+                                                    display: flex; 
+                                                    align-items: center; 
+                                                    justify-content: center;">
+                                            <i class="fas fa-{% if media.media_type == 'video' %}video{% else %}headphones{% endif %}" 
+                                               style="color: #8B5CF6;"></i>
                                         </div>
+                                        <span>{{ forloop.counter }}. {% if media.title %}{{ media.title }}{% else %}{{ media.get_media_type_display }} File{% endif %}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
                                         {% if media.duration_minutes %}
-                                        <span class="badge bg-secondary text-light">{{ media.duration_minutes }} min</span>
+                                        <span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #A78BFA;">{{ media.duration_minutes }} min</span>
                                         {% endif %}
-                                    </a>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
+                                        <i class="fas fa-external-link-alt" style="color: #8B5CF6; font-size: 0.85rem;"></i>
+                                    </div>
+                                </a>
+                                {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                     {% endif %}
                     
                     {% else %}
                     <!-- No media uploaded -->
-                    <div class="card mb-4">
-                        <div class="card-body text-center py-5">
-                            <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}upload{% endif %} fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">No media files uploaded yet</h5>
-                            <p class="text-muted mb-0 small">The teacher will upload the lesson content soon.</p>
+                    <div class="content-card mb-4" 
+                         style="background: #1A1A1A; 
+                                border: 1px solid #2A2A2A; 
+                                border-radius: 12px; 
+                                padding: 3rem 2rem;">
+                        <div class="text-center">
+                            <div class="mb-4" style="color: #4B5563;">
+                                <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% else %}upload{% endif %} fa-4x"></i>
+                            </div>
+                            <h5 style="color: #9CA3AF; font-weight: 600;">No media files uploaded yet</h5>
+                            <p class="mb-0" style="color: #6B7280; font-size: 0.9rem;">The teacher will upload the lesson content soon.</p>
                         </div>
                     </div>
                     {% endif %}
                 {% endif %}
                 
                 <!-- Content -->
-                <div class="card-custom p-4">
+                <div class="content-card" 
+                     style="background: #1A1A1A; 
+                            border: 1px solid #2A2A2A; 
+                            border-radius: 12px; 
+                            padding: 2rem;">
+                    <h5 class="fw-bold mb-4 text-white" style="font-size: 1.25rem;">About this lesson</h5>
                     <div class="prose">
                         {{ lesson.description|linebreaks }}
                     </div>
@@ -169,42 +317,72 @@ footer { display: none !important; }
 </div>
 
 <style>
-    /* Player Card Hover Effects */
-    .card[onclick]:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+    /* ==================== PLAYER CARD ANIMATIONS ==================== */
+    .player-preview {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    
-    .card[onclick]:hover .bg-white.rounded-circle {
-        transform: scale(1.1);
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+
+    .player-preview:hover {
+        transform: scale(1.01);
     }
-    
-    .card[onclick]:active {
-        transform: translateY(-2px);
-    }
-    
-    /* Smooth image transitions */
-    .card[onclick] img {
-        transition: transform 0.3s ease;
-    }
-    
-    .card[onclick]:hover img {
+
+    .player-preview:hover .player-thumbnail {
         transform: scale(1.05);
     }
-    
-    /* Progress bar animation */
-    .progress-bar {
-        transition: width 0.3s ease;
+
+    .player-preview:hover .play-button {
+        transform: scale(1.1);
+        box-shadow: 0 12px 30px rgba(139, 92, 246, 0.4);
     }
-    
-    /* Badge animation */
-    .badge {
+
+    .player-preview:hover .player-overlay {
+        background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);
+    }
+
+    .play-button {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .player-overlay {
         transition: all 0.3s ease;
     }
     
-    .card[onclick]:hover .badge {
-        transform: scale(1.05);
+    /* ==================== CONTENT ANIMATIONS ==================== */
+    .content-card {
+        animation: fadeInUp 0.4s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ==================== PROGRESS BAR ==================== */
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+
+    /* ==================== SMOOTH SCROLLING ==================== */
+    .sidebar,
+    .main-content-area > div {
+        scroll-behavior: smooth;
+    }
+
+    /* ==================== ACCESSIBILITY ==================== */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
     }
 </style>
 {% endblock %}

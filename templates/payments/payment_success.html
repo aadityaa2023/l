@@ -3,66 +3,77 @@
 {% block title %}Payment Successful - LeQ{% endblock %}
 
 {% block content %}
-<section class="py-5">
-    <div class="container">
+<section class="payment-success-section py-3" style="min-height: auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container py-3">
         <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="card-custom p-5 text-center">
-                    <div class="mb-4">
-                        <div class="success-checkmark mb-4">
-                            <div class="check-icon">
-                                <span class="icon-line line-tip"></span>
-                                <span class="icon-line line-long"></span>
-                                <div class="icon-circle"></div>
-                                <div class="icon-fix"></div>
-                            </div>
+            <div class="col-lg-6 col-md-8">
+                <div class="success-card shadow-lg">
+                    <!-- Success Icon -->
+                    <div class="text-center mb-3">
+                        <div class="success-animation">
+                            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                            </svg>
                         </div>
-                        <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
                     </div>
                     
-                    <h2 class="fw-bold mb-3">Payment Successful!</h2>
-                    <p class="text-muted mb-4">
-                        Thank you for your purchase. Your payment has been processed successfully.
-                    </p>
+                    <!-- Success Message -->
+                    <div class="text-center mb-3">
+                        <h1 class="success-title mb-2">Payment Successful!</h1>
+                        <p class="success-subtitle mb-0">
+                            Thank you for your purchase. Your course is now unlocked!
+                        </p>
+                    </div>
 
+                    <!-- Payment Details -->
                     {% if payment %}
-                    <div class="card-custom bg-light p-3 mb-4 text-start">
-                        <div class="row mb-2">
-                            <div class="col-6 text-muted">Course:</div>
-                            <div class="col-6 fw-semibold">{{ payment.course.title }}</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6 text-muted">Amount Paid:</div>
-                            <div class="col-6 fw-semibold">₹{{ payment.amount }}</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-6 text-muted">Payment ID:</div>
-                            <div class="col-6 fw-semibold">{{ payment.razorpay_payment_id }}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-6 text-muted">Date:</div>
-                            <div class="col-6 fw-semibold">{{ payment.created_at|date:"d M, Y h:i A" }}</div>
+                    <div class="payment-details-card mb-3">
+                        <h5 class="details-header mb-2">
+                            <i class="fas fa-receipt me-2"></i>Payment Details
+                        </h5>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Course</span>
+                                <span class="detail-value">{{ payment.course.title }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Amount Paid</span>
+                                <span class="detail-value amount">₹{{ payment.amount }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Payment ID</span>
+                                <span class="detail-value payment-id">{{ payment.razorpay_payment_id|truncatechars:20 }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Date & Time</span>
+                                <span class="detail-value">{{ payment.created_at|date:"d M, Y h:i A" }}</span>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
 
-                    <div class="alert alert-info mb-4">
-                        <i class="fas fa-envelope me-2"></i>
-                        A confirmation email has been sent to your registered email address.
+                    <!-- Email Notification -->
+                    <div class="email-notification mb-3">
+                        <i class="fas fa-envelope-circle-check me-2"></i>
+                        <span>Confirmation email sent to your registered email address.</span>
                     </div>
 
-                    <div class="d-grid gap-2">
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
                         {% if payment and payment.course %}
-                        <a href="{% url 'courses:course_learn' slug=payment.course.slug %}" class="btn btn-primary-custom btn-lg">
-                            <i class="fas fa-play-circle me-2"></i>Start Learning
+                        <a href="{% url 'courses:course_learn' payment.course.id %}" class="btn btn-primary-action">
+                            <i class="fas fa-play-circle me-2"></i>Start Learning Now
                         </a>
                         {% endif %}
-                        <a href="{% url 'courses:course_list' %}" class="btn btn-outline-primary">
-                            <i class="fas fa-book me-2"></i>Browse More Courses
-                        </a>
-                        <a href="{% url 'payments:my_payments' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-receipt me-2"></i>View Payment History
-                        </a>
+                        <div class="secondary-actions">
+                            <a href="{% url 'courses:course_list' %}" class="btn btn-secondary-action">
+                                <i class="fas fa-book me-2"></i>Browse Courses
+                            </a>
+                            <a href="{% url 'payments:my_payments' %}" class="btn btn-secondary-action">
+                                <i class="fas fa-history me-2"></i>History
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -71,134 +82,278 @@
 </section>
 
 <style>
-.success-checkmark {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto;
-}
-
-.success-checkmark .check-icon {
-    width: 80px;
-    height: 80px;
+/* Payment Success Page Styles */
+.payment-success-section {
     position: relative;
-    border-radius: 50%;
-    box-sizing: content-box;
-    border: 4px solid #28a745;
+    overflow: hidden;
 }
 
-.success-checkmark .check-icon::before {
-    top: 3px;
-    left: -2px;
-    width: 30px;
-    transform-origin: 100% 50%;
-    border-radius: 100px 0 0 100px;
-}
-
-.success-checkmark .check-icon::after {
+.payment-success-section::before {
+    content: '';
+    position: absolute;
     top: 0;
-    left: 30px;
-    width: 60px;
-    transform-origin: 0 50%;
-    border-radius: 0 100px 100px 0;
-    animation: rotate-circle 4.25s ease-in;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.3;
 }
 
-.success-checkmark .icon-line {
-    height: 5px;
-    background-color: #28a745;
-    display: block;
-    border-radius: 2px;
-    position: absolute;
-    z-index: 10;
+.success-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 1.5rem 1.5rem;
+    position: relative;
+    animation: slideUp 0.6s ease-out;
 }
 
-.success-checkmark .icon-line.line-tip {
-    top: 46px;
-    left: 14px;
-    width: 25px;
-    transform: rotate(45deg);
-    animation: icon-line-tip 0.75s;
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.success-checkmark .icon-line.line-long {
-    top: 38px;
-    right: 8px;
-    width: 47px;
-    transform: rotate(-45deg);
-    animation: icon-line-long 0.75s;
+/* Success Animation */
+.success-animation {
+    display: inline-block;
+    width: 120px;
+    height: 120px;
 }
 
-.success-checkmark .icon-circle {
-    top: -4px;
-    left: -4px;
-    z-index: 10;
-    width: 80px;
-    height: 80px;
+.checkmark {
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    position: absolute;
-    box-sizing: content-box;
-    border: 4px solid rgba(40, 167, 69, .5);
+    display: block;
+    stroke-width: 3;
+    stroke: #10b981;
+    stroke-miterlimit: 10;
+    box-shadow: inset 0px 0px 0px #10b981;
+    animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
 }
 
-.success-checkmark .icon-fix {
-    top: 8px;
-    width: 5px;
-    left: 26px;
-    z-index: 1;
-    height: 85px;
-    position: absolute;
-    transform: rotate(-45deg);
-    background-color: #fff;
+.checkmark-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    stroke-width: 3;
+    stroke-miterlimit: 10;
+    stroke: #10b981;
+    fill: #d1fae5;
+    animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
 
-@keyframes icon-line-tip {
-    0% {
-        width: 0;
-        left: 1px;
-        top: 19px;
-    }
-    54% {
-        width: 0;
-        left: 1px;
-        top: 19px;
-    }
-    70% {
-        width: 50px;
-        left: -8px;
-        top: 37px;
-    }
-    84% {
-        width: 17px;
-        left: 21px;
-        top: 48px;
-    }
+.checkmark-check {
+    transform-origin: 50% 50%;
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    stroke: #10b981;
+    stroke-width: 3;
+    animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+
+@keyframes stroke {
     100% {
-        width: 25px;
-        left: 14px;
-        top: 46px;
+        stroke-dashoffset: 0;
     }
 }
 
-@keyframes icon-line-long {
-    0% {
-        width: 0;
-        right: 46px;
-        top: 54px;
+@keyframes scale {
+    0%, 100% {
+        transform: none;
     }
-    65% {
-        width: 0;
-        right: 46px;
-        top: 54px;
+    50% {
+        transform: scale3d(1.1, 1.1, 1);
     }
-    84% {
-        width: 55px;
-        right: 0px;
-        top: 35px;
-    }
+}
+
+@keyframes fill {
     100% {
-        width: 47px;
-        right: 8px;
-        top: 38px;
+        box-shadow: inset 0px 0px 0px 60px #d1fae5;
+    }
+}
+
+/* Typography */
+.success-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.success-subtitle {
+    font-size: 0.95rem;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* Payment Details Card */
+.payment-details-card {
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border-radius: 16px;
+    padding: 1.75rem;
+    border: 2px solid #e5e7eb;
+}
+
+.details-header {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 1.25rem;
+}
+
+.details-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 0.95rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-size: 1rem;
+    color: #1f2937;
+    font-weight: 600;
+    text-align: right;
+}
+
+.detail-value.amount {
+    font-size: 1.25rem;
+    color: #10b981;
+}
+
+.detail-value.payment-id {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    background: #fff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Email Notification */
+.email-notification {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border-left: 4px solid #3b82f6;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    color: #1e40af;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+}
+
+.email-notification i {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+    color: #3b82f6;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.btn-primary-action {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.secondary-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.btn-secondary-action {
+    background: white;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-secondary-action:hover {
+    background: #f9fafb;
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-1px);
+}
+
+/* Security Badge */
+.security-badge {
+    display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .success-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    .success-title {
+        font-size: 2rem;
+    }
+    
+    .success-subtitle {
+        font-size: 1rem;
+    }
+    
+    .secondary-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .detail-value {
+        text-align: left;
     }
 }
 </style>

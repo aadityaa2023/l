@@ -55,6 +55,13 @@ class CourseListView(ListView):
         level = self.request.GET.get('level')
         if level:
             queryset = queryset.filter(level=level)
+
+        # Filter by price
+        price_filter = self.request.GET.get('price')
+        if price_filter == 'free':
+            queryset = queryset.filter(Q(price=0) | Q(is_free=True))
+        elif price_filter == 'paid':
+            queryset = queryset.filter(price__gt=0)
         
         # Sort
         sort = self.request.GET.get('sort', '-created_at')

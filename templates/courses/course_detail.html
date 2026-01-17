@@ -167,16 +167,17 @@
                                                 {% endif %}
                                                 <span>{{ lesson.title }}</span>
                                             </div>
+                                            {% if lesson.duration_minutes and lesson.duration_minutes|floatformat:"0" != "0" %}
                                             <small class="text-muted">
                                                 <i class="far fa-clock me-1"></i>
-                                                {% if lesson.duration_minutes and lesson.duration_minutes|floatformat:"0" != "0" %}
-                                                    {{ lesson.duration_minutes }} min
-                                                {% elif lesson.media_files.first and lesson.media_files.first.duration_minutes %}
-                                                    {{ lesson.media_files.first.duration_minutes }} min
-                                                {% else %}
-                                                    0 min
-                                                {% endif %}
+                                                {{ lesson.duration_minutes }} min
                                             </small>
+                                            {% elif lesson.media_files.first and lesson.media_files.first.duration_minutes %}
+                                            <small class="text-muted">
+                                                <i class="far fa-clock me-1"></i>
+                                                {{ lesson.media_files.first.duration_minutes }} min
+                                            </small>
+                                            {% endif %}
                                         </a>
                                     </div>
                                     {% endfor %}

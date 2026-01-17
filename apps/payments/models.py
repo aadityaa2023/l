@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 import uuid
+from .encryption import encrypt_payment_data, decrypt_payment_data
 
 
 class Payment(models.Model):
@@ -40,6 +41,18 @@ class Payment(models.Model):
     razorpay_payment_id = models.CharField(_('Razorpay payment ID'), max_length=255, blank=True)
     razorpay_signature = models.CharField(_('Razorpay signature'), max_length=500, blank=True)
     
+    # Encrypted Payment Method Details (256-bit AES encryption)
+    encrypted_card_last4 = models.CharField(_('encrypted card last 4 digits'), max_length=500, blank=True, 
+                                           help_text="Encrypted last 4 digits of card")
+    encrypted_card_type = models.CharField(_('encrypted card type'), max_length=500, blank=True,
+                                          help_text="Encrypted card type (Visa, Mastercard, etc.)")
+    encrypted_upi_id = models.CharField(_('encrypted UPI ID'), max_length=500, blank=True,
+                                        help_text="Encrypted UPI ID")
+    encrypted_wallet_name = models.CharField(_('encrypted wallet name'), max_length=500, blank=True,
+                                            help_text="Encrypted wallet name")
+    encrypted_bank_name = models.CharField(_('encrypted bank name'), max_length=500, blank=True,
+                                          help_text="Encrypted bank name for netbanking")
+    
     # Additional Info
     description = models.TextField(_('description'), blank=True)
     failure_reason = models.TextField(_('failure reason'), blank=True)
@@ -66,6 +79,119 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.amount} {self.currency} ({self.status})"
+    
+    # Payment Method Encryption/Decryption Methods
+    
+    def set_card_details(self, last4=None, card_type=None):
+        """
+        Encrypt and store card details
+        
+        Args:
+            last4: Last 4 digits of card
+            card_type: Card type (Visa, Mastercard, etc.)
+        """
+        if last4:
+            self.encrypted_card_last4 = encrypt_payment_data(str(last4))
+        if card_type:
+            self.encrypted_card_type = encrypt_payment_data(str(card_type))
+    
+    def get_card_details(self):
+        """
+        Decrypt and return card details
+        
+        Returns:
+            Dictionary with card_last4 and card_type
+        """
+        return {
+            'card_last4': decrypt_payment_data(self.encrypted_card_last4) if self.encrypted_card_last4 else None,
+            'card_type': decrypt_payment_data(self.encrypted_card_type) if self.encrypted_card_type else None,
+        }
+    
+    def set_upi_id(self, upi_id):
+        """
+        Encrypt and store UPI ID
+        
+        Args:
+            upi_id: UPI ID
+        """
+        if upi_id:
+            self.encrypted_upi_id = encrypt_payment_data(str(upi_id))
+    
+    def get_upi_id(self):
+        """
+        Decrypt and return UPI ID
+        
+        Returns:
+            Decrypted UPI ID or None
+        """
+        return decrypt_payment_data(self.encrypted_upi_id) if self.encrypted_upi_id else None
+    
+    def set_wallet_name(self, wallet_name):
+        """
+        Encrypt and store wallet name
+        
+        Args:
+            wallet_name: Wallet name
+        """
+        if wallet_name:
+            self.encrypted_wallet_name = encrypt_payment_data(str(wallet_name))
+    
+    def get_wallet_name(self):
+        """
+        Decrypt and return wallet name
+        
+        Returns:
+            Decrypted wallet name or None
+        """
+        return decrypt_payment_data(self.encrypted_wallet_name) if self.encrypted_wallet_name else None
+    
+    def set_bank_name(self, bank_name):
+        """
+        Encrypt and store bank name
+        
+        Args:
+            bank_name: Bank name for netbanking
+        """
+        if bank_name:
+            self.encrypted_bank_name = encrypt_payment_data(str(bank_name))
+    
+    def get_bank_name(self):
+        """
+        Decrypt and return bank name
+        
+        Returns:
+            Decrypted bank name or None
+        """
+        return decrypt_payment_data(self.encrypted_bank_name) if self.encrypted_bank_name else None
+    
+    def get_masked_payment_info(self):
+        """
+        Get masked payment information for display
+        
+        Returns:
+            String with masked payment info
+        """
+        if self.payment_method == 'card':
+            details = self.get_card_details()
+            if details['card_last4']:
+                return f"{details['card_type'] or 'Card'} ending in {details['card_last4']}"
+        elif self.payment_method == 'upi':
+            upi_id = self.get_upi_id()
+            if upi_id:
+                # Mask UPI ID (show first 2 and last 2 chars)
+                if len(upi_id) > 4:
+                    return f"{upi_id[:2]}{'*' * (len(upi_id) - 4)}{upi_id[-2:]}"
+                return upi_id
+        elif self.payment_method == 'wallet':
+            wallet = self.get_wallet_name()
+            if wallet:
+                return f"{wallet} Wallet"
+        elif self.payment_method == 'netbanking':
+            bank = self.get_bank_name()
+            if bank:
+                return f"{bank} Net Banking"
+        
+        return self.get_payment_method_display()
 
 
 class Subscription(models.Model):
