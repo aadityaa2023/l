@@ -1,14 +1,15 @@
 """
 Payment views for Razorpay integration
 """
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from django.conf import settings
+from django.db import models
 import json
-import logging
 from .models import Payment, Subscription, PaymentWebhook
 from .utils import RazorpayHandler, convert_to_paise, convert_from_paise
 from apps.courses.models import Course, Enrollment
@@ -324,8 +325,17 @@ def my_payments(request):
     """List user's payment history"""
     payments = Payment.objects.filter(user=request.user).select_related('course').order_by('-created_at')
     
+    # Calculate stats
+    total_payments = payments.count()
+    completed_payments = payments.filter(status='completed')
+    successful_payments = completed_payments.count()
+    total_spent = completed_payments.aggregate(total=models.Sum('amount'))['total'] or 0
+    
     context = {
-        'payments': payments
+        'payments': payments,
+        'total_payments': total_payments,
+        'successful_payments': successful_payments,
+        'total_spent': total_spent,
     }
     
     return render(request, 'payments/my_payments.html', context)

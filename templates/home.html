@@ -159,20 +159,49 @@
     }
 
     /* ==================== Course Cards ==================== */
+    /* Use percentage-based calc so we can show 5 cards per row on large screens */
     .course-card-wrapper {
-        flex: 0 0 auto;
-        width: 280px;
+        flex: 0 0 calc((100% - 4rem) / 5);
+        max-width: calc((100% - 4rem) / 5);
     }
 
-    @media (max-width: 576px) {
+    /* >= 1200px: 5 columns (accounting for gaps) */
+    @media (min-width: 1200px) {
         .course-card-wrapper {
-            width: 200px;
+            flex: 0 0 calc((100% - 4rem) / 5);
+            max-width: calc((100% - 4rem) / 5);
         }
     }
 
-    @media (min-width: 1400px) {
+    /* 992px - 1199px: 4 columns */
+    @media (max-width: 1199.98px) and (min-width: 992px) {
         .course-card-wrapper {
-            width: 300px;
+            flex: 0 0 calc((100% - 3rem) / 4);
+            max-width: calc((100% - 3rem) / 4);
+        }
+    }
+
+    /* 768px - 991px: 3 columns */
+    @media (max-width: 991.98px) and (min-width: 768px) {
+        .course-card-wrapper {
+            flex: 0 0 calc((100% - 2rem) / 3);
+            max-width: calc((100% - 2rem) / 3);
+        }
+    }
+
+    /* 576px - 767px: 2 columns */
+    @media (max-width: 767.98px) and (min-width: 576px) {
+        .course-card-wrapper {
+            flex: 0 0 calc((100% - 1rem) / 2);
+            max-width: calc((100% - 1rem) / 2);
+        }
+    }
+
+    /* <576px: single column */
+    @media (max-width: 575.98px) {
+        .course-card-wrapper {
+            flex: 0 0 100%;
+            max-width: 100%;
         }
     }
 
@@ -654,7 +683,7 @@
         
         <div class="horizontal-scroll-wrapper">
             <div class="horizontal-scroll-container">
-                {% for course in trending_courses %}
+                {% for course in trending_courses|slice:":5" %}
                 <div class="course-card-wrapper">
                     <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none">
                         <div class="course-card">

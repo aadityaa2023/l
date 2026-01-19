@@ -205,6 +205,75 @@
             border: 1px solid var(--border-color) !important;
         }
 
+        /* Make text inputs and textareas dark with visible white text and placeholders */
+        .card-custom .form-control,
+        .form-control,
+        .card-custom input.form-control,
+        .card-custom textarea.form-control,
+        .card-custom .form-control-lg {
+            background: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+            box-shadow: none !important;
+        }
+
+        /* Placeholder color should be slightly muted but visible */
+        .card-custom .form-control::placeholder,
+        .form-control::placeholder {
+            color: var(--text-secondary) !important;
+            opacity: 1; /* ensure full opacity for consistent browsers */
+        }
+
+        /* Focus styles for accessibility (neutral, no purple border) */
+        .card-custom .form-control:focus,
+        .form-control:focus {
+            background: var(--bg-secondary) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important; /* keep neutral border on focus */
+            box-shadow: 0 0 0 0.08rem rgba(255,255,255,0.04) !important; /* subtle neutral focus */
+            outline: none !important;
+        }
+
+        /* Ensure input text selection is visible (neutral highlight) */
+        .card-custom .form-control::selection,
+        .form-control::selection {
+            background: rgba(255,255,255,0.08);
+            color: var(--text-primary);
+        }
+
+        /* Hide browser-supplied clear / reveal buttons and decorations that break dark UI */
+        /* Edge / IE */
+        input::-ms-clear,
+        input::-ms-reveal {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+
+        /* Chrome / Safari / other WebKit-based browsers: hide textfield decoration buttons */
+        input::-webkit-clear-button,
+        input::-webkit-textfield-decoration-button,
+        input::-webkit-search-decoration,
+        input::-webkit-search-cancel-button,
+        input::-webkit-search-results-button,
+        input::-webkit-search-results-decoration,
+        input::-webkit-credentials-auto-fill-button {
+            display: none !important;
+            -webkit-appearance: none !important;
+        }
+
+        /* Autofill fix: ensure autofilled inputs keep dark background and white text */
+        input:-webkit-autofill,
+        input:-webkit-autofill:focus,
+        textarea:-webkit-autofill,
+        textarea:-webkit-autofill:focus,
+        select:-webkit-autofill,
+        select:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--text-primary) !important;
+            -webkit-box-shadow: 0 0 0px 1000px var(--bg-secondary) inset !important;
+            box-shadow: 0 0 0px 1000px var(--bg-secondary) inset !important;
+        }
+
         /* Course card improvements */
         .card-custom {
             border-radius: 12px;

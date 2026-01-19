@@ -34,20 +34,17 @@
                 <div class="card-custom p-4 sticky-top" style="top: 100px;">
                     <h5 class="fw-bold mb-4"><i class="fas fa-filter me-2"></i>Filters</h5>
                     
-                    <!-- Categories -->
+                    <!-- Categories (dropdown) -->
                     <div class="mb-4">
                         <h6 class="fw-semibold mb-3">Categories</h6>
-                        <div class="list-group list-group-flush">
-                            <a href="{% url 'courses:course_list' %}?{% for k,v in request.GET.items %}{% if k != 'category' %}{{ k }}={{ v|urlencode }}&{% endif %}{% endfor %}" class="list-group-item list-group-item-action border-0 {% if not request.GET.category %}active{% endif %}">
-                                All Categories
-                            </a>
+                        <select id="filter-category" name="category" class="form-select" onchange="window.location.href = updateQueryStringParameter(window.location.search, 'category', this.value);">
+                            <option value="" {% if not request.GET.category %}selected{% endif %}>All Categories</option>
                             {% for category in categories %}
-                            <a href="?category={{ category.slug }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
-                               class="list-group-item list-group-item-action border-0 {% if request.GET.category == category.slug %}active{% endif %}">
-                                <i class="{{ category.icon|default:'fas fa-folder' }} me-2"></i>{{ category.name }}
-                            </a>
+                            <option value="{{ category.slug }}" {% if request.GET.category == category.slug %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
                             {% endfor %}
-                        </div>
+                        </select>
                     </div>
                     
                     <!-- Level Filter -->
