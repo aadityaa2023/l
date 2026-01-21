@@ -512,34 +512,10 @@
         <div class="menu-section">
           <div class="menu-section-title">Content</div>
           <a
-            href="{% url 'platformadmin:review_moderation' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'review_moderation' %}active{% endif %}"
-          >
-            <i class="fas fa-star-half-alt"></i> Review Moderation
-          </a>
-          <a
             href="{% url 'platformadmin:banner_list' %}"
             class="menu-item {% if 'banner' in request.resolver_match.url_name %}active{% endif %}"
           >
             <i class="fas fa-images"></i> Banners
-          </a>
-          <a
-            href="{% url 'platformadmin:cms_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'cms_management' %}active{% endif %}"
-          >
-            <i class="fas fa-file-alt"></i> CMS Pages
-          </a>
-          <a
-            href="{% url 'platformadmin:faq_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'faq_management' %}active{% endif %}"
-          >
-            <i class="fas fa-question-circle"></i> FAQs
-          </a>
-          <a
-            href="{% url 'platformadmin:announcement_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'announcement_management' %}active{% endif %}"
-          >
-            <i class="fas fa-bullhorn"></i> Announcements
           </a>
         </div>
 
@@ -550,18 +526,6 @@
             class="menu-item {% if request.resolver_match.url_name == 'analytics_report' %}active{% endif %}"
           >
             <i class="fas fa-chart-bar"></i> Analytics
-          </a>
-          <a
-            href="{% url 'platformadmin:activity_logs' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'activity_logs' %}active{% endif %}"
-          >
-            <i class="fas fa-history"></i> Activity Logs
-          </a>
-          <a
-            href="{% url 'platformadmin:login_history' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'login_history' %}active{% endif %}"
-          >
-            <i class="fas fa-shield-alt"></i> Login History
           </a>
         </div>
 

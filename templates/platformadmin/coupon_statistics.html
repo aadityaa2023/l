@@ -1,0 +1,205 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-chart-bar"></i> Coupon Statistics</h2>
+        <p class="text-muted mb-0">Comprehensive view of coupon performance and commission distribution</p>
+    </div>
+    <a href="{% url 'platformadmin:coupon_management' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Coupons
+    </a>
+</div>
+
+<!-- Overall Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_coupons }}</div>
+            <div class="stat-label">Total Coupons</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card success">
+            <div class="stat-value">{{ active_coupons }}</div>
+            <div class="stat-label">Active Coupons</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card warning">
+            <div class="stat-value">{{ total_uses|intcomma }}</div>
+            <div class="stat-label">Total Uses</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card danger">
+            <div class="stat-value">₹{{ total_discount|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Total Discount Given</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="stat-value">₹{{ total_revenue|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Total Revenue via Coupons</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+            <div class="stat-value">₹{{ total_extra_commission|floatformat:0|intcomma }}</div>
+            <div class="stat-label">Total Extra Commission (20%)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Platform Admin vs Teacher Coupons -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user-shield"></i> Platform Admin Coupons</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center mb-3">
+                            <h4>{{ platform_stats.count }}</h4>
+                            <small class="text-muted">Total Coupons</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center mb-3">
+                            <h4>{{ platform_stats.uses }}</h4>
+                            <small class="text-muted">Total Uses</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4>₹{{ platform_stats.revenue|floatformat:0|intcomma }}</h4>
+                            <small class="text-muted">Revenue</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4>₹{{ platform_stats.extra_commission|floatformat:0|intcomma }}</h4>
+                            <small class="text-muted">Extra Commission</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chalkboard-teacher"></i> Teacher Coupons</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center mb-3">
+                            <h4>{{ teacher_stats.count }}</h4>
+                            <small class="text-muted">Total Coupons</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center mb-3">
+                            <h4>{{ teacher_stats.uses }}</h4>
+                            <small class="text-muted">Total Uses</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4>₹{{ teacher_stats.revenue|floatformat:0|intcomma }}</h4>
+                            <small class="text-muted">Revenue</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h4>₹{{ teacher_stats.extra_commission|floatformat:0|intcomma }}</h4>
+                            <small class="text-muted">Extra Commission</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Performing Coupons -->
+<div class="card">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-trophy"></i> Top Performing Coupons</h5>
+    </div>
+    <div class="card-body">
+        {% if top_coupons %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Coupon Code</th>
+                        <th>Type</th>
+                        <th>Discount</th>
+                        <th>Times Used</th>
+                        <th>Revenue Generated</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for coupon in top_coupons %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><strong>{{ coupon.code }}</strong></td>
+                        <td>
+                            {% if coupon.creator_type == 'platform_admin' %}
+                                <span class="badge bg-primary">Platform Admin</span>
+                            {% else %}
+                                <span class="badge bg-success">Teacher</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if coupon.discount_type == 'percentage' %}
+                                {{ coupon.discount_value }}%
+                            {% else %}
+                                ₹{{ coupon.discount_value }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ coupon.usage_count }}</span>
+                        </td>
+                        <td>₹{{ coupon.total_revenue|default:0|floatformat:2|intcomma }}</td>
+                        <td>
+                            {% if coupon.status == 'active' %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ coupon.status|title }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center">No coupon usage data available yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Commission Distribution Info -->
+<div class="alert alert-info mt-4">
+    <h6><i class="fas fa-info-circle"></i> Commission Distribution Rules</h6>
+    <ul class="mb-0">
+        <li><strong>Normal Purchase (No Coupon):</strong> Revenue split according to the commission rate set during teacher assignment (default 30% platform, 70% teacher)</li>
+        <li><strong>Platform Admin Coupon:</strong> Platform receives extra commission (equal to coupon discount %) from final amount; remaining split per default commission rate</li>
+        <li><strong>Teacher Coupon:</strong> Teacher receives extra commission (equal to coupon discount %) from final amount; remaining split per default commission rate</li>
+        <li>The extra commission percentage equals the coupon's discount percentage and is calculated from the final purchase amount <em>after</em> discount is applied</li>
+    </ul>
+</div>
+
+{% endblock %}

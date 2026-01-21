@@ -612,6 +612,25 @@ class CourseAssignment(models.Model):
     can_publish = models.BooleanField(_('can publish'), default=False,
                                        help_text="Allow teacher to publish/unpublish course")
     
+    # Commission Settings (per teacher per course)
+    commission_percentage = models.DecimalField(
+        _('commission percentage'), 
+        max_digits=5, 
+        decimal_places=2, 
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Platform commission percentage for this teacher on this course (leave empty to use platform default)"
+    )
+    
+    # Assigned Coupons (Teacher-specific coupons)
+    assigned_coupons = models.ManyToManyField(
+        'payments.Coupon',
+        blank=True,
+        related_name='teacher_assignments',
+        help_text="Coupons assigned to this teacher for this course"
+    )
+    
     # Notes
     assignment_notes = models.TextField(_('assignment notes'), blank=True,
                                          help_text="Admin notes about this assignment")
@@ -637,3 +656,46 @@ class CourseAssignment(models.Model):
 
     def __str__(self):
         return f"{self.course.title} → {self.teacher.email} ({self.status})"
+
+
+# ---------------------------------------------------------------------------
+# Signals: when a CourseAssignment is created/updated to 'assigned',
+# automatically set the Course.teacher and notify the teacher.
+# ---------------------------------------------------------------------------
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+try:
+    # import here to avoid circular import problems at module import time
+    from apps.notifications.models import Notification
+except Exception:
+    Notification = None
+
+
+@receiver(post_save, sender=CourseAssignment)
+def _on_course_assignment_save(sender, instance: CourseAssignment, created, **kwargs):
+    try:
+        # When assignment status is 'assigned', make the course's teacher match
+        if instance.status == 'assigned' and instance.course:
+            course = instance.course
+            if course.teacher != instance.teacher:
+                course.teacher = instance.teacher
+                course.save()
+
+            # Create a notification for the teacher if notifications are available
+            if Notification is not None:
+                try:
+                    Notification.objects.create(
+                        user=instance.teacher,
+                        notification_type='course_assignment',
+                        title=f"New course assigned: {course.title}",
+                        message=f"You have been assigned the course '{course.title}' by the platform.",
+                        course=course,
+                        send_email=False,
+                    )
+                except Exception:
+                    # Don't let notification failures break assignment flow
+                    pass
+    except Exception:
+        # Avoid raising during signal handling
+        pass

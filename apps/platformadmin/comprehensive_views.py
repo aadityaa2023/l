@@ -18,10 +18,11 @@ from apps.platformadmin.decorators import platformadmin_required
 from apps.platformadmin.utils import get_context_data, ActivityLog
 from apps.platformadmin.models import (
     LoginHistory, CMSPage, FAQ, Announcement, InstructorPayout,
-    VideoSettings
+    VideoSettings, CourseAssignment
 )
 from apps.courses.models import Course, Review, Enrollment
 from apps.payments.models import Payment, Subscription, Coupon, CouponUsage
+from apps.payments.commission_calculator import CommissionCalculator
 from apps.notifications.models import Notification
 from django.contrib.auth import get_user_model
 
@@ -38,7 +39,7 @@ def coupon_management(request):
     status_filter = request.GET.get('status', '')
     search = request.GET.get('search', '')
     
-    coupons = Coupon.objects.all()
+    coupons = Coupon.objects.select_related('assigned_to_teacher').all()
     
     if status_filter:
         coupons = coupons.filter(status=status_filter)
@@ -87,8 +88,17 @@ def coupon_create(request):
         valid_until = request.POST.get('valid_until')
         max_uses = request.POST.get('max_uses')
         max_uses_per_user = request.POST.get('max_uses_per_user', 1)
+        assigned_to_teacher_id = request.POST.get('assigned_to_teacher')
         
         try:
+            # Determine creator_type and assigned_to_teacher
+            creator_type = 'platform_admin'
+            assigned_to_teacher = None
+            
+            if assigned_to_teacher_id:
+                assigned_to_teacher = User.objects.get(id=assigned_to_teacher_id, role='teacher')
+                creator_type = 'teacher'
+            
             coupon = Coupon.objects.create(
                 code=code,
                 description=description,
@@ -100,13 +110,15 @@ def coupon_create(request):
                 valid_until=valid_until,
                 max_uses=int(max_uses) if max_uses else None,
                 max_uses_per_user=int(max_uses_per_user),
-                created_by=request.user
+                created_by=request.user,
+                creator_type=creator_type,
+                assigned_to_teacher=assigned_to_teacher
             )
             
             # Log action
             ActivityLog.log_action(
                 request.user, 'create', 'Coupon', str(coupon.id), code,
-                {}, {'code': code, 'discount': discount_value}
+                {}, {'code': code, 'discount': discount_value, 'teacher': assigned_to_teacher.email if assigned_to_teacher else 'Platform-wide'}
             )
             
             messages.success(request, f"Coupon '{code}' created successfully.")
@@ -117,6 +129,7 @@ def coupon_create(request):
     
     context = get_context_data(request)
     context['courses'] = Course.objects.filter(status='published')
+    context['available_teachers'] = User.objects.filter(role='teacher', is_active=True).order_by('email')
     return render(request, 'platformadmin/coupon_create.html', context)
 
 
@@ -129,7 +142,8 @@ def coupon_edit(request, coupon_id):
     if request.method == 'POST':
         old_values = {
             'status': coupon.status,
-            'discount_value': str(coupon.discount_value)
+            'discount_value': str(coupon.discount_value),
+            'assigned_to_teacher': coupon.assigned_to_teacher.email if coupon.assigned_to_teacher else 'Platform-wide'
         }
         
         coupon.description = request.POST.get('description', '')
@@ -139,12 +153,28 @@ def coupon_edit(request, coupon_id):
         if 'discount_value' in request.POST:
             coupon.discount_value = Decimal(request.POST['discount_value'])
         
+        # Handle teacher assignment
+        assigned_to_teacher_id = request.POST.get('assigned_to_teacher')
+        if assigned_to_teacher_id:
+            try:
+                coupon.assigned_to_teacher = User.objects.get(id=assigned_to_teacher_id, role='teacher')
+                coupon.creator_type = 'teacher'
+            except User.DoesNotExist:
+                messages.warning(request, "Selected teacher not found. Coupon remains platform-wide.")
+        else:
+            coupon.assigned_to_teacher = None
+            coupon.creator_type = 'platform_admin'
+        
         coupon.save()
         
         # Log action
         ActivityLog.log_action(
             request.user, 'update', 'Coupon', str(coupon.id), coupon.code,
-            old_values, {'status': coupon.status, 'discount_value': str(coupon.discount_value)}
+            old_values, {
+                'status': coupon.status, 
+                'discount_value': str(coupon.discount_value),
+                'assigned_to_teacher': coupon.assigned_to_teacher.email if coupon.assigned_to_teacher else 'Platform-wide'
+            }
         )
         
         messages.success(request, f"Coupon '{coupon.code}' updated successfully.")
@@ -152,12 +182,97 @@ def coupon_edit(request, coupon_id):
     
     context = get_context_data(request)
     context['coupon'] = coupon
+    context['available_teachers'] = User.objects.filter(role='teacher', is_active=True).order_by('email')
     context['usage_stats'] = {
         'total_uses': coupon.usages.count(),
         'unique_users': coupon.usages.values('user').distinct().count(),
         'total_discount': coupon.usages.aggregate(Sum('discount_amount'))['discount_amount__sum'] or 0,
+        'total_revenue': coupon.usages.aggregate(Sum('final_amount'))['final_amount__sum'] or 0,
+        'extra_commission': coupon.usages.aggregate(Sum('extra_commission_earned'))['extra_commission_earned__sum'] or 0,
     }
+    
+    # Recent usages
+    context['recent_usages'] = coupon.usages.select_related('user', 'payment__course').order_by('-used_at')[:10]
+    
     return render(request, 'platformadmin/coupon_edit.html', context)
+
+
+@platformadmin_required
+@platformadmin_required
+@require_http_methods(['POST', 'GET'])
+def coupon_delete(request, coupon_id):
+    """Delete a coupon"""
+    coupon = get_object_or_404(Coupon, id=coupon_id)
+    
+    if request.method == 'POST' or request.method == 'GET':
+        coupon_code = coupon.code
+        coupon_usage_count = coupon.usages.count()
+        
+        # Log action before deletion
+        ActivityLog.log_action(
+            request.user, 'delete', 'Coupon', str(coupon.id), coupon_code,
+            {'code': coupon_code, 'status': coupon.status, 'usage_count': coupon_usage_count},
+            {}
+        )
+        
+        # Delete the coupon
+        coupon.delete()
+        
+        messages.success(request, f"Coupon '{coupon_code}' has been deleted successfully. Note: Usage history is preserved for audit purposes.")
+        return redirect('platformadmin:coupon_management')
+
+
+@platformadmin_required
+def coupon_statistics(request):
+    """View detailed coupon statistics"""
+    from decimal import Decimal
+    
+    # Overall stats
+    total_coupons = Coupon.objects.count()
+    active_coupons = Coupon.objects.filter(status='active').count()
+    total_uses = CouponUsage.objects.count()
+    total_discount = CouponUsage.objects.aggregate(Sum('discount_amount'))['discount_amount__sum'] or Decimal('0')
+    total_revenue = CouponUsage.objects.aggregate(Sum('final_amount'))['final_amount__sum'] or Decimal('0')
+    total_extra_commission = CouponUsage.objects.aggregate(Sum('extra_commission_earned'))['extra_commission_earned__sum'] or Decimal('0')
+    
+    # Platform Admin vs Teacher coupons
+    platform_coupons = Coupon.objects.filter(creator_type='platform_admin')
+    teacher_coupons = Coupon.objects.filter(creator_type='teacher')
+    
+    platform_stats = {
+        'count': platform_coupons.count(),
+        'uses': CouponUsage.objects.filter(coupon__creator_type='platform_admin').count(),
+        'revenue': CouponUsage.objects.filter(coupon__creator_type='platform_admin').aggregate(Sum('final_amount'))['final_amount__sum'] or Decimal('0'),
+        'extra_commission': CouponUsage.objects.filter(coupon__creator_type='platform_admin').aggregate(Sum('extra_commission_earned'))['extra_commission_earned__sum'] or Decimal('0'),
+    }
+    
+    teacher_stats = {
+        'count': teacher_coupons.count(),
+        'uses': CouponUsage.objects.filter(coupon__creator_type='teacher').count(),
+        'revenue': CouponUsage.objects.filter(coupon__creator_type='teacher').aggregate(Sum('final_amount'))['final_amount__sum'] or Decimal('0'),
+        'extra_commission': CouponUsage.objects.filter(coupon__creator_type='teacher').aggregate(Sum('extra_commission_earned'))['extra_commission_earned__sum'] or Decimal('0'),
+    }
+    
+    # Top performing coupons
+    top_coupons = Coupon.objects.annotate(
+        usage_count=Count('usages'),
+        total_revenue=Sum('usages__final_amount')
+    ).order_by('-usage_count')[:10]
+    
+    context = get_context_data(request)
+    context.update({
+        'total_coupons': total_coupons,
+        'active_coupons': active_coupons,
+        'total_uses': total_uses,
+        'total_discount': total_discount,
+        'total_revenue': total_revenue,
+        'total_extra_commission': total_extra_commission,
+        'platform_stats': platform_stats,
+        'teacher_stats': teacher_stats,
+        'top_coupons': top_coupons,
+    })
+    
+    return render(request, 'platformadmin/coupon_statistics.html', context)
 
 
 # ============================================================================
@@ -313,21 +428,75 @@ def instructor_earnings(request):
     context['teachers'] = page_obj.object_list
     context['instructor_filter'] = instructor_filter
     
-    # Overall stats
-    total_revenue = Payment.objects.filter(status='completed').aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
-    platform_commission_rate = Decimal('0.30')  # 30% as Decimal fraction
-
-    # Precompute per-teacher commission/net values to avoid template filters
-    teachers_list = context['teachers']
+    # Overall stats - calculate actual platform and teacher earnings
+    all_completed_payments = Payment.objects.filter(status='completed').select_related('course')
+    total_revenue = Decimal('0')
+    total_platform_earnings = Decimal('0')
+    total_instructor_earnings = Decimal('0')
+    
+    # Calculate accurate commission for each payment
+    for payment in all_completed_payments:
+        total_revenue += payment.amount
+        
+        # Get coupon usage if any
+        coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+        coupon = coupon_usage.coupon if coupon_usage else None
+        
+        # Calculate commission using the commission calculator
+        commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+        total_platform_earnings += commission_data['platform_commission']
+        total_instructor_earnings += commission_data['teacher_revenue']
+    
+    # Calculate per-teacher earnings using actual commission rates
+    teachers_list = list(context['teachers'])
     for teacher in teachers_list:
-        sales = Decimal(teacher.total_sales or 0)
-        teacher.platform_commission = (sales * platform_commission_rate)
-        teacher.net_earnings = (sales * (Decimal('1.00') - platform_commission_rate))
+        # Get all payments for this teacher's courses
+        teacher_payments = Payment.objects.filter(
+            course__teacher=teacher,
+            status='completed'
+        ).select_related('course')
+        
+        teacher_sales = Decimal('0')
+        teacher_platform_commission = Decimal('0')
+        teacher_net_earnings = Decimal('0')
+        
+        for payment in teacher_payments:
+            teacher_sales += payment.amount
+            
+            # Get coupon usage if any
+            coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+            coupon = coupon_usage.coupon if coupon_usage else None
+            
+            # Calculate commission using the commission calculator
+            commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+            teacher_platform_commission += commission_data['platform_commission']
+            teacher_net_earnings += commission_data['teacher_revenue']
+        
+        # Set the calculated values on the teacher object
+        teacher.total_sales = teacher_sales
+        teacher.platform_commission = teacher_platform_commission
+        teacher.net_earnings = teacher_net_earnings
+        
+        # Calculate teacher's average commission rate
+        if teacher_sales > 0:
+            teacher.commission_rate = (teacher_platform_commission / teacher_sales * 100).quantize(Decimal('0.01'))
+        else:
+            teacher.commission_rate = Decimal('0.00')
+
+    # Calculate average platform commission percentage
+    if total_revenue > 0:
+        avg_platform_commission_pct = (total_platform_earnings / total_revenue * 100).quantize(Decimal('0.01'))
+        avg_instructor_commission_pct = (total_instructor_earnings / total_revenue * 100).quantize(Decimal('0.01'))
+    else:
+        avg_platform_commission_pct = Decimal('0.00')
+        avg_instructor_commission_pct = Decimal('0.00')
 
     context['earnings_stats'] = {
         'total_revenue': total_revenue,
-        'platform_earnings': Decimal(total_revenue) * platform_commission_rate,
-        'instructor_earnings': Decimal(total_revenue) * (Decimal('1.00') - platform_commission_rate),
+        'platform_earnings': total_platform_earnings,
+        'instructor_earnings': total_instructor_earnings,
+        'platform_commission_pct': avg_platform_commission_pct,
+        'instructor_commission_pct': avg_instructor_commission_pct,
         'pending_payouts': InstructorPayout.objects.filter(status='requested').count(),
     }
     

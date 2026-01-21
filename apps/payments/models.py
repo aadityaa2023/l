@@ -386,8 +386,37 @@ class Coupon(models.Model):
     applicable_categories = models.ManyToManyField('courses.Category', blank=True, related_name='coupons',
                                                     help_text="Leave empty for all categories")
     
-    # Created by
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_coupons')
+    # Creator and Assignment
+    CREATOR_TYPE_CHOICES = (
+        ('platform_admin', 'Platform Admin'),
+        ('teacher', 'Teacher'),
+    )
+    
+    creator_type = models.CharField(
+        _('creator type'), 
+        max_length=20, 
+        choices=CREATOR_TYPE_CHOICES, 
+        default='platform_admin',
+        help_text="Who created/owns this coupon"
+    )
+    
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='created_coupons'
+    )
+    
+    # For teacher coupons - which teacher owns/can use this coupon
+    assigned_to_teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_teacher_coupons',
+        limit_choices_to={'role': 'teacher'},
+        help_text="If this is a teacher coupon, which teacher it belongs to"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(_('created at'), auto_now_add=True)
@@ -451,6 +480,23 @@ class CouponUsage(models.Model):
     original_amount = models.DecimalField(_('original amount'), max_digits=10, decimal_places=2)
     discount_amount = models.DecimalField(_('discount amount'), max_digits=10, decimal_places=2)
     final_amount = models.DecimalField(_('final amount'), max_digits=10, decimal_places=2)
+    
+    # Commission Tracking (extra commission equals coupon discount %)
+    extra_commission_earned = models.DecimalField(
+        _('extra commission earned'),
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Extra commission from using this coupon (equals coupon discount %)"
+    )
+    commission_recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='commission_from_coupons',
+        help_text="Who receives the extra commission (Platform Admin or Teacher)"
+    )
     
     # Metadata
     used_at = models.DateTimeField(_('used at'), auto_now_add=True)

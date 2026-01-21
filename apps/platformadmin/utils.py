@@ -15,6 +15,58 @@ import json
 User = get_user_model()
 
 
+def get_platform_earnings():
+    """Calculate platform earnings from completed payments"""
+    from apps.payments.commission_calculator import CommissionCalculator
+    from apps.payments.models import CouponUsage
+    
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_start = today_start - timedelta(days=1)
+    week_start = today_start - timedelta(days=7)
+    month_start = today_start - timedelta(days=30)
+    
+    # Get all completed payments
+    completed_payments = Payment.objects.filter(status='completed')
+    
+    def calculate_earnings_for_period(payments_qs):
+        """Calculate total platform earnings for a payment queryset"""
+        total_earnings = Decimal('0')
+        
+        for payment in payments_qs:
+            # Check if coupon was used
+            try:
+                coupon_usage = CouponUsage.objects.get(payment=payment)
+                coupon = coupon_usage.coupon
+            except CouponUsage.DoesNotExist:
+                coupon = None
+            
+            # Calculate commission
+            commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+            total_earnings += commission_data['platform_commission']
+        
+        return total_earnings
+    
+    # Calculate earnings for different periods
+    earnings = {
+        'total': calculate_earnings_for_period(completed_payments),
+        'yesterday': calculate_earnings_for_period(
+            completed_payments.filter(
+                completed_at__gte=yesterday_start,
+                completed_at__lt=today_start
+            )
+        ),
+        'last_week': calculate_earnings_for_period(
+            completed_payments.filter(completed_at__gte=week_start)
+        ),
+        'last_month': calculate_earnings_for_period(
+            completed_payments.filter(completed_at__gte=month_start)
+        ),
+    }
+    
+    return earnings
+
+
 class DashboardStats:
     """Class to handle dashboard statistics"""
     
@@ -231,6 +283,20 @@ class ReportGenerator:
 
 class ActivityLog:
     """Log admin activities"""
+    
+    @staticmethod
+    def log_action(admin, action, content_type, object_id, object_repr, old_values=None, new_values=None, reason=''):
+        """Generic method to log any admin action"""
+        AdminLog.objects.create(
+            admin=admin,
+            action=action,
+            content_type=content_type,
+            object_id=str(object_id),
+            object_repr=object_repr,
+            old_values=old_values or {},
+            new_values=new_values or {},
+            reason=reason,
+        )
     
     @staticmethod
     def log_user_action(user, admin, action, old_values=None, new_values=None, reason=''):

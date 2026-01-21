@@ -1,7 +1,4 @@
-"""
-Platform Admin Dashboard Views
-Custom admin panel for managing teachers, students, courses, and transactions
-"""
+from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib import messages
@@ -10,7 +7,6 @@ from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
-from datetime import timedelta
 
 from apps.platformadmin.decorators import platformadmin_required
 from apps.platformadmin.forms import (
@@ -31,7 +27,12 @@ User = get_user_model()
 @platformadmin_required
 def dashboard(request):
     """Main admin dashboard"""
+    from apps.platformadmin.utils import get_platform_earnings
+    
     context = get_context_data(request)
+    
+    # Get platform earnings
+    earnings = get_platform_earnings()
     
     # Additional dashboard metrics
     context['quick_stats'] = {
@@ -43,14 +44,8 @@ def dashboard(request):
         'failed_transactions': Payment.objects.filter(status='failed').count(),
     }
     
-    # Recent activities
-    context['recent_approvals'] = CourseApproval.objects.select_related(
-        'course', 'reviewed_by'
-    ).filter(status__in=['pending']).order_by('-created_at')[:5]
-    
-    context['recent_payments'] = Payment.objects.select_related(
-        'user', 'course'
-    ).order_by('-created_at')[:10]
+    # Platform earnings stats
+    context['platform_earnings'] = earnings
     
     return render(request, 'platformadmin/dashboard.html', context)
 
@@ -211,7 +206,7 @@ def course_management(request):
 def course_approval(request, course_id):
     """Approve or reject courses"""
     course = get_object_or_404(Course, id=course_id)
-    approval, created = CourseApproval.objects.get_or_create(course=course)
+    approval, _ = CourseApproval.objects.get_or_create(course=course)
     
     if request.method == 'POST':
         form = CourseApprovalForm(request.POST, instance=approval)
@@ -230,7 +225,7 @@ def course_approval(request, course_id):
                 form.cleaned_data.get('review_comments', '')
             )
             
-            messages.success(request, f"Course approval has been updated.")
+            messages.success(request, "Course approval has been updated.")
             return redirect('platformadmin:course_management')
     else:
         form = CourseApprovalForm(instance=approval)
@@ -319,7 +314,7 @@ def payment_detail(request, payment_id):
                     return redirect('platformadmin:payment_detail', payment_id=payment.id)
             
             # Process refund
-            success, message, refund_obj = refund_handler.process_refund(
+                success, message, _ = refund_handler.process_refund(
                 payment=payment,
                 admin_user=request.user,
                 amount=amount,
@@ -403,7 +398,7 @@ def platform_settings(request):
         form = PlatformSettingsForm(request.POST)
         if form.is_valid():
             for key, value in form.cleaned_data.items():
-                setting, created = PlatformSetting.objects.get_or_create(key=key)
+                setting, _ = PlatformSetting.objects.get_or_create(key=key)
                 setting.value = str(value)
                 setting.save()
             
@@ -938,9 +933,12 @@ def admin_course_edit(request, course_id):
     # Get course modules and lessons
     modules = Module.objects.filter(course=course).prefetch_related('lessons').order_by('order')
     
-    # Get course assignments
+    # Get course assignments (only active ones — exclude revoked or removed assignments)
     from apps.platformadmin.models import CourseAssignment
-    assignments = CourseAssignment.objects.filter(course=course).select_related('teacher', 'assigned_by')
+    assignments = CourseAssignment.objects.filter(
+        course=course,
+        status__in=['assigned', 'accepted']
+    ).select_related('teacher', 'assigned_by').order_by('-assigned_at')
     
     # Get course stats
     from apps.courses.models import Enrollment
@@ -1004,6 +1002,8 @@ def admin_course_assign(request, course_id):
     """Assign a course to a teacher"""
     course = get_object_or_404(Course, id=course_id)
     from apps.platformadmin.models import CourseAssignment
+    from apps.payments.models import Coupon
+    from decimal import Decimal
     
     if request.method == 'POST':
         teacher_id = request.POST.get('teacher_id')
@@ -1019,6 +1019,18 @@ def admin_course_assign(request, course_id):
         if existing:
             messages.warning(request, f'Course already assigned to {teacher.email}')
         else:
+            # Get commission percentage (optional). If not provided, leave
+            # as None so course assignment will use platform default.
+            commission_percentage_raw = request.POST.get('commission_percentage')
+            commission_percentage = None
+            if commission_percentage_raw:
+                try:
+                    commission_percentage = Decimal(commission_percentage_raw)
+                    if commission_percentage < 0 or commission_percentage > 100:
+                        commission_percentage = None
+                except Exception:
+                    commission_percentage = None
+            
             # Create assignment
             assignment = CourseAssignment.objects.create(
                 course=course,
@@ -1029,6 +1041,7 @@ def admin_course_assign(request, course_id):
                 can_delete_content=request.POST.get('can_delete_content') == 'on',
                 can_edit_details=request.POST.get('can_edit_details') == 'on',
                 can_publish=request.POST.get('can_publish') == 'on',
+                commission_percentage=commission_percentage,
                 assignment_notes=request.POST.get('assignment_notes', ''),
             )
             
@@ -1044,7 +1057,7 @@ def admin_course_assign(request, course_id):
                 notification_type='course_assignment',
                 title='New Course Assignment',
                 message=f'You have been assigned to teach "{course.title}". Please review and accept or reject this assignment.',
-                link_url=f'/courses/teacher/assignments/',
+                link_url='/courses/teacher/assignments/',
                 link_text='View Assignments',
                 course=course,
                 send_email=True
@@ -1061,10 +1074,12 @@ def admin_course_assign(request, course_id):
                     'course': course.title,
                     'teacher': teacher.email,
                     'status': assignment.status,
+                    'commission_percentage': str(commission_percentage),
+                 
                 }
             )
             
-            messages.success(request, 'platform admin assigned.')
+            messages.success(request, 'Teacher assigned successfully.')
             return redirect('platformadmin:admin_course_edit', course_id=course.id)
     
     # Get all verified teachers
@@ -1901,10 +1916,9 @@ def admin_lesson_media_delete(request, media_id):
     from apps.courses.models import LessonMedia
     
     media = get_object_or_404(LessonMedia, id=media_id)
-    
+
     if request.method == 'POST':
-        lesson_id = media.lesson.course.id
-        
+
         # Log the action before deletion
         AdminLog.objects.create(
             admin=request.user,

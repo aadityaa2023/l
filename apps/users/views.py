@@ -12,7 +12,8 @@ from django.db.models import Count, Avg, Q, Sum
 from .models import User, StudentProfile, TeacherProfile, Address
 from apps.courses.models import Enrollment, Course, Review
 from apps.analytics.models import StudentAnalytics, TeacherAnalytics
-from apps.payments.models import Payment, Subscription
+from apps.payments.models import Payment, Subscription, CouponUsage
+from apps.payments.commission_calculator import CommissionCalculator
 
 
 # Dashboard Views
@@ -148,26 +149,53 @@ def teacher_dashboard(request):
         course__id__in=course_ids
     ).select_related('student', 'course').order_by('-created_at')[:5]
     
-    # Revenue calculations
+    # Revenue calculations - Calculate actual teacher earnings using commission calculator
+    from decimal import Decimal
+    from datetime import datetime, timedelta
+    
     thirty_days_ago = datetime.now() - timedelta(days=30)
     seven_days_ago = datetime.now() - timedelta(days=7)
     
-    revenue_30days = Payment.objects.filter(
+    # Calculate revenue for last 30 days
+    payments_30days = Payment.objects.filter(
         course__id__in=course_ids,
         status='completed',
         created_at__gte=thirty_days_ago
-    ).aggregate(total=Sum('amount'))['total'] or 0
+    ).select_related('course')
     
-    revenue_7days = Payment.objects.filter(
+    revenue_30days = Decimal('0')
+    for payment in payments_30days:
+        coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+        coupon = coupon_usage.coupon if coupon_usage else None
+        commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+        revenue_30days += commission_data['teacher_revenue']
+    
+    # Calculate revenue for last 7 days
+    payments_7days = Payment.objects.filter(
         course__id__in=course_ids,
         status='completed',
         created_at__gte=seven_days_ago
-    ).aggregate(total=Sum('amount'))['total'] or 0
+    ).select_related('course')
     
-    total_revenue = Payment.objects.filter(
+    revenue_7days = Decimal('0')
+    for payment in payments_7days:
+        coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+        coupon = coupon_usage.coupon if coupon_usage else None
+        commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+        revenue_7days += commission_data['teacher_revenue']
+    
+    # Calculate total revenue
+    total_payments = Payment.objects.filter(
         course__id__in=course_ids,
         status='completed'
-    ).aggregate(total=Sum('amount'))['total'] or 0
+    ).select_related('course')
+    
+    total_revenue = Decimal('0')
+    for payment in total_payments:
+        coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+        coupon = coupon_usage.coupon if coupon_usage else None
+        commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+        total_revenue += commission_data['teacher_revenue']
     
     # Enrollment trends (last 7 days)
     enrollment_trend = []

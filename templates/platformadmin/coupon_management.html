@@ -71,6 +71,7 @@
                     <th>Code</th>
                     <th>Type</th>
                     <th>Discount</th>
+                    <th>Assigned To</th>
                     <th>Valid Period</th>
                     <th>Usage</th>
                     <th>Status</th>
@@ -89,6 +90,17 @@
                             {{ coupon.discount_value }}%
                         {% else %}
                             ₹{{ coupon.discount_value }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if coupon.assigned_to_teacher %}
+                            <span class="badge bg-success" title="Teacher Coupon">
+                                <i class="fas fa-user-tie"></i> {{ coupon.assigned_to_teacher.get_full_name|default:coupon.assigned_to_teacher.email }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary" title="Platform-wide Coupon">
+                                <i class="fas fa-globe"></i> Platform-wide
+                            </span>
                         {% endif %}
                     </td>
                     <td>
@@ -119,6 +131,37 @@
                            class="btn btn-sm btn-primary">
                             <i class="fas fa-edit"></i>
                         </a>
+                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" 
+                                data-bs-target="#deleteModal{{ coupon.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <!-- Delete Modal -->
+                        <div class="modal fade" id="deleteModal{{ coupon.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">Delete Coupon</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Are you sure you want to delete coupon <strong>{{ coupon.code }}</strong>?</p>
+                                        <p class="text-muted small">This action cannot be undone.</p>
+                                        {% if coupon.usages.count > 0 %}
+                                        <div class="alert alert-warning" role="alert">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            This coupon has been used {{ coupon.usages.count }} time(s). All usage records will be preserved.
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <a href="{% url 'platformadmin:coupon_delete' coupon.id %}" class="btn btn-danger">
+                                            <i class="fas fa-trash"></i> Delete Coupon
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}

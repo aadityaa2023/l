@@ -59,6 +59,8 @@ urlpatterns = [
     path('coupons/', comprehensive_views.coupon_management, name='coupon_management'),
     path('coupons/create/', comprehensive_views.coupon_create, name='coupon_create'),
     path('coupons/<int:coupon_id>/edit/', comprehensive_views.coupon_edit, name='coupon_edit'),
+    path('coupons/<int:coupon_id>/delete/', comprehensive_views.coupon_delete, name='coupon_delete'),
+    path('coupons/statistics/', comprehensive_views.coupon_statistics, name='coupon_statistics'),
     
     # Review & Rating Moderation
     path('reviews/', comprehensive_views.review_moderation, name='review_moderation'),

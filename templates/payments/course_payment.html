@@ -16,7 +16,7 @@
                     </div>
 
                     <button id="rzp-button" class="btn btn-primary-custom w-100 py-3 btn-lg">
-                        <i class="fas fa-lock me-2"></i>Pay ₹{{ course.actual_price }}
+                        <i class="fas fa-lock me-2"></i>Pay <span id="pay-button-amount">₹{{ final_amount|default:course.actual_price }}</span>
                     </button>
 
                     <div class="text-center mt-3">
@@ -43,13 +43,44 @@
                     
                     <div class="d-flex justify-content-between mb-2">
                         <span>Original Price</span>
-                        <span>₹{{ course.price }}</span>
+                        <span id=\"original-price\">₹{{ original_amount|default:course.price }}</span>
+                    </div>
+                    
+                    {% if applied_coupon or discount_amount %}
+                    <div class=\"d-flex justify-content-between mb-2 text-success\" id=\"discount-row\">
+                        <span><i class=\"fas fa-tag me-1\"></i>Discount{% if applied_coupon %} ({{ applied_coupon.code }}){% endif %}</span>
+                        <span id=\"discount-amount\">-₹{{ discount_amount }}</span>
+                    </div>
+                    {% else %}
+                    <div class=\"d-flex justify-content-between mb-2 text-success d-none\" id=\"discount-row\">
+                        <span><i class=\"fas fa-tag me-1\"></i>Discount <span id=\"coupon-code-display\"></span></span>
+                        <span id=\"discount-amount\">-₹0</span>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Coupon Code Input -->
+                    <div class="mb-3">
+                        <label for="coupon-input" class="form-label small fw-bold text-dark">Have a coupon code?</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control border-dark" id="coupon-input" placeholder="Enter coupon code" 
+                                   value="{{ applied_coupon.code|default:'' }}" {% if applied_coupon %}disabled{% endif %}>
+                            <button class="btn btn-dark" type="button" id="apply-coupon-btn" 
+                                    {% if applied_coupon %}disabled{% endif %}>
+                                {% if applied_coupon %}Applied{% else %}Apply{% endif %}
+                            </button>
+                            {% if applied_coupon %}
+                            <button class="btn btn-outline-danger" type="button" id="remove-coupon-btn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                        <div id="coupon-message" class="small mt-1"></div>
                     </div>
                     
                     {% if course.discount_price %}
                     <div class="d-flex justify-content-between mb-2 text-success">
-                        <span>Discount</span>
-                        <span>-₹{{ course.price|add:"-"|add:course.discount_price }}</span>
+                        <span>Course Discount</span>
+                        <span>-₹{{ course.discount_price }}</span>
                     </div>
                     {% endif %}
                     
@@ -57,7 +88,7 @@
                     
                     <div class="d-flex justify-content-between mb-3">
                         <h5 class="fw-bold mb-0">Total</h5>
-                        <h5 class="fw-bold mb-0" style="color: var(--primary-color);">₹{{ course.actual_price }}</h5>
+                        <h5 class="fw-bold mb-0" style="color: var(--primary-color);" id="total-amount">₹{{ final_amount|default:course.actual_price }}</h5>
                     </div>
                     
                     <div class="alert alert-success">
@@ -72,10 +103,146 @@
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+    let currentAmount = {{ final_amount|default:course.actual_price }};
+    let appliedCoupon = {% if applied_coupon %}true{% else %}false{% endif %};
+    
+    // Apply Coupon - Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const applyBtn = document.getElementById('apply-coupon-btn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                validateAndApplyCoupon();
+            });
+        }
+    });
+    
+    function validateAndApplyCoupon() {
+        const couponInput = document.getElementById('coupon-input');
+        const applyBtn = document.getElementById('apply-coupon-btn');
+        const messageDiv = document.getElementById('coupon-message');
+        const couponCode = couponInput.value.trim();
+        
+        if (!couponCode) {
+            messageDiv.innerHTML = '<span class="text-danger">Please enter a coupon code</span>';
+            return;
+        }
+        
+        // Disable button and show loading
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Validating...';
+        
+        fetch("{% url 'payments:validate_coupon' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                coupon_code: couponCode,
+                course_id: {{ course.id }}
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+                if (data.valid) {
+                    // Update UI with discount (guard DOM accesses)
+                    const discountRow = document.getElementById('discount-row');
+                    const discountAmountEl = document.getElementById('discount-amount');
+                    const couponCodeDisplay = document.getElementById('coupon-code-display');
+                    const totalAmountEl = document.getElementById('total-amount');
+                    const payButtonAmount = document.getElementById('pay-button-amount');
+
+                    if (discountRow && discountRow.classList) {
+                        discountRow.classList.remove('d-none');
+                    }
+                    if (discountAmountEl) {
+                        discountAmountEl.textContent = '-₹' + data.discount_amount.toFixed(2);
+                    }
+                    if (couponCodeDisplay) {
+                        couponCodeDisplay.textContent = '(' + couponCode.toUpperCase() + ')';
+                    }
+                    if (totalAmountEl) {
+                        totalAmountEl.textContent = '₹' + data.final_amount.toFixed(2);
+                    }
+                    if (payButtonAmount) {
+                        payButtonAmount.textContent = '₹' + data.final_amount.toFixed(2);
+                    }
+
+                    currentAmount = data.final_amount;
+                    appliedCoupon = true;
+
+                    // Show success message
+                    if (messageDiv) {
+                        messageDiv.innerHTML = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>' + data.message + '</span>';
+                    }
+
+                    // Disable input and change button
+                    if (couponInput) couponInput.disabled = true;
+                    if (applyBtn) {
+                        applyBtn.textContent = 'Applied';
+                        applyBtn.disabled = true;
+                    }
+
+                    // Add remove button if not exists
+                    if (!document.getElementById('remove-coupon-btn')) {
+                        const group = document.querySelector('.input-group');
+                        if (group) {
+                            const removeBtn = document.createElement('button');
+                            removeBtn.className = 'btn btn-outline-danger';
+                            removeBtn.type = 'button';
+                            removeBtn.id = 'remove-coupon-btn';
+                            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                            removeBtn.onclick = removeCoupon;
+                            group.appendChild(removeBtn);
+                        }
+                    }
+
+                    // Redirect to apply coupon in backend
+                    setTimeout(() => {
+                        window.location.href = "{% url 'payments:course_payment' course.id %}?coupon=" + couponCode;
+                    }, 1000);
+                } else {
+                    if (messageDiv) {
+                        messageDiv.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>' + data.message + '</span>';
+                    }
+                    if (applyBtn) {
+                        applyBtn.disabled = false;
+                        applyBtn.textContent = 'Apply';
+                    }
+                }
+            })
+        .catch(error => {
+            console.error('Error:', error);
+            messageDiv.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Error validating coupon. Please try again.</span>';
+            applyBtn.disabled = false;
+            applyBtn.textContent = 'Apply';
+        });
+    }
+    
+    // Remove Coupon
+    function removeCoupon() {
+        window.location.href = "{% url 'payments:course_payment' course.id %}";
+    }
+    
+    {% if applied_coupon %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const removeBtn = document.getElementById('remove-coupon-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', removeCoupon);
+        }
+    });
+    {% endif %}
+    
     var options = {
         "key": "{{ razorpay_key_id }}",
-        "amount": "{{ order.amount }}",
-        "currency": "{{ order.currency }}",
+        "amount": Math.round(currentAmount * 100), // Convert to paise
+        "currency": "INR",
         "name": "LeQ",
         "description": "{{ course.title }}",
         "order_id": "{{ order.id }}",
@@ -123,10 +290,15 @@
 
     var rzp = new Razorpay(options);
 
-    document.getElementById('rzp-button').onclick = function(e) {
-        e.preventDefault();
-        rzp.open();
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+        const payBtn = document.getElementById('rzp-button');
+        if (payBtn) {
+            payBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                rzp.open();
+            });
+        }
+    });
 
     // Handle payment failure
     rzp.on('payment.failed', function (response) {

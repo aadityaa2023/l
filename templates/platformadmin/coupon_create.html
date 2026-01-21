@@ -54,6 +54,22 @@
                         <textarea name="description" class="form-control" rows="3"></textarea>
                     </div>
                     
+                    <div class="mb-3">
+                        <label class="form-label">Assign to Teacher (Optional)</label>
+                        <select name="assigned_to_teacher" class="form-control">
+                            <option value="">-- Platform-wide Coupon --</option>
+                            {% for teacher in available_teachers %}
+                            <option value="{{ teacher.id }}">
+                                {{ teacher.get_full_name|default:teacher.email }} ({{ teacher.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">
+                            Select a teacher to assign this coupon to a specific teacher. 
+                            Leave empty for platform-wide coupons that any student can use.
+                        </small>
+                    </div>
+                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Minimum Purchase Amount</label>

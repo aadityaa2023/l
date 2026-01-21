@@ -11,12 +11,17 @@ urlpatterns = [
     path('course/<int:course_id>/', views.course_payment, name='course_payment'),
     path('verify/', views.verify_payment, name='verify_payment'),
     
+    # Coupon Validation
+    path('validate-coupon/', views.validate_coupon, name='validate_coupon'),
+    
     # Payment Status
     path('success/', views.payment_success, name='payment_success'),
     path('failed/', views.payment_failed, name='payment_failed'),
     
     # Payment History
     path('my-payments/', views.my_payments, name='my_payments'),
+    # Teacher Earnings (teacher-facing)
+    path('teacher/earnings/', views.teacher_earnings, name='teacher_earnings'),
     
     # Refunds
     path('refund/<int:payment_id>/', views.request_refund, name='request_refund'),

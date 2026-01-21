@@ -1,0 +1,185 @@
+{% extends 'teacher_base.html' %}
+{% load static %}
+
+{% block title %}Coupon Statistics - Teacher Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        border-radius: 12px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+    }
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+    }
+    .badge-custom {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+    .table-modern {
+        background: white;
+        border-radius: 8px;
+    }
+    .table-modern thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .table-modern thead th {
+        border: none;
+        padding: 15px;
+        font-weight: 600;
+    }
+    .table-modern tbody tr {
+        transition: background 0.2s ease;
+    }
+    .table-modern tbody tr:hover {
+        background: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-ticket-alt"></i> My Coupon Statistics</h2>
+            <p class="text-muted">Track performance of coupons assigned to you</p>
+        </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card bg-primary text-white shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-ticket-alt fa-2x mb-2"></i>
+                    <h3 class="mb-1">{{ assigned_coupons|length }}</h3>
+                    <p class="mb-0">Total Coupons Assigned</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-success text-white shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h3 class="mb-1">{{ total_uses }}</h3>
+                    <p class="mb-0">Total Uses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-warning text-dark shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-coins fa-2x mb-2"></i>
+                    <h3 class="mb-1">₹{{ total_extra_commission|floatformat:2 }}</h3>
+                    <p class="mb-0">Extra Commission Earned</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-info text-white shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-rupee-sign fa-2x mb-2"></i>
+                    <h3 class="mb-1">₹{{ total_revenue|floatformat:2 }}</h3>
+                    <p class="mb-0">Revenue via Coupons</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Coupon Details -->
+    <div class="card shadow-sm">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Coupon Details</h5>
+        </div>
+        <div class="card-body">
+            {% if assigned_coupons %}
+            <div class="table-responsive">
+                <table class="table table-modern table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-barcode me-2"></i>Coupon Code</th>
+                            <th><i class="fas fa-book me-2"></i>Course</th>
+                            <th><i class="fas fa-tag me-2"></i>Discount</th>
+                            <th><i class="fas fa-chart-line me-2"></i>Times Used</th>
+                            <th><i class="fas fa-rupee-sign me-2"></i>Revenue</th>
+                            <th><i class="fas fa-coins me-2"></i>Extra Commission</th>
+                            <th><i class="fas fa-info-circle me-2"></i>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in assigned_coupons %}
+                        <tr>
+                            <td>
+                                <strong class="text-primary">{{ item.coupon.code }}</strong>
+                            </td>
+                            <td>
+                                {% if item.course %}
+                                <span class="text-muted">{{ item.course.title|truncatewords:5 }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.coupon.discount_type == 'percentage' %}
+                                    <span class="badge badge-custom bg-info">{{ item.coupon.discount_value }}%</span>
+                                {% else %}
+                                    <span class="badge badge-custom bg-info">₹{{ item.coupon.discount_value }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-custom bg-secondary">{{ item.uses }} uses</span>
+                            </td>
+                            <td>
+                                <strong class="text-success">₹{{ item.total_revenue|floatformat:2 }}</strong>
+                            </td>
+                            <td>
+                                <strong class="text-warning">₹{{ item.extra_commission|floatformat:2 }}</strong>
+                            </td>
+                            <td>
+                                {% if item.coupon.status == 'active' %}
+                                    <span class="badge badge-custom bg-success">
+                                        <i class="fas fa-check-circle me-1"></i>Active
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-custom bg-secondary">
+                                        <i class="fas fa-pause-circle me-1"></i>Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">No Coupons Assigned Yet</h5>
+                <p class="text-muted">The platform admin will assign coupons to you when appropriate.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Info Box -->
+    <div class="alert alert-info mt-4 shadow-sm" style="border-left: 4px solid #0dcaf0;">
+        <h6><i class="fas fa-info-circle me-2"></i><strong>How Extra Commission Works:</strong></h6>
+        <ul class="mb-0 mt-2">
+            <li>When students use your assigned coupons, you earn <strong>extra commission equal to the coupon's discount percentage</strong> on top of your regular commission.</li>
+            <li><strong>Example:</strong> If a student uses a 10% discount coupon on a ₹1,000 course:
+                <ul class="mt-2">
+                    <li>Final price after discount: ₹900</li>
+                    <li>Your extra commission: <strong>10% of ₹900 = ₹90</strong></li>
+                    <li>This is added to your regular commission!</li>
+                </ul>
+            </li>
+            <li>The remaining revenue is split according to your default commission rate set by the platform admin.</li>
+            <li>Share your coupon codes with students to increase your earnings!</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

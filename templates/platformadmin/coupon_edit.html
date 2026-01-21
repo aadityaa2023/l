@@ -31,6 +31,22 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label class="form-label">Assign to Teacher</label>
+                        <select name="assigned_to_teacher" class="form-control">
+                            <option value="">-- Platform-wide Coupon --</option>
+                            {% for teacher in available_teachers %}
+                            <option value="{{ teacher.id }}" {% if coupon.assigned_to_teacher_id == teacher.id %}selected{% endif %}>
+                                {{ teacher.get_full_name|default:teacher.email }} ({{ teacher.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">
+                            Select a teacher to assign this coupon to a specific teacher. 
+                            Leave empty for platform-wide coupons that any student can use.
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label class="form-label">Status</label>
                         <select name="status" class="form-control">
                             <option value="active" {% if coupon.status == 'active' %}selected{% endif %}>Active</option>

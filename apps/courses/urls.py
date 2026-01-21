@@ -44,6 +44,7 @@ urlpatterns = [
     path('teacher/courses/<int:course_id>/preview/', views.teacher_course_preview, name='teacher_course_preview'),
     path('teacher/courses/<int:course_id>/duplicate/', views.teacher_course_duplicate, name='teacher_course_duplicate'),
     path('teacher/analytics/', views.teacher_analytics, name='teacher_analytics'),
+    path('teacher/coupon-statistics/', views.teacher_coupon_statistics, name='teacher_coupon_statistics'),
     
     # Teacher Students Management
     path('teacher/students/', views.teacher_students_list, name='teacher_students'),

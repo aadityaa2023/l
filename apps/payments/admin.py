@@ -82,11 +82,12 @@ class PaymentWebhookAdmin(ModelAdmin):
 
 # @admin.register(Coupon)
 class CouponAdmin(ModelAdmin):
-    list_display = ('code', 'discount_type', 'discount_value', 'status', 'valid_from', 
-                    'valid_until', 'current_uses', 'max_uses')
-    list_filter = ('status', 'discount_type', 'created_at')
+    list_display = ('code', 'discount_type', 'discount_value', 'status', 'creator_type',
+                    'valid_from', 'valid_until', 'current_uses', 'max_uses')
+    list_filter = ('status', 'discount_type', 'creator_type', 'created_at')
     search_fields = ('code', 'description')
     readonly_fields = ('current_uses', 'created_at', 'updated_at')
+    filter_horizontal = ('applicable_courses', 'applicable_categories')
     
     # Unfold customizations
     list_filter_submit = True
@@ -97,17 +98,20 @@ class CouponAdmin(ModelAdmin):
         (_('Validity'), {'fields': ('valid_from', 'valid_until')}),
         (_('Usage Limits'), {'fields': ('max_uses', 'max_uses_per_user', 'current_uses')}),
         (_('Applicability'), {'fields': ('applicable_courses', 'applicable_categories')}),
-        (_('Metadata'), {'fields': ('created_by', 'created_at', 'updated_at')}),
+        (_('Creator & Assignment'), {'fields': ('creator_type', 'created_by', 'assigned_to_teacher')}),
+        (_('Metadata'), {'fields': ('created_at', 'updated_at')}),
     )
 
 
 # @admin.register(CouponUsage)
 class CouponUsageAdmin(ModelAdmin):
-    list_display = ('user', 'coupon', 'original_amount', 'discount_amount', 'final_amount', 'used_at')
+    list_display = ('user', 'coupon', 'original_amount', 'discount_amount', 'final_amount', 
+                    'extra_commission_earned', 'commission_recipient', 'used_at')
     list_filter = ('used_at',)
     search_fields = ('user__email', 'coupon__code')
     readonly_fields = ('id', 'coupon', 'user', 'payment', 'original_amount', 
-                       'discount_amount', 'final_amount', 'used_at')
+                       'discount_amount', 'final_amount', 'extra_commission_earned',
+                       'commission_recipient', 'used_at')
     
     # Unfold customizations
     list_filter_submit = True
@@ -115,6 +119,7 @@ class CouponUsageAdmin(ModelAdmin):
     fieldsets = (
         (_('Usage Details'), {'fields': ('coupon', 'user', 'payment')}),
         (_('Amounts'), {'fields': ('original_amount', 'discount_amount', 'final_amount')}),
+        (_('Commission'), {'fields': ('extra_commission_earned', 'commission_recipient')}),
         (_('Timestamp'), {'fields': ('used_at',)}),
     )
     

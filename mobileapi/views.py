@@ -1011,8 +1011,31 @@ class DashboardView(APIView):
             is_featured=True
         ).select_related('teacher', 'category')[:5]
         
+        # Trending courses (most enrollments)
+        trending_courses = Course.objects.filter(
+            status='published'
+        ).select_related('teacher', 'category').order_by('-total_enrollments')[:5]
+        
         # Categories
         categories = Category.objects.filter(is_active=True)[:10]
+        
+        # Categories with courses
+        categories_with_courses = []
+        for category in categories[:5]:  # Limit to 5 categories for performance
+            courses = Course.objects.filter(
+                status='published',
+                category=category
+            ).select_related('teacher', 'category')[:10]
+            
+            if courses.exists():
+                categories_with_courses.append({
+                    'category': CategorySerializer(category).data,
+                    'courses': CourseListSerializer(
+                        courses,
+                        many=True,
+                        context={'request': request}
+                    ).data
+                })
         
         # Banners
         now = timezone.now()
@@ -1030,7 +1053,13 @@ class DashboardView(APIView):
                 many=True,
                 context={'request': request}
             ).data,
+            'trending_courses': CourseListSerializer(
+                trending_courses,
+                many=True,
+                context={'request': request}
+            ).data,
             'categories': CategorySerializer(categories, many=True).data,
+            'categories_with_courses': categories_with_courses,
             'banners': MobileBannerSerializer(
                 banners,
                 many=True,

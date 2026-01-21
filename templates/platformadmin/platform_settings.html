@@ -12,24 +12,6 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    
-                    <div class="mb-4">
-                        <h6>Pricing Settings</h6>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label">Commission %</label>
-                                {{ form.commission_percentage }}
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Min Course Price</label>
-                                {{ form.min_course_price }}
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Max Course Price</label>
-                                {{ form.max_course_price }}
-                            </div>
-                        </div>
-                    </div>
 
                     <div class="mb-4">
                         <h6>Teacher Settings</h6>
@@ -91,10 +73,9 @@
                 <h5 class="mb-0">Help</h5>
             </div>
             <div class="card-body small">
-                <p><strong>Commission %:</strong> Platform commission on each course sale.</p>
-                <p><strong>Min/Max Course Price:</strong> Price restrictions for courses.</p>
                 <p><strong>Teacher Verification:</strong> Require admin approval before teachers can publish courses.</p>
                 <p class="mb-0"><strong>Course Approval:</strong> All courses need admin approval before going live.</p>
+                <p class="mt-2 mb-0"><strong>Note:</strong> Commission settings are now managed per teacher per course during course assignment.</p>
             </div>
         </div>
     </div>

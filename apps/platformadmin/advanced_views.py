@@ -17,7 +17,8 @@ from apps.platformadmin.export_utils import CSVExporter
 from apps.platformadmin.payment_handlers import BulkPaymentHandler
 from apps.platformadmin.notifications import AdminEmailNotifier
 from apps.platformadmin.utils import ActivityLog, get_context_data
-from apps.payments.models import Payment, Refund
+from apps.payments.models import Payment, Refund, CouponUsage
+from apps.payments.commission_calculator import CommissionCalculator
 from apps.courses.models import Course, Enrollment
 from django.contrib.auth import get_user_model
 
@@ -296,18 +297,34 @@ def teacher_analytics(request):
                 pass
         total_enrollments = total_enrollments_qs.count()
 
-        # Revenue
+        # Revenue - Calculate actual teacher earnings using commission calculator
         payments_qs = Payment.objects.filter(
             course__teacher=teacher,
             status='completed'
-        )
+        ).select_related('course')
         if start_dt is not None:
             try:
                 payments_qs = payments_qs.filter(created_at__gte=start_dt)
             except Exception:
                 pass
 
-        total_revenue = payments_qs.aggregate(total=Sum('amount'))['total'] or 0
+        # Calculate actual teacher revenue (not total sales)
+        from decimal import Decimal
+        total_sales = Decimal('0')
+        teacher_net_revenue = Decimal('0')
+        
+        for payment in payments_qs:
+            total_sales += payment.amount
+            
+            # Get coupon usage if any
+            coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+            coupon = coupon_usage.coupon if coupon_usage else None
+            
+            # Calculate commission using the commission calculator
+            commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+            teacher_net_revenue += commission_data['teacher_revenue']
+        
+        total_revenue = teacher_net_revenue  # Show net revenue to teachers, not total sales
 
         # Basic rating / verification data
         total_students = getattr(teacher, 'total_students', None)

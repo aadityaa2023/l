@@ -219,34 +219,6 @@ class PaymentFilterForm(forms.Form):
 class PlatformSettingsForm(forms.Form):
     """Form for managing platform settings"""
     
-    commission_percentage = forms.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        min_value=0,
-        max_value=100,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01'
-        })
-    )
-    min_course_price = forms.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        min_value=0,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01'
-        })
-    )
-    max_course_price = forms.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        min_value=0,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.01'
-        })
-    )
     enable_new_teachers = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={

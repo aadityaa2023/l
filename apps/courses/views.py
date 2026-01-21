@@ -20,6 +20,8 @@ from .models import (
     LessonProgress, Note, Review, Announcement
 )
 from apps.analytics.models import ListeningSession, TeacherAnalytics
+from apps.payments.models import Payment, CouponUsage
+from apps.payments.commission_calculator import CommissionCalculator
 
 
 # Course Browsing
@@ -686,8 +688,7 @@ def teacher_courses(request):
     # Base queryset - only assigned courses
     courses = Course.objects.filter(id__in=course_ids).annotate(
         student_count=Count('enrollments', filter=Q(enrollments__status='active')),
-        avg_rating=Avg('reviews__rating'),
-        total_revenue=Sum('enrollments__payment_amount', filter=Q(enrollments__status='active'))
+        avg_rating=Avg('reviews__rating')
     )
     
     # Apply filters
@@ -703,6 +704,24 @@ def teacher_courses(request):
     # Apply sorting
     courses = courses.order_by(sort_by)
     
+    # Calculate actual teacher revenue for each course using commission calculator
+    from decimal import Decimal
+    courses_list = list(courses)
+    for course in courses_list:
+        course_payments = Payment.objects.filter(
+            course=course,
+            status='completed'
+        ).select_related('course')
+        
+        total_revenue = Decimal('0')
+        for payment in course_payments:
+            coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+            coupon = coupon_usage.coupon if coupon_usage else None
+            commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+            total_revenue += commission_data['teacher_revenue']
+        
+        course.total_revenue = total_revenue
+    
     # Get counts for each status
     status_counts = {
         'all': Course.objects.filter(id__in=course_ids).count(),
@@ -715,7 +734,7 @@ def teacher_courses(request):
     course_assignments = {assignment.course.id: assignment for assignment in assignments}
     
     context = {
-        'courses': courses,
+        'courses': courses_list,
         'status_filter': status_filter,
         'search_query': search_query,
         'sort_by': sort_by,
@@ -787,10 +806,20 @@ def teacher_course_edit(request, course_id):
     
     # Get course stats
     student_count = Enrollment.objects.filter(course=course, status='active').count()
-    total_revenue = Enrollment.objects.filter(
-        course=course, 
-        status='active'
-    ).aggregate(total=Sum('payment_amount'))['total'] or 0
+    
+    # Calculate actual teacher revenue using commission calculator
+    from decimal import Decimal
+    course_payments = Payment.objects.filter(
+        course=course,
+        status='completed'
+    ).select_related('course')
+    
+    total_revenue = Decimal('0')
+    for payment in course_payments:
+        coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+        coupon = coupon_usage.coupon if coupon_usage else None
+        commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+        total_revenue += commission_data['teacher_revenue']
     
     context = {
         'course': course,
@@ -858,6 +887,7 @@ def teacher_analytics(request):
     from apps.payments.models import Payment
     from django.db.models import Sum, Count
     from datetime import datetime, timedelta
+    from decimal import Decimal
     
     # Get or create analytics
     try:
@@ -865,43 +895,146 @@ def teacher_analytics(request):
     except TeacherAnalytics.DoesNotExist:
         analytics = None
     
-    # Revenue analytics
-    total_revenue = Payment.objects.filter(
+    # Revenue analytics - Calculate actual teacher earnings using commission calculator
+    all_teacher_payments = Payment.objects.filter(
         course__teacher=request.user,
         status='completed'
-    ).aggregate(total=Sum('amount'))['total'] or 0
+    ).select_related('course')
+    
+    total_revenue = Decimal('0')
+    for payment in all_teacher_payments:
+        coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+        coupon = coupon_usage.coupon if coupon_usage else None
+        commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+        total_revenue += commission_data['teacher_revenue']
     
     # Monthly revenue for last 6 months
     monthly_revenue = []
     for i in range(5, -1, -1):
         month_start = (datetime.now() - timedelta(days=30*i)).replace(day=1)
         month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-        revenue = Payment.objects.filter(
+        
+        month_payments = Payment.objects.filter(
             course__teacher=request.user,
             status='completed',
             created_at__gte=month_start,
             created_at__lte=month_end
-        ).aggregate(total=Sum('amount'))['total'] or 0
+        ).select_related('course')
+        
+        month_rev = Decimal('0')
+        for payment in month_payments:
+            coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+            coupon = coupon_usage.coupon if coupon_usage else None
+            commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+            month_rev += commission_data['teacher_revenue']
+        
         monthly_revenue.append({
             'month': month_start.strftime('%b %Y'),
-            'revenue': revenue
+            'revenue': month_rev
         })
     
     # Course performance
     courses = Course.objects.filter(teacher=request.user).annotate(
         student_count=Count('enrollments', filter=Q(enrollments__status='active')),
-        avg_rating=Avg('reviews__rating'),
-        total_revenue=Sum('enrollments__payment_amount', filter=Q(enrollments__status='active'))
+        avg_rating=Avg('reviews__rating')
     ).order_by('-student_count')
+    
+    # Calculate revenue for each course
+    courses_list = list(courses)
+    for course in courses_list:
+        course_payments = Payment.objects.filter(
+            course=course,
+            status='completed'
+        ).select_related('course')
+        
+        course_rev = Decimal('0')
+        for payment in course_payments:
+            coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+            coupon = coupon_usage.coupon if coupon_usage else None
+            commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+            course_rev += commission_data['teacher_revenue']
+        
+        course.total_revenue = course_rev
     
     context = {
         'analytics': analytics,
         'total_revenue': total_revenue,
         'monthly_revenue': monthly_revenue,
-        'courses': courses,
+        'courses': courses_list,
     }
     
     return render(request, 'courses/teacher_analytics.html', context)
+
+
+@login_required
+def teacher_coupon_statistics(request):
+    """View teacher's assigned coupons and their statistics"""
+    if not request.user.is_teacher:
+        messages.error(request, 'You do not have teacher access')
+        return redirect('users:dashboard')
+    
+    from apps.payments.models import Coupon, CouponUsage
+    from apps.platformadmin.models import CourseAssignment
+    from django.db.models import Sum, Count
+    from decimal import Decimal
+    
+    # Get all assignments for this teacher (include assigned + accepted)
+    assignments = CourseAssignment.objects.filter(
+        teacher=request.user,
+        status__in=['assigned', 'accepted']
+    ).prefetch_related('assigned_coupons')
+
+    # Collect all coupons assigned via CourseAssignment and coupons directly assigned to teacher
+    coupon_map = {}
+
+    # Coupons from assignments
+    for assignment in assignments:
+        for coupon in assignment.assigned_coupons.all():
+            coupon_map[coupon.id] = {
+                'coupon': coupon,
+                'course': assignment.course
+            }
+
+    # Also include coupons that were created/assigned directly to this teacher (Coupon.assigned_to_teacher)
+    teacher_direct_coupons = Coupon.objects.filter(assigned_to_teacher=request.user)
+    for coupon in teacher_direct_coupons:
+        # If coupon already present via assignment, keep the course from assignment; otherwise course is None
+        if coupon.id not in coupon_map:
+            coupon_map[coupon.id] = {
+                'coupon': coupon,
+                'course': None
+            }
+
+    # Build stats list
+    assigned_coupons = []
+    for entry in coupon_map.values():
+        coupon = entry['coupon']
+        course = entry['course']
+        uses = CouponUsage.objects.filter(coupon=coupon).count()
+        total_revenue = CouponUsage.objects.filter(coupon=coupon).aggregate(Sum('final_amount'))['final_amount__sum'] or Decimal('0')
+        extra_commission = CouponUsage.objects.filter(coupon=coupon, commission_recipient=request.user).aggregate(Sum('extra_commission_earned'))['extra_commission_earned__sum'] or Decimal('0')
+        coupon_stats = {
+            'coupon': coupon,
+            'course': course,
+            'uses': uses,
+            'total_revenue': total_revenue,
+            'extra_commission': extra_commission,
+        }
+        assigned_coupons.append(coupon_stats)
+    
+    # Overall statistics
+    total_uses = sum(c['uses'] for c in assigned_coupons)
+    total_revenue = sum(c['total_revenue'] for c in assigned_coupons)
+    total_extra_commission = sum(c['extra_commission'] for c in assigned_coupons)
+    
+    context = {
+        'assigned_coupons': assigned_coupons,
+        'total_uses': total_uses,
+        'total_revenue': total_revenue,
+        'total_extra_commission': total_extra_commission,
+    }
+    
+    return render(request, 'courses/teacher_coupon_stats.html', context)
 
 
 # ==================== MODULE MANAGEMENT ====================

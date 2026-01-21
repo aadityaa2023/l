@@ -363,22 +363,15 @@
                     <i class="fas fa-users"></i>
                     <span>Students</span>
                 </a>
-                <a href="{% url 'courses:teacher_reviews' %}" class="menu-item {% if 'reviews' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="fas fa-star"></i>
-                    <span>Reviews</span>
-                </a>
-                <a href="{% url 'payments:my_payments' %}" class="menu-item">
+                <a href="{% url 'payments:teacher_earnings' %}" class="menu-item {% if 'teacher_earnings' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="fas fa-rupee-sign"></i>
                     <span>Earnings</span>
                 </a>
-                <a href="{% url 'notifications:messages_inbox' %}" class="menu-item {% if 'messages' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="fas fa-comments"></i>
-                    <span>Messages</span>
+                <a href="{% url 'courses:teacher_coupon_statistics' %}" class="menu-item {% if 'coupon' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>My Coupons</span>
                 </a>
-                <a href="{% url 'notifications:teacher_questions' %}" class="menu-item {% if 'questions' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Q&A</span>
-                </a>
+                {# Messages and Q&A removed from teacher sidebar per request #}
             </div>
             
             <!-- Settings -->
