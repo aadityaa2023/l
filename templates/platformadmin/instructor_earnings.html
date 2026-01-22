@@ -6,34 +6,6 @@
     <h2><i class="fas fa-money-bill-wave"></i> Instructor Earnings</h2>
 </div>
 
-<!-- Stats Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-value">₹{{ earnings_stats.total_revenue|floatformat:0 }}</div>
-            <div class="stat-label">Total Revenue</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card success">
-            <div class="stat-value">₹{{ earnings_stats.instructor_earnings|floatformat:0 }}</div>
-            <div class="stat-label">Instructor Earnings ({{ earnings_stats.instructor_commission_pct }}%)</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card info">
-            <div class="stat-value">₹{{ earnings_stats.platform_earnings|floatformat:0 }}</div>
-            <div class="stat-label">Platform Earnings ({{ earnings_stats.platform_commission_pct }}%)</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card warning">
-            <div class="stat-value">{{ earnings_stats.pending_payouts }}</div>
-            <div class="stat-label">Pending Payouts</div>
-        </div>
-    </div>
-</div>
-
 <!-- Filters -->
 <div class="card mb-4">
     <div class="card-body">
@@ -65,6 +37,8 @@
                     <th>Total Students</th>
                     <th>Platform Commission</th>
                     <th>Net Earnings</th>
+                    <th>Paid Out</th>
+                    <th>Remaining</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -95,22 +69,35 @@
                         <strong>
                             {% if teacher.total_sales %}
                                 ₹{{ teacher.net_earnings|floatformat:2 }}
-                                <br><small class="text-muted">({{ teacher.net_earnings|floatformat:0|add:teacher.platform_commission|floatformat:0 }})</small>
                             {% else %}
                                 ₹0.00
                             {% endif %}
                         </strong>
                     </td>
                     <td>
+                        <span class="badge bg-success">₹{{ teacher.total_paid_out|floatformat:2|default:"0.00" }}</span>
+                    </td>
+                    <td>
+                        {% if teacher.remaining_balance > 0 %}
+                            <span class="badge bg-warning text-dark">₹{{ teacher.remaining_balance|floatformat:2 }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">₹0.00</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'platformadmin:payout_management' %}?search={{ teacher.email }}" 
+                           class="btn btn-sm btn-primary me-1" title="Manage Payouts">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </a>
                         <a href="{% url 'platformadmin:teacher_analytics' %}?teacher={{ teacher.id }}" 
-                           class="btn btn-sm btn-info">
-                            <i class="fas fa-chart-line"></i> Details
+                           class="btn btn-sm btn-info" title="View Details">
+                            <i class="fas fa-chart-line"></i>
                         </a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                         No instructor data found
                     </td>
                 </tr>

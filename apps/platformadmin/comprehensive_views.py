@@ -18,7 +18,7 @@ from apps.platformadmin.decorators import platformadmin_required
 from apps.platformadmin.utils import get_context_data, ActivityLog
 from apps.platformadmin.models import (
     LoginHistory, CMSPage, FAQ, Announcement, InstructorPayout,
-    VideoSettings, CourseAssignment
+    VideoSettings, CourseAssignment, TeacherCommission, PayoutTransaction
 )
 from apps.courses.models import Course, Review, Enrollment
 from apps.payments.models import Payment, Subscription, Coupon, CouponUsage
@@ -472,6 +472,15 @@ def instructor_earnings(request):
             teacher_platform_commission += commission_data['platform_commission']
             teacher_net_earnings += commission_data['teacher_revenue']
         
+        # Get teacher commission balance (paid out amounts)
+        try:
+            teacher_commission = TeacherCommission.objects.get(teacher=teacher)
+            teacher.total_paid_out = teacher_commission.total_paid
+            teacher.remaining_balance = teacher_commission.remaining_balance
+        except TeacherCommission.DoesNotExist:
+            teacher.total_paid_out = Decimal('0.00')
+            teacher.remaining_balance = teacher_net_earnings
+        
         # Set the calculated values on the teacher object
         teacher.total_sales = teacher_sales
         teacher.platform_commission = teacher_platform_commission
@@ -505,32 +514,66 @@ def instructor_earnings(request):
 
 @platformadmin_required
 def payout_management(request):
-    """Manage instructor payout requests"""
-    status_filter = request.GET.get('status', '')
+    """Manage teacher commission payouts - manual settlement"""
+    search = request.GET.get('search', '')
+    sort_by = request.GET.get('sort', '-remaining')  # Default: highest remaining first
     
-    payouts = InstructorPayout.objects.select_related('instructor', 'processed_by').all()
+    # Get all teachers with commission balances
+    teachers_with_commissions = TeacherCommission.objects.select_related('teacher').all()
     
-    if status_filter:
-        payouts = payouts.filter(status=status_filter)
+    # Search filter
+    if search:
+        teachers_with_commissions = teachers_with_commissions.filter(
+            Q(teacher__email__icontains=search) |
+            Q(teacher__first_name__icontains=search) |
+            Q(teacher__last_name__icontains=search)
+        )
+    
+    # Calculate remaining balance for each and prepare data
+    teacher_data = []
+    for tc in teachers_with_commissions:
+        remaining = tc.remaining_balance
+        # Only show teachers with earnings
+        if tc.total_earned > 0:
+            teacher_data.append({
+                'teacher_commission': tc,
+                'teacher': tc.teacher,
+                'total_earned': tc.total_earned,
+                'total_paid': tc.total_paid,
+                'remaining_balance': remaining,
+            })
+    
+    # Sort
+    if sort_by == '-remaining':
+        teacher_data.sort(key=lambda x: x['remaining_balance'], reverse=True)
+    elif sort_by == 'remaining':
+        teacher_data.sort(key=lambda x: x['remaining_balance'])
+    elif sort_by == '-earned':
+        teacher_data.sort(key=lambda x: x['total_earned'], reverse=True)
+    elif sort_by == 'name':
+        teacher_data.sort(key=lambda x: x['teacher'].email)
     
     # Pagination
-    paginator = Paginator(payouts.order_by('-created_at'), 20)
+    paginator = Paginator(teacher_data, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     context = get_context_data(request)
     context['page_obj'] = page_obj
-    context['payouts'] = page_obj.object_list
-    context['status_filter'] = status_filter
+    context['teachers'] = page_obj.object_list
+    context['search'] = search
+    context['sort_by'] = sort_by
     
-    # Stats
+    # Calculate statistics
+    total_pending = sum(t['remaining_balance'] for t in teacher_data)
+    total_paid_overall = TeacherCommission.objects.aggregate(Sum('total_paid'))['total_paid__sum'] or 0
+    teachers_with_pending = sum(1 for t in teacher_data if t['remaining_balance'] > 0)
+    
     context['payout_stats'] = {
-        'total_requested': InstructorPayout.objects.filter(status='requested').count(),
-        'total_amount': InstructorPayout.objects.filter(status='requested').aggregate(Sum('net_amount'))['net_amount__sum'] or 0,
-        'completed_this_month': InstructorPayout.objects.filter(
-            status='completed',
-            processed_at__month=timezone.now().month
-        ).count(),
+        'total_pending': total_pending,
+        'total_paid_overall': total_paid_overall,
+        'teachers_with_pending': teachers_with_pending,
+        'total_teachers': len(teacher_data),
     }
     
     return render(request, 'platformadmin/payout_management.html', context)
@@ -538,55 +581,112 @@ def payout_management(request):
 
 @platformadmin_required
 @require_POST
-def payout_approve(request, payout_id):
-    """Approve payout request"""
-    payout = get_object_or_404(InstructorPayout, id=payout_id)
-    
-    transaction_ref = request.POST.get('transaction_reference', '')
+def payout_process(request):
+    """Process manual payout to a teacher"""
+    teacher_id = request.POST.get('teacher_id')
+    amount_str = request.POST.get('amount', '0')
+    payment_method = request.POST.get('payment_method', '')
+    transaction_reference = request.POST.get('transaction_reference', '')
     admin_notes = request.POST.get('admin_notes', '')
     
-    payout.status = 'completed'
-    payout.processed_by = request.user
-    payout.processed_at = timezone.now()
-    payout.transaction_reference = transaction_ref
-    payout.admin_notes = admin_notes
-    payout.save()
+    try:
+        teacher = get_object_or_404(User, id=teacher_id, role='teacher')
+        amount = Decimal(amount_str)
+        
+        # Validate amount
+        if amount <= 0:
+            messages.error(request, "Payout amount must be greater than zero.")
+            return redirect('platformadmin:payout_management')
+        
+        # Get or create teacher commission record
+        teacher_commission, created = TeacherCommission.objects.get_or_create(
+            teacher=teacher
+        )
+        
+        # Check if amount exceeds remaining balance
+        remaining = teacher_commission.remaining_balance
+        if amount > remaining:
+            messages.error(
+                request, 
+                f"Payout amount (₹{amount}) exceeds remaining balance (₹{remaining}). Please enter a valid amount."
+            )
+            return redirect('platformadmin:payout_management')
+        
+        # Create payout transaction
+        payout_transaction = PayoutTransaction.objects.create(
+            teacher=teacher,
+            amount=amount,
+            status='completed',
+            payment_method=payment_method,
+            transaction_reference=transaction_reference,
+            processed_by=request.user,
+            processed_at=timezone.now(),
+            admin_notes=admin_notes
+        )
+        
+        # Update teacher commission balance
+        teacher_commission.total_paid += amount
+        teacher_commission.last_payout_at = timezone.now()
+        teacher_commission.save()
+        
+        # Log the action
+        ActivityLog.log_action(
+            request.user, 
+            'create', 
+            'PayoutTransaction', 
+            str(payout_transaction.id),
+            f"Payout to {teacher.email} - ₹{amount}",
+            {},
+            {
+                'amount': str(amount),
+                'teacher': teacher.email,
+                'remaining_after': str(teacher_commission.remaining_balance)
+            }
+        )
+        
+        messages.success(
+            request, 
+            f"Successfully paid ₹{amount} to {teacher.get_full_name() or teacher.email}. Remaining balance: ₹{teacher_commission.remaining_balance}"
+        )
+        
+    except User.DoesNotExist:
+        messages.error(request, "Teacher not found.")
+    except ValueError:
+        messages.error(request, "Invalid amount entered.")
+    except Exception as e:
+        messages.error(request, f"Error processing payout: {str(e)}")
     
-    # Log action
-    ActivityLog.log_action(
-        request.user, 'approve', 'InstructorPayout', str(payout.id),
-        f"{payout.instructor.email} - ₹{payout.net_amount}",
-        {'status': 'requested'}, {'status': 'completed'}
-    )
-    
-    messages.success(request, f"Payout of ₹{payout.net_amount} approved for {payout.instructor.email}")
     return redirect('platformadmin:payout_management')
 
 
 @platformadmin_required
-@require_POST
-def payout_reject(request, payout_id):
-    """Reject payout request"""
-    payout = get_object_or_404(InstructorPayout, id=payout_id)
+def payout_history(request, teacher_id):
+    """View payout history for a specific teacher"""
+    teacher = get_object_or_404(User, id=teacher_id, role='teacher')
     
-    rejection_reason = request.POST.get('rejection_reason', '')
+    # Get teacher commission record
+    try:
+        teacher_commission = TeacherCommission.objects.get(teacher=teacher)
+    except TeacherCommission.DoesNotExist:
+        teacher_commission = None
     
-    payout.status = 'rejected'
-    payout.processed_by = request.user
-    payout.processed_at = timezone.now()
-    payout.rejection_reason = rejection_reason
-    payout.save()
+    # Get all payout transactions
+    transactions = PayoutTransaction.objects.filter(
+        teacher=teacher
+    ).select_related('processed_by').order_by('-created_at')
     
-    # Log action
-    ActivityLog.log_action(
-        request.user, 'reject', 'InstructorPayout', str(payout.id),
-        f"{payout.instructor.email} - ₹{payout.net_amount}",
-        {'status': 'requested'}, {'status': 'rejected'},
-        reason=rejection_reason
-    )
+    # Pagination
+    paginator = Paginator(transactions, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
-    messages.success(request, "Payout request rejected.")
-    return redirect('platformadmin:payout_management')
+    context = get_context_data(request)
+    context['teacher'] = teacher
+    context['teacher_commission'] = teacher_commission
+    context['page_obj'] = page_obj
+    context['transactions'] = page_obj.object_list
+    
+    return render(request, 'platformadmin/payout_history.html', context)
 
 
 # ============================================================================

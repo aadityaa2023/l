@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from apps.platformadmin.models import (
     AdminLog, CourseApproval, DashboardStat, PlatformSetting,
     LoginHistory, CMSPage, FAQ, Announcement, InstructorPayout,
-    VideoSettings, CourseAssignment
+    VideoSettings, CourseAssignment, TeacherCommission, PayoutTransaction
 )
 
 User = get_user_model()
@@ -149,6 +149,57 @@ class VideoSettingsAdmin(admin.ModelAdmin):
     
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(TeacherCommission)
+class TeacherCommissionAdmin(admin.ModelAdmin):
+    """Admin interface for teacher commissions"""
+    list_display = ['teacher', 'total_earned', 'total_paid', 'get_remaining_balance', 'last_payout_at', 'updated_at']
+    list_filter = ['created_at', 'last_payout_at']
+    search_fields = ['teacher__email', 'teacher__first_name', 'teacher__last_name']
+    readonly_fields = ['teacher', 'total_earned', 'total_paid', 'get_remaining_balance', 
+                       'created_at', 'updated_at', 'last_payout_at']
+    date_hierarchy = 'created_at'
+    
+    def get_remaining_balance(self, obj):
+        return f"₹{obj.remaining_balance:,.2f}"
+    get_remaining_balance.short_description = 'Remaining Balance'
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(PayoutTransaction)
+class PayoutTransactionAdmin(admin.ModelAdmin):
+    """Admin interface for payout transactions"""
+    list_display = ['teacher', 'amount', 'status', 'payment_method', 'processed_by', 'created_at']
+    list_filter = ['status', 'payment_method', 'created_at']
+    search_fields = ['teacher__email', 'transaction_reference', 'admin_notes']
+    readonly_fields = ['id', 'teacher', 'amount', 'status', 'payment_method', 
+                       'transaction_reference', 'processed_by', 'created_at', 'processed_at']
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Transaction Info', {
+            'fields': ('teacher', 'amount', 'status')
+        }),
+        ('Payment Details', {
+            'fields': ('payment_method', 'transaction_reference')
+        }),
+        ('Processing', {
+            'fields': ('processed_by', 'admin_notes', 'created_at', 'processed_at')
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+
 
 class PlatformSettingAdmin(admin.ModelAdmin):
     """Admin interface for platform settings"""

@@ -1,0 +1,30 @@
+{{ site_name }} - One-Time Password
+
+Hello {{ user.first_name|default:user.email }},
+
+Your One-Time Password (OTP) for {{ purpose|title }} is:
+
+{{ otp_code }}
+
+This code is valid for {{ validity_minutes }} minutes only.
+
+{% if purpose == 'verification' %}
+Please use this code to verify your email address and complete your registration.
+{% elif purpose == 'login' %}
+Please use this code to log in to your account.
+{% elif purpose == 'password_reset' %}
+Please use this code to reset your password.
+{% else %}
+Please use this code to complete your request.
+{% endif %}
+
+IMPORTANT: Do not share this code with anyone. {{ site_name }} support staff will never ask for your OTP.
+
+If you didn't request this code, you can safely ignore this email. Your account is secure.
+
+---
+
+Need help? Contact our support team.
+
+{{ site_name }}
+© {{ current_year }} All rights reserved.

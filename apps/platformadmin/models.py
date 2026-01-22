@@ -699,3 +699,157 @@ def _on_course_assignment_save(sender, instance: CourseAssignment, created, **kw
     except Exception:
         # Avoid raising during signal handling
         pass
+
+
+class TeacherCommission(models.Model):
+    """Track teacher commission earnings and payout balances"""
+    
+    teacher = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='commission_balance',
+        limit_choices_to={'role': 'teacher'}
+    )
+    
+    # Total earnings from all course sales
+    total_earned = models.DecimalField(
+        _('total earned'), 
+        max_digits=12, 
+        decimal_places=2, 
+        default=0,
+        help_text="Total commission earned from all course purchases"
+    )
+    
+    # Total amount already paid out
+    total_paid = models.DecimalField(
+        _('total paid'), 
+        max_digits=12, 
+        decimal_places=2, 
+        default=0,
+        help_text="Total amount already paid to teacher"
+    )
+    
+    # Remaining payable balance (calculated field)
+    @property
+    def remaining_balance(self):
+        """Calculate remaining payable commission"""
+        return self.total_earned - self.total_paid
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    last_payout_at = models.DateTimeField(_('last payout at'), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _('teacher commission')
+        verbose_name_plural = _('teacher commissions')
+        ordering = ['-total_earned']
+        indexes = [
+            models.Index(fields=['teacher']),
+            models.Index(fields=['-total_earned']),
+        ]
+    
+    def __str__(self):
+        return f"{self.teacher.email} - Earned: ₹{self.total_earned}, Paid: ₹{self.total_paid}, Remaining: ₹{self.remaining_balance}"
+
+
+class PayoutTransaction(models.Model):
+    """Record each payout transaction to teachers"""
+    
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled'),
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='payout_transactions',
+        limit_choices_to={'role': 'teacher'}
+    )
+    
+    # Amount details
+    amount = models.DecimalField(
+        _('payout amount'), 
+        max_digits=10, 
+        decimal_places=2,
+        help_text="Amount paid out in this transaction"
+    )
+    
+    # Transaction details
+    status = models.CharField(_('status'), max_length=20, choices=STATUS_CHOICES, default='pending')
+    payment_method = models.CharField(
+        _('payment method'), 
+        max_length=100, 
+        blank=True,
+        help_text="e.g., Bank Transfer, UPI, etc."
+    )
+    transaction_reference = models.CharField(
+        _('transaction reference'), 
+        max_length=255, 
+        blank=True,
+        help_text="Bank transaction ID or reference number"
+    )
+    
+    # Processing details
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='processed_payout_transactions',
+        limit_choices_to={'role': 'admin'}
+    )
+    
+    # Notes
+    admin_notes = models.TextField(_('admin notes'), blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    processed_at = models.DateTimeField(_('processed at'), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _('payout transaction')
+        verbose_name_plural = _('payout transactions')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['teacher', '-created_at']),
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Payout to {self.teacher.email} - ₹{self.amount} ({self.status})"
+
+
+# Signal to update TeacherCommission when Payment is completed
+@receiver(post_save, sender='payments.Payment')
+def update_teacher_commission_on_payment(sender, instance, created, **kwargs):
+    """Update teacher commission balance when a payment is completed"""
+    if instance.status == 'completed' and instance.course:
+        from apps.payments.commission_calculator import CommissionCalculator
+        
+        # Calculate teacher commission
+        commission_data = CommissionCalculator.calculate_commission(instance)
+        teacher_revenue = commission_data.get('teacher_revenue', 0)
+        
+        # Get the teacher from course assignment
+        teacher = None
+        assignment = CommissionCalculator.get_teacher_assignment(instance.course)
+        if assignment:
+            teacher = assignment.teacher
+        elif instance.course.teacher:
+            teacher = instance.course.teacher
+        
+        if teacher and teacher_revenue > 0:
+            # Get or create TeacherCommission record
+            commission, created = TeacherCommission.objects.get_or_create(
+                teacher=teacher
+            )
+            
+            # Add to total earned
+            commission.total_earned += teacher_revenue
+            commission.save()

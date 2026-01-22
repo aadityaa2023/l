@@ -452,6 +452,7 @@ def teacher_earnings(request):
     calculates accurate commission using CommissionCalculator.
     """
     from apps.payments.commission_calculator import CommissionCalculator
+    from apps.platformadmin.models import TeacherCommission, PayoutTransaction
     
     user = request.user
 
@@ -479,6 +480,23 @@ def teacher_earnings(request):
         teacher_earnings += commission_data['teacher_revenue']
 
     net_earnings = teacher_earnings
+    
+    # Get payout information
+    try:
+        teacher_commission = TeacherCommission.objects.get(teacher=user)
+        total_paid_out = teacher_commission.total_paid
+        remaining_balance = teacher_commission.remaining_balance
+        last_payout_date = teacher_commission.last_payout_at
+    except TeacherCommission.DoesNotExist:
+        total_paid_out = Decimal('0.00')
+        remaining_balance = net_earnings
+        last_payout_date = None
+    
+    # Get recent payout transactions
+    payout_history = PayoutTransaction.objects.filter(
+        teacher=user,
+        status='completed'
+    ).order_by('-created_at')[:10]
 
     # Recent transactions (limited to 20)
     recent_payments = teacher_payments[:20]
@@ -488,6 +506,10 @@ def teacher_earnings(request):
         'platform_commission': platform_commission,
         'teacher_earnings': teacher_earnings,
         'net_earnings': net_earnings,
+        'total_paid_out': total_paid_out,
+        'remaining_balance': remaining_balance,
+        'last_payout_date': last_payout_date,
+        'payout_history': payout_history,
         'recent_payments': recent_payments,
     }
 

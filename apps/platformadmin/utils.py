@@ -204,10 +204,10 @@ class ReportGenerator:
     """Generate various reports for admin"""
     
     @staticmethod
-    def get_revenue_report(start_date=None, end_date=None):
-        """Generate revenue report"""
+    def get_revenue_report(start_date=None, end_date=None, days=30):
+        """Generate revenue report with enhanced metrics"""
         if not start_date:
-            start_date = timezone.now().date() - timedelta(days=30)
+            start_date = timezone.now().date() - timedelta(days=days)
         if not end_date:
             end_date = timezone.now().date()
         
@@ -224,19 +224,37 @@ class ReportGenerator:
                 daily_revenue[date_str] = Decimal('0')
             daily_revenue[date_str] += payment.amount
         
+        # Calculate previous period for comparison
+        prev_start = start_date - timedelta(days=days)
+        prev_end = start_date - timedelta(days=1)
+        prev_payments = Payment.objects.filter(
+            status='completed',
+            completed_at__date__gte=prev_start,
+            completed_at__date__lte=prev_end
+        )
+        prev_total = prev_payments.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+        
+        total_revenue = sum(daily_revenue.values())
+        growth = ((total_revenue - prev_total) / prev_total * 100) if prev_total > 0 else 0
+        
         return {
             'start_date': start_date,
             'end_date': end_date,
-            'total_revenue': sum(daily_revenue.values()),
+            'total_revenue': total_revenue,
             'daily_revenue': daily_revenue,
             'avg_daily_revenue': sum(daily_revenue.values()) / len(daily_revenue) if daily_revenue else Decimal('0'),
+            'total_transactions': payments.count(),
+            'prev_period_revenue': prev_total,
+            'growth_percentage': float(growth),
+            'max_daily_revenue': max(daily_revenue.values()) if daily_revenue else Decimal('0'),
+            'min_daily_revenue': min(daily_revenue.values()) if daily_revenue else Decimal('0'),
         }
     
     @staticmethod
-    def get_user_report(start_date=None, end_date=None):
-        """Generate user growth report"""
+    def get_user_report(start_date=None, end_date=None, days=30):
+        """Generate user growth report with enhanced metrics"""
         if not start_date:
-            start_date = timezone.now().date() - timedelta(days=30)
+            start_date = timezone.now().date() - timedelta(days=days)
         if not end_date:
             end_date = timezone.now().date()
         
@@ -256,28 +274,61 @@ class ReportGenerator:
             elif user.role == 'student':
                 daily_users[date_str]['students'] += 1
         
+        # Calculate previous period for comparison
+        prev_start = start_date - timedelta(days=days)
+        prev_end = start_date - timedelta(days=1)
+        prev_users = User.objects.filter(
+            date_joined__date__gte=prev_start,
+            date_joined__date__lte=prev_end
+        )
+        prev_total = prev_users.count()
+        
+        total_new_users = users.count()
+        growth = ((total_new_users - prev_total) / prev_total * 100) if prev_total > 0 else 0
+        
         return {
             'start_date': start_date,
             'end_date': end_date,
-            'total_new_users': users.count(),
+            'total_new_users': total_new_users,
             'new_teachers': users.filter(role='teacher').count(),
             'new_students': users.filter(role='student').count(),
             'daily_users': daily_users,
+            'prev_period_users': prev_total,
+            'growth_percentage': float(growth),
+            'avg_daily_users': total_new_users / days if days > 0 else 0,
         }
     
     @staticmethod
     def get_course_stats_report():
-        """Generate course statistics report"""
+        """Generate course statistics report with enhanced metrics"""
+        from apps.courses.models import Enrollment
+        
+        courses = Course.objects.all()
+        
+        # Top courses by enrollment
+        top_courses = courses.annotate(
+            enrollment_count=Count('enrollments')
+        ).order_by('-enrollment_count')[:10]
+        
+        # Category distribution
+        category_distribution = courses.values('category__name').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
         return {
-            'total_courses': Course.objects.count(),
+            'total_courses': courses.count(),
             'by_status': {
-                'draft': Course.objects.filter(status='draft').count(),
-                'published': Course.objects.filter(status='published').count(),
-                'archived': Course.objects.filter(status='archived').count(),
+                'draft': courses.filter(status='draft').count(),
+                'published': courses.filter(status='published').count(),
+                'archived': courses.filter(status='archived').count(),
             },
-            'by_teacher': Course.objects.values('teacher__email').annotate(count=Count('id')).order_by('-count')[:10],
-            'featured': Course.objects.filter(is_featured=True).count(),
-            'avg_price': Course.objects.aggregate(avg=Count('price'))['avg'],
+            'by_teacher': courses.values('teacher__email', 'teacher__first_name', 'teacher__last_name').annotate(count=Count('id')).order_by('-count')[:10],
+            'featured': courses.filter(is_featured=True).count(),
+            'avg_price': courses.aggregate(avg=Count('price'))['avg'],
+            'top_courses': list(top_courses.values('id', 'title', 'enrollment_count')),
+            'category_distribution': list(category_distribution),
+            'total_enrollments': Enrollment.objects.count(),
+            'active_enrollments': Enrollment.objects.filter(status='active').count(),
         }
 
 

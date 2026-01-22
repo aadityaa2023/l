@@ -74,8 +74,8 @@ urlpatterns = [
     # Instructor Earnings & Payouts
     path('earnings/', comprehensive_views.instructor_earnings, name='instructor_earnings'),
     path('payouts/', comprehensive_views.payout_management, name='payout_management'),
-    path('payouts/<int:payout_id>/approve/', comprehensive_views.payout_approve, name='payout_approve'),
-    path('payouts/<int:payout_id>/reject/', comprehensive_views.payout_reject, name='payout_reject'),
+    path('payouts/process/', comprehensive_views.payout_process, name='payout_process'),
+    path('payouts/history/<int:teacher_id>/', comprehensive_views.payout_history, name='payout_history'),
     
     # Login History & Security
     path('security/login-history/', comprehensive_views.login_history, name='login_history'),

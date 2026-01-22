@@ -343,22 +343,181 @@ def payment_detail(request, payment_id):
 
 @platformadmin_required
 def analytics_report(request):
-    """View analytics and reports"""
-    report_type = request.GET.get('type', 'revenue')
+    """View analytics and reports with enhanced data visualization"""
+    from apps.courses.models import Enrollment
+    import json
+    from decimal import Decimal
+    from datetime import datetime, timedelta
+    
+    report_type = request.GET.get('type', 'overview')
+    days = int(request.GET.get('days', 30))
     
     context = get_context_data(request)
     
-    if report_type == 'revenue':
-        context['report'] = ReportGenerator.get_revenue_report()
-        context['title'] = 'Revenue Report'
+    # Helper function to convert Decimal to float
+    def decimal_to_float(obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        elif isinstance(obj, dict):
+            return {k: decimal_to_float(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [decimal_to_float(item) for item in obj]
+        return obj
+    
+    # Helper function to fill missing dates
+    def fill_date_range(data_dict, start_date, end_date):
+        """Fill missing dates with 0 values"""
+        filled_data = {}
+        current_date = start_date
+        while current_date <= end_date:
+            date_str = current_date.isoformat()
+            filled_data[date_str] = data_dict.get(date_str, 0)
+            current_date += timedelta(days=1)
+        return filled_data
+    
+    # Overview with all key metrics
+    if report_type == 'overview':
+        revenue_report = ReportGenerator.get_revenue_report(days=days)
+        user_report = ReportGenerator.get_user_report(days=days)
+        course_report = ReportGenerator.get_course_stats_report()
+        
+        # Enrollment trends
+        start_date = (timezone.now() - timedelta(days=days)).date()
+        end_date = timezone.now().date()
+        
+        enrollments = Enrollment.objects.filter(
+            enrolled_at__gte=timezone.now() - timedelta(days=days)
+        )
+        daily_enrollments = {}
+        for enrollment in enrollments:
+            date_str = enrollment.enrolled_at.date().isoformat()
+            daily_enrollments[date_str] = daily_enrollments.get(date_str, 0) + 1
+        
+        # Fill missing dates
+        daily_enrollments_filled = fill_date_range(daily_enrollments, start_date, end_date)
+        revenue_filled = fill_date_range(
+            {k: float(v) for k, v in revenue_report['daily_revenue'].items()},
+            start_date,
+            end_date
+        )
+        
+        # Prepare chart data
+        chart_data = {
+            'revenue': {
+                'labels': sorted(revenue_filled.keys()),
+                'data': [revenue_filled[k] for k in sorted(revenue_filled.keys())]
+            },
+            'enrollments': {
+                'labels': sorted(daily_enrollments_filled.keys()),
+                'data': [daily_enrollments_filled[k] for k in sorted(daily_enrollments_filled.keys())]
+            },
+            'users': {
+                'teachers': user_report.get('new_teachers', 0),
+                'students': user_report.get('new_students', 0)
+            },
+            'courses': {
+                'published': course_report['by_status'].get('published', 0),
+                'draft': course_report['by_status'].get('draft', 0),
+                'archived': course_report['by_status'].get('archived', 0)
+            }
+        }
+        
+        context.update({
+            'title': 'Analytics Overview',
+            'revenue_report': decimal_to_float(revenue_report),
+            'user_report': decimal_to_float(user_report),
+            'course_report': decimal_to_float(course_report),
+            'total_enrollments': enrollments.count(),
+            'chart_data': json.dumps(chart_data),
+        })
+        
+    elif report_type == 'revenue':
+        report = ReportGenerator.get_revenue_report(days=days)
+        start_date = (timezone.now() - timedelta(days=days)).date()
+        end_date = timezone.now().date()
+        
+        revenue_filled = fill_date_range(
+            {k: float(v) for k, v in report['daily_revenue'].items()},
+            start_date,
+            end_date
+        )
+        
+        chart_data = {
+            'labels': sorted(revenue_filled.keys()),
+            'data': [revenue_filled[k] for k in sorted(revenue_filled.keys())]
+        }
+        
+        context['report'] = decimal_to_float(report)
+        context['chart_data'] = json.dumps(chart_data)
+        context['title'] = 'Revenue Analytics'
+        
     elif report_type == 'users':
-        context['report'] = ReportGenerator.get_user_report()
-        context['title'] = 'User Growth Report'
+        report = ReportGenerator.get_user_report(days=days)
+        start_date = (timezone.now() - timedelta(days=days)).date()
+        end_date = timezone.now().date()
+        
+        # Prepare user growth data
+        all_dates = []
+        current_date = start_date
+        while current_date <= end_date:
+            all_dates.append(current_date.isoformat())
+            current_date += timedelta(days=1)
+        
+        teachers_data = []
+        students_data = []
+        for date_str in all_dates:
+            user_data = report['daily_users'].get(date_str, {'teachers': 0, 'students': 0})
+            teachers_data.append(user_data.get('teachers', 0))
+            students_data.append(user_data.get('students', 0))
+        
+        chart_data = {
+            'labels': all_dates,
+            'teachers': teachers_data,
+            'students': students_data
+        }
+        
+        context['report'] = decimal_to_float(report)
+        context['chart_data'] = json.dumps(chart_data)
+        context['title'] = 'User Growth Analytics'
+        
     elif report_type == 'courses':
-        context['report'] = ReportGenerator.get_course_stats_report()
-        context['title'] = 'Course Statistics Report'
+        report = ReportGenerator.get_course_stats_report()
+        
+        # Prepare teacher and category data
+        teacher_labels = []
+        teacher_counts = []
+        for teacher in report['by_teacher'][:10]:
+            first_name = teacher.get('teacher__first_name', '') or ''
+            last_name = teacher.get('teacher__last_name', '') or ''
+            name = f"{first_name} {last_name}".strip()
+            if not name:
+                name = (teacher.get('teacher__email', '') or 'Unknown').split('@')[0]
+            teacher_labels.append(name)
+            teacher_counts.append(teacher.get('count', 0))
+        
+        category_labels = []
+        category_counts = []
+        for cat in report['category_distribution'][:6]:
+            category_labels.append(cat.get('category__name') or 'Uncategorized')
+            category_counts.append(cat.get('count', 0))
+        
+        chart_data = {
+            'teachers': {
+                'labels': teacher_labels,
+                'data': teacher_counts
+            },
+            'categories': {
+                'labels': category_labels,
+                'data': category_counts
+            }
+        }
+        
+        context['report'] = decimal_to_float(report)
+        context['chart_data'] = json.dumps(chart_data)
+        context['title'] = 'Course Analytics'
     
     context['report_type'] = report_type
+    context['days'] = days
     
     return render(request, 'platformadmin/analytics_report.html', context)
 

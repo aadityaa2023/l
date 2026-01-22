@@ -1,165 +1,925 @@
 {% extends 'platformadmin/base.html' %}
+{% load static %}
 
 {% block platformadmin_content %}
-<h2>Analytics & Reports</h2>
+<div class="analytics-container">
+    <div class="page-header mb-4">
+        <h2 class="mb-2">
+            <i class="fas fa-chart-line me-2"></i> Analytics & Insights
+        </h2>
+        <p class="text-muted">Comprehensive platform performance metrics</p>
+    </div>
 
-<!-- Report Type Selection -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="btn-group" role="group">
-            <a href="?type=revenue" class="btn {% if report_type == 'revenue' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                <i class="fas fa-chart-line"></i> Revenue Report
-            </a>
-            <a href="?type=users" class="btn {% if report_type == 'users' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                <i class="fas fa-users"></i> User Growth
-            </a>
-            <a href="?type=courses" class="btn {% if report_type == 'courses' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                <i class="fas fa-book"></i> Courses
-            </a>
+    <!-- Report Type & Time Range Selection -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="btn-group report-type-selector" role="group">
+                <a href="?type=overview&days={{ days }}" class="btn {% if report_type == 'overview' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-th-large"></i> Overview
+                </a>
+                <a href="?type=revenue&days={{ days }}" class="btn {% if report_type == 'revenue' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-dollar-sign"></i> Revenue
+                </a>
+                <a href="?type=users&days={{ days }}" class="btn {% if report_type == 'users' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-users"></i> Users
+                </a>
+                <a href="?type=courses&days={{ days }}" class="btn {% if report_type == 'courses' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-book"></i> Courses
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-4 text-end">
+            <div class="btn-group time-range-selector" role="group">
+                <a href="?type={{ report_type }}&days=7" class="btn {% if days == 7 %}btn-primary{% else %}btn-outline-secondary{% endif %} btn-sm">7D</a>
+                <a href="?type={{ report_type }}&days=30" class="btn {% if days == 30 %}btn-primary{% else %}btn-outline-secondary{% endif %} btn-sm">30D</a>
+                <a href="?type={{ report_type }}&days=90" class="btn {% if days == 90 %}btn-primary{% else %}btn-outline-secondary{% endif %} btn-sm">90D</a>
+            </div>
         </div>
     </div>
+
+    {% if report_type == 'overview' %}
+        <!-- Overview Dashboard -->
+        <div class="row g-4 mb-4">
+            <!-- Revenue Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card revenue-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-rupee-sign"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-label">Total Revenue</div>
+                        <div class="metric-value">₹{{ revenue_report.total_revenue|floatformat:0 }}</div>
+                        <div class="metric-change {% if revenue_report.growth_percentage >= 0 %}positive{% else %}negative{% endif %}">
+                            <i class="fas fa-arrow-{% if revenue_report.growth_percentage >= 0 %}up{% else %}down{% endif %}"></i>
+                            {{ revenue_report.growth_percentage|floatformat:1 }}% vs previous period
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card users-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-label">New Users</div>
+                        <div class="metric-value">{{ user_report.total_new_users }}</div>
+                        <div class="metric-change {% if user_report.growth_percentage >= 0 %}positive{% else %}negative{% endif %}">
+                            <i class="fas fa-arrow-{% if user_report.growth_percentage >= 0 %}up{% else %}down{% endif %}"></i>
+                            {{ user_report.growth_percentage|floatformat:1 }}% vs previous period
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enrollments Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card enrollments-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-label">Total Enrollments</div>
+                        <div class="metric-value">{{ total_enrollments }}</div>
+                        <div class="metric-subtext">Active learning sessions</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses Card -->
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card courses-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="metric-content">
+                        <div class="metric-label">Published Courses</div>
+                        <div class="metric-value">{{ course_report.by_status.published }}</div>
+                        <div class="metric-subtext">of {{ course_report.total_courses }} total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Revenue Trend Chart -->
+            <div class="col-xl-8">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="fas fa-chart-area me-2"></i> Revenue Trend</h5>
+                        <span class="badge bg-success">Last {{ days }} Days</span>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="revenueChart" height="80"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Growth Chart -->
+            <div class="col-xl-4">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="fas fa-chart-pie me-2"></i> User Distribution</h5>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="userDistributionChart"></canvas>
+                        <div class="chart-legend mt-3">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #667eea;"></span>
+                                <span>Teachers: {{ user_report.new_teachers }}</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: #764ba2;"></span>
+                                <span>Students: {{ user_report.new_students }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Enrollment Trend -->
+            <div class="col-xl-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="fas fa-chart-line me-2"></i> Enrollment Trend</h5>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="enrollmentChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Status -->
+            <div class="col-xl-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="fas fa-chart-bar me-2"></i> Course Status Breakdown</h5>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="courseStatusChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% elif report_type == 'revenue' %}
+        <!-- Revenue Analytics -->
+        <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card revenue-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Total Revenue</div>
+                        <div class="metric-value">₹{{ report.total_revenue|floatformat:0 }}</div>
+                        <div class="metric-change {% if report.growth_percentage >= 0 %}positive{% else %}negative{% endif %}">
+                            <i class="fas fa-arrow-{% if report.growth_percentage >= 0 %}up{% else %}down{% endif %}"></i>
+                            {{ report.growth_percentage|floatformat:1 }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Avg Daily Revenue</div>
+                        <div class="metric-value">₹{{ report.avg_daily_revenue|floatformat:0 }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Total Transactions</div>
+                        <div class="metric-value">{{ report.total_transactions }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Peak Daily Revenue</div>
+                        <div class="metric-value">₹{{ report.max_daily_revenue|floatformat:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="fas fa-chart-area me-2"></i> Revenue Over Time</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="revenueDetailChart" height="80"></canvas>
+            </div>
+        </div>
+
+    {% elif report_type == 'users' %}
+        <!-- User Analytics -->
+        <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card users-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Total New Users</div>
+                        <div class="metric-value">{{ report.total_new_users }}</div>
+                        <div class="metric-change {% if report.growth_percentage >= 0 %}positive{% else %}negative{% endif %}">
+                            <i class="fas fa-arrow-{% if report.growth_percentage >= 0 %}up{% else %}down{% endif %}"></i>
+                            {{ report.growth_percentage|floatformat:1 }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">New Teachers</div>
+                        <div class="metric-value">{{ report.new_teachers }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">New Students</div>
+                        <div class="metric-value">{{ report.new_students }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Avg Daily Users</div>
+                        <div class="metric-value">{{ report.avg_daily_users|floatformat:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="fas fa-chart-line me-2"></i> User Growth Over Time</h5>
+            </div>
+            <div class="chart-body">
+                <canvas id="userGrowthChart" height="80"></canvas>
+            </div>
+        </div>
+
+    {% elif report_type == 'courses' %}
+        <!-- Course Analytics -->
+        <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card courses-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Total Courses</div>
+                        <div class="metric-value">{{ report.total_courses }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Published</div>
+                        <div class="metric-value">{{ report.by_status.published }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Draft</div>
+                        <div class="metric-value">{{ report.by_status.draft }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-label">Featured</div>
+                        <div class="metric-value">{{ report.featured }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-xl-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="fas fa-chart-bar me-2"></i> Top Teachers by Courses</h5>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="teacherCoursesChart" height="120"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h5><i class="fas fa-chart-pie me-2"></i> Category Distribution</h5>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="categoryChart" height="120"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 </div>
 
-<!-- Report Content -->
-<div class="card">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">{{ title }}</h5>
-    </div>
-    <div class="card-body">
-        {% if report_type == 'revenue' %}
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="stat-value">₹{{ report.total_revenue|floatformat:0 }}</div>
-                        <div class="stat-label">Total Revenue</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card success">
-                        <div class="stat-value">₹{{ report.avg_daily_revenue|floatformat:0 }}</div>
-                        <div class="stat-label">Average Daily Revenue</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ report.daily_revenue|length }}</div>
-                        <div class="stat-label">Days with Revenue</div>
-                    </div>
-                </div>
-            </div>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Revenue</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for date, amount in report.daily_revenue.items %}
-                        <tr>
-                            <td>{{ date }}</td>
-                            <td>₹{{ amount|floatformat:0 }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+<script>
+(function() {
+    'use strict';
+    
+    // Chart Configuration
+    const chartColors = {
+        primary: '#667eea',
+        secondary: '#764ba2',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        info: '#3b82f6',
+    };
 
-        {% elif report_type == 'users' %}
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ report.total_new_users }}</div>
-                        <div class="stat-label">New Users</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card success">
-                        <div class="stat-value">{{ report.new_teachers }}</div>
-                        <div class="stat-label">New Teachers</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ report.new_students }}</div>
-                        <div class="stat-label">New Students</div>
-                    </div>
-                </div>
-            </div>
+    const defaultOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 13 },
+                borderColor: chartColors.primary,
+                borderWidth: 1,
+            }
+        }
+    };
 
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Total</th>
-                            <th>Teachers</th>
-                            <th>Students</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for date, data in report.daily_users.items %}
-                        <tr>
-                            <td>{{ date }}</td>
-                            <td>{{ data.total }}</td>
-                            <td>{{ data.teachers }}</td>
-                            <td>{{ data.students }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCharts);
+    } else {
+        initCharts();
+    }
 
-        {% elif report_type == 'courses' %}
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ report.total_courses }}</div>
-                        <div class="stat-label">Total Courses</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card success">
-                        <div class="stat-value">{{ report.by_status.published }}</div>
-                        <div class="stat-label">Published</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card warning">
-                        <div class="stat-value">{{ report.by_status.draft }}</div>
-                        <div class="stat-label">Draft</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card">
-                        <div class="stat-value">{{ report.featured }}</div>
-                        <div class="stat-label">Featured</div>
-                    </div>
-                </div>
-            </div>
+    function initCharts() {
+        console.log('Initializing analytics charts...');
+        
+        const reportType = '{{ report_type }}';
+        const chartDataRaw = '{{ chart_data|escapejs }}';
+        
+        if (!chartDataRaw) {
+            console.error('No chart data available');
+            return;
+        }
+        
+        let chartData;
+        try {
+            chartData = JSON.parse(chartDataRaw);
+            console.log('Chart data loaded:', chartData);
+        } catch (e) {
+            console.error('Failed to parse chart data:', e);
+            return;
+        }
 
-            <h6>Top Teachers by Course Count:</h6>
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Teacher Email</th>
-                            <th>Course Count</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for teacher in report.by_teacher %}
-                        <tr>
-                            <td>{{ teacher.teacher__email }}</td>
-                            <td>{{ teacher.count }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-    </div>
-</div>
+        if (reportType === 'overview') {
+            createOverviewCharts(chartData);
+        } else if (reportType === 'revenue') {
+            createRevenueChart(chartData);
+        } else if (reportType === 'users') {
+            createUsersChart(chartData);
+        } else if (reportType === 'courses') {
+            createCoursesCharts(chartData);
+        }
+    }
+
+    function createOverviewCharts(data) {
+        // Revenue Trend Chart
+        const revenueCtx = document.getElementById('revenueChart');
+        if (revenueCtx && data.revenue) {
+            try {
+                new Chart(revenueCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.revenue.labels,
+                        datasets: [{
+                            label: 'Revenue (₹)',
+                            data: data.revenue.data,
+                            borderColor: chartColors.primary,
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                        }]
+                    },
+                    options: {
+                        ...defaultOptions,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Revenue chart created');
+            } catch (e) {
+                console.error('Error creating revenue chart:', e);
+            }
+        }
+
+        // User Distribution Chart
+        const userDistCtx = document.getElementById('userDistributionChart');
+        if (userDistCtx && data.users) {
+            try {
+                new Chart(userDistCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Teachers', 'Students'],
+                        datasets: [{
+                            data: [data.users.teachers, data.users.students],
+                            backgroundColor: [chartColors.primary, chartColors.secondary],
+                            borderWidth: 0,
+                        }]
+                    },
+                    options: {
+                        ...defaultOptions,
+                        cutout: '70%',
+                    }
+                });
+                console.log('User distribution chart created');
+            } catch (e) {
+                console.error('Error creating user distribution chart:', e);
+            }
+        }
+
+        // Enrollment Trend Chart
+        const enrollmentCtx = document.getElementById('enrollmentChart');
+        if (enrollmentCtx && data.enrollments) {
+            try {
+                new Chart(enrollmentCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.enrollments.labels,
+                        datasets: [{
+                            label: 'Enrollments',
+                            data: data.enrollments.data,
+                            backgroundColor: chartColors.success,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        ...defaultOptions,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Enrollment chart created');
+            } catch (e) {
+                console.error('Error creating enrollment chart:', e);
+            }
+        }
+
+        // Course Status Chart
+        const courseStatusCtx = document.getElementById('courseStatusChart');
+        if (courseStatusCtx && data.courses) {
+            try {
+                new Chart(courseStatusCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Published', 'Draft', 'Archived'],
+                        datasets: [{
+                            label: 'Courses',
+                            data: [
+                                data.courses.published,
+                                data.courses.draft,
+                                data.courses.archived
+                            ],
+                            backgroundColor: [chartColors.success, chartColors.warning, chartColors.danger],
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        ...defaultOptions,
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Course status chart created');
+            } catch (e) {
+                console.error('Error creating course status chart:', e);
+            }
+        }
+    }
+
+    function createRevenueChart(data) {
+        const revenueDetailCtx = document.getElementById('revenueDetailChart');
+        if (revenueDetailCtx && data.labels && data.data) {
+            try {
+                new Chart(revenueDetailCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Daily Revenue (₹)',
+                            data: data.data,
+                            borderColor: chartColors.primary,
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                        }]
+                    },
+                    options: {
+                        ...defaultOptions,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Detailed revenue chart created');
+            } catch (e) {
+                console.error('Error creating detailed revenue chart:', e);
+            }
+        }
+    }
+
+    function createUsersChart(data) {
+        const userGrowthCtx = document.getElementById('userGrowthChart');
+        if (userGrowthCtx && data.labels) {
+            try {
+                new Chart(userGrowthCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'Teachers',
+                                data: data.teachers,
+                                borderColor: chartColors.primary,
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                            },
+                            {
+                                label: 'Students',
+                                data: data.students,
+                                borderColor: chartColors.secondary,
+                                backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                            }
+                        ]
+                    },
+                    options: {
+                        ...defaultOptions,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('User growth chart created');
+            } catch (e) {
+                console.error('Error creating user growth chart:', e);
+            }
+        }
+    }
+
+    function createCoursesCharts(data) {
+        // Teacher Courses Chart
+        const teacherCoursesCtx = document.getElementById('teacherCoursesChart');
+        if (teacherCoursesCtx && data.teachers && data.teachers.labels && data.teachers.labels.length > 0) {
+            try {
+                new Chart(teacherCoursesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.teachers.labels,
+                        datasets: [{
+                            label: 'Number of Courses',
+                            data: data.teachers.data,
+                            backgroundColor: chartColors.primary,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        ...defaultOptions,
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('Teacher courses chart created');
+            } catch (e) {
+                console.error('Error creating teacher courses chart:', e);
+            }
+        }
+
+        // Category Distribution Chart
+        const categoryCtx = document.getElementById('categoryChart');
+        if (categoryCtx && data.categories && data.categories.labels && data.categories.labels.length > 0) {
+            try {
+                new Chart(categoryCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: data.categories.labels,
+                        datasets: [{
+                            data: data.categories.data,
+                            backgroundColor: [
+                                chartColors.primary,
+                                chartColors.secondary,
+                                chartColors.success,
+                                chartColors.warning,
+                                chartColors.info,
+                                chartColors.danger,
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff',
+                        }]
+                    },
+                    options: defaultOptions
+                });
+                console.log('Category chart created');
+            } catch (e) {
+                console.error('Error creating category chart:', e);
+            }
+        }
+    }
+})();
+</script>
+
+<style>
+.analytics-container {
+    padding: 0;
+}
+
+.page-header h2 {
+    color: #1f2937;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.report-type-selector .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.time-range-selector .btn {
+    padding: 0.5rem 1rem;
+    min-width: 60px;
+    border-radius: 6px;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.15);
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.metric-card.revenue-card::before {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.metric-card.users-card::before {
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.metric-card.enrollments-card::before {
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.metric-card.courses-card::before {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.metric-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.metric-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.revenue-card .metric-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.users-card .metric-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.enrollments-card .metric-icon {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-label {
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-value {
+    color: #1f2937;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+}
+
+.metric-change {
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.metric-change.positive {
+    color: #10b981;
+}
+
+.metric-change.negative {
+    color: #ef4444;
+}
+
+.metric-subtext {
+    color: #9ca3af;
+    font-size: 0.875rem;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    height: 100%;
+}
+
+.chart-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chart-header h5 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.chart-body {
+    padding: 1.5rem;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+    .report-type-selector .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .page-header h2 {
+        font-size: 1.5rem;
+    }
+}
+</style>
 {% endblock %}
