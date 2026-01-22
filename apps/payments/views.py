@@ -197,23 +197,10 @@ def verify_payment(request):
                 try:
                     coupon = Coupon.objects.get(code=coupon_data['code'])
                     
-                    # Create coupon usage record
+                    # Create coupon usage record with discount information
                     original_amount = Decimal(coupon_data['original_amount'])
                     discount_amount = Decimal(coupon_data['discount_amount'])
                     final_amount = Decimal(coupon_data['final_amount'])
-                    
-                    # Determine commission recipient
-                    commission_recipient = None
-                    extra_commission = Decimal('0')
-                    
-                    if coupon.creator_type == 'teacher' and coupon.assigned_to_teacher:
-                        commission_recipient = coupon.assigned_to_teacher
-                        extra_commission = discount_amount  # Teacher gets the discount amount as extra commission
-                    elif coupon.creator_type == 'platform_admin':
-                        # Platform admin gets the commission
-                        if coupon.created_by:
-                            commission_recipient = coupon.created_by
-                        extra_commission = discount_amount
                     
                     coupon_usage = CouponUsage.objects.create(
                         coupon=coupon,
@@ -222,8 +209,7 @@ def verify_payment(request):
                         original_amount=original_amount,
                         discount_amount=discount_amount,
                         final_amount=final_amount,
-                        extra_commission_earned=extra_commission,
-                        commission_recipient=commission_recipient
+                        # Commission details will be updated by CommissionCalculator.record_commission_on_payment
                     )
                     
                     # Increment coupon usage count
@@ -244,8 +230,8 @@ def verify_payment(request):
             
             logger.info(f"Commission calculated - Scenario: {commission_data['scenario']}, "
                        f"Platform: {commission_data['platform_commission']}, "
-                       f"Teacher: {commission_data['teacher_revenue']}, "
-                       f"Extra: {commission_data['extra_commission']}")
+                       f"Teacher: {commission_data['teacher_revenue']}")
+
             
             # Create enrollment and unlock course
             enrollment, created = Enrollment.objects.get_or_create(
@@ -477,8 +463,7 @@ def teacher_earnings(request):
 
     total_sales = Decimal('0')
     platform_commission = Decimal('0')
-    base_earnings = Decimal('0')
-    extra_commission = Decimal('0')
+    teacher_earnings = Decimal('0')
 
     # Calculate accurate commission for each payment
     for payment in teacher_payments:
@@ -491,16 +476,9 @@ def teacher_earnings(request):
         # Calculate commission using the commission calculator
         commission_data = CommissionCalculator.calculate_commission(payment, coupon)
         platform_commission += commission_data['platform_commission']
-        
-        # Track extra commission separately for display
-        if commission_data['extra_commission'] > 0 and commission_data['extra_commission_recipient'] == user:
-            extra_commission += commission_data['extra_commission']
-            # Base earnings is teacher revenue minus extra commission
-            base_earnings += (commission_data['teacher_revenue'] - commission_data['extra_commission'])
-        else:
-            base_earnings += commission_data['teacher_revenue']
+        teacher_earnings += commission_data['teacher_revenue']
 
-    net_earnings = base_earnings + extra_commission
+    net_earnings = teacher_earnings
 
     # Recent transactions (limited to 20)
     recent_payments = teacher_payments[:20]
@@ -508,8 +486,7 @@ def teacher_earnings(request):
     context = {
         'total_sales': total_sales,
         'platform_commission': platform_commission,
-        'base_teacher_earnings': base_earnings,
-        'extra_commission': extra_commission,
+        'teacher_earnings': teacher_earnings,
         'net_earnings': net_earnings,
         'recent_payments': recent_payments,
     }

@@ -284,11 +284,13 @@
                                 <small class="text-muted">
                                     Status: 
                                     {% if assignment.status == 'assigned' %}
-                                        <span class="badge bg-warning">Pending</span>
+                                        <span class="badge bg-info">Assigned</span>
                                     {% elif assignment.status == 'accepted' %}
                                         <span class="badge bg-success">Accepted</span>
                                     {% elif assignment.status == 'rejected' %}
                                         <span class="badge bg-danger">Rejected</span>
+                                    {% elif assignment.status == 'revoked' %}
+                                        <span class="badge bg-secondary">Revoked</span>
                                     {% else %}
                                         <span class="badge bg-secondary">{{ assignment.status|title }}</span>
                                     {% endif %}

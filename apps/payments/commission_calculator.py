@@ -26,24 +26,31 @@ class CommissionCalculator:
         """
         Calculate commission distribution for a payment
         
+        Commission Logic:
+        - Commission is calculated ONLY on the final amount (after discount) according to the 
+          commission percentage set by platform admin while assigning teacher to course
+        - The discount is absorbed - nobody gets it as extra commission
+        
+        Example: 100 rupee course with 10% coupon and 30% platform commission:
+        - User pays: 90 rupees (100 - 10% discount)
+        - Platform commission: 27 rupees (30% of 90)
+        - Teacher revenue: 63 rupees (70% of 90)
+        - The 10 rupee discount is absorbed (nobody gets it)
+        
         Returns:
             dict: {
                 'platform_commission': Decimal,
                 'teacher_revenue': Decimal,
-                'extra_commission': Decimal,
-                'extra_commission_recipient': User or None,
                 'commission_rate': Decimal,
-                'scenario': str  # 'normal', 'platform_coupon', or 'teacher_coupon'
+                'scenario': str  # 'normal' or 'with_coupon'
             }
         """
         from apps.platformadmin.models import CourseAssignment
-        from apps.payments.models import CouponUsage
         
-        final_amount = payment.amount
+        final_amount = payment.amount  # Amount user actually paid (after discount)
         course = payment.course
         
         # Get teacher assignment to get commission rate
-        # Changed from 'accepted' to 'assigned' to include assigned teachers
         assignment = CourseAssignment.objects.filter(
             course=course,
             status__in=['assigned', 'accepted']
@@ -65,66 +72,17 @@ class CommissionCalculator:
         if base_commission_rate is None:
             base_commission_rate = Decimal('0.00')
         
+        # Calculate commission on final_amount (amount user paid after discount)
+        platform_commission = (final_amount * base_commission_rate) / 100
+        teacher_revenue = final_amount - platform_commission
+        
         # Initialize result
         result = {
-            'platform_commission': Decimal('0'),
-            'teacher_revenue': Decimal('0'),
-            'extra_commission': Decimal('0'),
-            'extra_commission_recipient': None,
+            'platform_commission': platform_commission,
+            'teacher_revenue': teacher_revenue,
             'commission_rate': base_commission_rate,
-            'scenario': 'normal'
+            'scenario': 'with_coupon' if coupon_used else 'normal'
         }
-        
-        # Scenario 1: Normal Purchase (No Coupon)
-        if not coupon_used:
-            result['scenario'] = 'normal'
-            result['platform_commission'] = (final_amount * base_commission_rate) / 100
-            result['teacher_revenue'] = final_amount - result['platform_commission']
-            return result
-        
-        # Check if coupon is Platform Admin or Teacher coupon
-        is_platform_coupon = coupon_used.creator_type == 'platform_admin'
-        is_teacher_coupon = coupon_used.creator_type == 'teacher'
-        
-        # Get the actual discount amount from CouponUsage record instead of recalculating
-        # This fixes the bug where discount was calculated on already-discounted amount
-        coupon_usage = CouponUsage.objects.filter(payment=payment, coupon=coupon_used).first()
-        if coupon_usage:
-            extra_commission_amount = coupon_usage.discount_amount
-        else:
-            # Fallback: calculate discount on final_amount (should not happen in normal flow)
-            try:
-                extra_commission_amount = coupon_used.calculate_discount(final_amount)
-            except Exception:
-                extra_commission_amount = Decimal('0')
-        
-        # Scenario 2: Platform Admin Coupon Used
-        if is_platform_coupon and not coupon_used.assigned_to_teacher:
-            result['scenario'] = 'platform_coupon'
-            result['extra_commission'] = extra_commission_amount
-            result['extra_commission_recipient'] = None  # Platform keeps extra commission
-            
-            # Split final_amount according to base commission, then add discount to platform
-            platform_base = (final_amount * base_commission_rate) / 100
-            result['platform_commission'] = platform_base + extra_commission_amount
-            result['teacher_revenue'] = final_amount - platform_base
-            
-        # Scenario 3: Teacher Coupon Used
-        elif is_teacher_coupon or (is_platform_coupon and coupon_used.assigned_to_teacher):
-            result['scenario'] = 'teacher_coupon'
-            result['extra_commission'] = extra_commission_amount
-            result['extra_commission_recipient'] = coupon_used.assigned_to_teacher or course.teacher
-            
-            # Split final_amount according to base commission, then add discount to teacher
-            platform_base = (final_amount * base_commission_rate) / 100
-            result['platform_commission'] = platform_base
-            result['teacher_revenue'] = (final_amount - platform_base) + extra_commission_amount
-        
-        else:
-            # Fallback to normal purchase if coupon type unclear
-            result['scenario'] = 'normal'
-            result['platform_commission'] = (final_amount * base_commission_rate) / 100
-            result['teacher_revenue'] = final_amount - result['platform_commission']
         
         return result
     
@@ -135,20 +93,15 @@ class CommissionCalculator:
         
         Args:
             payment: Payment object
-            coupon_usage: CouponUsage object if coupon was used
+            coupon_usage: CouponUsage object if coupon was used (optional, not used in calculation)
         """
-        coupon = None
-        if coupon_usage:
-            coupon = coupon_usage.coupon
+        coupon = coupon_usage.coupon if coupon_usage else None
         
-        # Calculate commission
+        # Calculate commission based on final amount only
         commission_data = CommissionCalculator.calculate_commission(payment, coupon)
         
-        # Update coupon usage with extra commission if applicable
-        if coupon_usage and commission_data['extra_commission'] > 0:
-            coupon_usage.extra_commission_earned = commission_data['extra_commission']
-            coupon_usage.commission_recipient = commission_data['extra_commission_recipient']
-            coupon_usage.save()
+        # Note: extra_commission_earned and commission_recipient in CouponUsage are 
+        # legacy fields and not updated with new logic (discount is absorbed, not redistributed)
         
         # Store commission data in payment metadata (for future reference)
         # You could add a JSONField to Payment model to store this, or create a separate CommissionRecord model

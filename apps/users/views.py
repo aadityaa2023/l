@@ -155,6 +155,8 @@ def teacher_dashboard(request):
     
     thirty_days_ago = datetime.now() - timedelta(days=30)
     seven_days_ago = datetime.now() - timedelta(days=7)
+    yesterday_start = (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_end = (datetime.now() - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
     
     # Calculate revenue for last 30 days
     payments_30days = Payment.objects.filter(
@@ -183,6 +185,21 @@ def teacher_dashboard(request):
         coupon = coupon_usage.coupon if coupon_usage else None
         commission_data = CommissionCalculator.calculate_commission(payment, coupon)
         revenue_7days += commission_data['teacher_revenue']
+    
+    # Calculate revenue for yesterday
+    payments_yesterday = Payment.objects.filter(
+        course__id__in=course_ids,
+        status='completed',
+        created_at__gte=yesterday_start,
+        created_at__lte=yesterday_end
+    ).select_related('course')
+    
+    revenue_yesterday = Decimal('0')
+    for payment in payments_yesterday:
+        coupon_usage = CouponUsage.objects.filter(payment=payment).first()
+        coupon = coupon_usage.coupon if coupon_usage else None
+        commission_data = CommissionCalculator.calculate_commission(payment, coupon)
+        revenue_yesterday += commission_data['teacher_revenue']
     
     # Calculate total revenue
     total_payments = Payment.objects.filter(
@@ -229,6 +246,7 @@ def teacher_dashboard(request):
         'recent_reviews': recent_reviews,
         'revenue_30days': revenue_30days,
         'revenue_7days': revenue_7days,
+        'revenue_yesterday': revenue_yesterday,
         'total_revenue': total_revenue,
         'enrollment_trend': enrollment_trend,
         'top_courses': top_courses,

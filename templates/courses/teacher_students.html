@@ -3,97 +3,176 @@
 
 {% block title %}Students - Teacher Panel{% endblock %}
 
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin-bottom: 12px;
+    }
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1a1a;
+    }
+    .stat-label {
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    .filter-section {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 12px;
+        padding: 20px;
+    }
+    .table-custom thead th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        color: #495057;
+    }
+    .table-custom tbody tr {
+        transition: background-color 0.2s;
+    }
+    .table-custom tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Students Management</h2>
+    <div>
+        <h2 class="mb-1"><i class="fas fa-users me-2"></i>Students Management</h2>
+        <p class="text-muted mb-0">Manage and track student enrollments across your courses</p>
+    </div>
     <a href="{% url 'courses:teacher_export_students' %}" class="btn btn-success">
         <i class="fas fa-download me-2"></i>Export CSV
     </a>
 </div>
 
 <!-- Stats Cards -->
-<div class="row g-3 mb-4">
+<div class="row g-4 mb-4">
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="text-muted mb-2">Total Enrollments</h6>
-                <h3 class="mb-0">{{ stats.total }}</h3>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-graduation-cap text-white"></i>
             </div>
+            <div class="stat-value">{{ stats.total }}</div>
+            <div class="stat-label">Total Enrollments</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="text-muted mb-2">Active Students</h6>
-                <h3 class="mb-0 text-success">{{ stats.active }}</h3>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-play-circle text-white"></i>
             </div>
+            <div class="stat-value text-success">{{ stats.active }}</div>
+            <div class="stat-label">Active Students</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="text-muted mb-2">Completed</h6>
-                <h3 class="mb-0 text-primary">{{ stats.completed }}</h3>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-check-circle text-white"></i>
             </div>
+            <div class="stat-value text-primary">{{ stats.completed }}</div>
+            <div class="stat-label">Completed</div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="text-muted mb-2">Unique Students</h6>
-                <h3 class="mb-0 text-info">{{ stats.unique_students }}</h3>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <i class="fas fa-users text-white"></i>
             </div>
+            <div class="stat-value text-info">{{ stats.unique_students }}</div>
+            <div class="stat-label">Unique Students</div>
         </div>
     </div>
 </div>
 
 <!-- Filters -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <input type="text" name="search" class="form-control" placeholder="Search students..." value="{{ search }}">
+<div class="card border-0 shadow-sm filter-section">
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" name="search" class="form-control border-start-0" placeholder="Search students..." value="{{ search }}">
             </div>
-            <div class="col-md-3">
-                <select name="status" class="form-select">
-                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
-                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
-                    <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select name="course" class="form-select">
-                    <option value="">All Courses</option>
-                    {% for course in teacher_courses %}
-                    <option value="{{ course.id }}" {% if course_filter == course.id|stringformat:"s" %}selected{% endif %}>
-                        {{ course.title }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-filter me-2"></i>Filter
-                </button>
-            </div>
-        </form>
-    </div>
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-select">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Status</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="course" class="form-select">
+                <option value="">All Courses</option>
+                {% for course in teacher_courses %}
+                <option value="{{ course.id }}" {% if course_filter == course.id|stringformat:"s" %}selected{% endif %}>
+                    {{ course.title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="fas fa-filter me-2"></i>Filter
+            </button>
+        </div>
+    </form>
 </div>
 
 <!-- Students Table -->
-<div class="card border-0 shadow-sm">
-    <div class="card-body">
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white border-0 py-3">
+        <h5 class="mb-0 fw-semibold">
+            <i class="fas fa-list me-2"></i>All Students
+        </h5>
+    </div>
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover table-custom mb-0">
                 <thead>
                     <tr>
-                        <th>Student</th>
-                        <th>Course</th>
-                        <th>Enrolled</th>
-                        <th>Progress</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th><i class="fas fa-user me-1"></i> Student</th>
+                        <th><i class="fas fa-book me-1"></i> Course</th>
+                        <th><i class="fas fa-calendar me-1"></i> Enrolled</th>
+                        <th><i class="fas fa-tasks me-1"></i> Progress</th>
+                        <th><i class="fas fa-tag me-1"></i> Status</th>
+                        <th><i class="fas fa-cogs me-1"></i> Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -101,41 +180,51 @@
                     <tr>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="avatar-sm bg-primary text-white rounded me-2 d-flex align-items-center justify-content-center">
+                                <div class="avatar-sm bg-gradient text-white d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                                     {{ enrollment.student.first_name.0|default:enrollment.student.email.0|upper }}
                                 </div>
-                                <div>
-                                    <div class="fw-bold">{{ enrollment.student.get_full_name|default:enrollment.student.email }}</div>
+                                <div class="ms-2">
+                                    <div class="fw-bold text-dark">{{ enrollment.student.get_full_name|default:enrollment.student.email }}</div>
                                     <small class="text-muted">{{ enrollment.student.email }}</small>
                                 </div>
                             </div>
                         </td>
-                        <td>{{ enrollment.course.title|truncatewords:5 }}</td>
-                        <td>{{ enrollment.enrolled_at|date:"M d, Y" }}</td>
                         <td>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar" role="progressbar" data-width="{{ enrollment.progress_percentage }}"></div>
-                            </div>
-                            <small>{{ enrollment.progress_percentage|floatformat:0 }}%</small>
+                            <a href="{% url 'courses:course_detail' slug=enrollment.course.slug %}" class="text-decoration-none">
+                                {{ enrollment.course.title|truncatewords:5 }}
+                            </a>
                         </td>
                         <td>
-                            <span class="badge bg-{% if enrollment.status == 'active' %}success{% elif enrollment.status == 'completed' %}primary{% else %}secondary{% endif %}">
-                                {{ enrollment.get_status_display }}
+                            <small class="text-muted">{{ enrollment.enrolled_at|date:"M d, Y" }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress me-2" style="height: 6px; width: 80px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ enrollment.progress_percentage }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ enrollment.progress_percentage|floatformat:0 }}%</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if enrollment.status == 'active' %}bg-success{% elif enrollment.status == 'completed' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                <i class="fas fa-{% if enrollment.status == 'active' %}check-circle{% elif enrollment.status == 'completed' %}trophy{% else %}times-circle{% endif %} me-1"></i>{{ enrollment.get_status_display }}
                             </span>
                         </td>
                         <td>
-                            <a href="{% url 'courses:teacher_student_detail' enrollment.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{% url 'notifications:message_compose_to' enrollment.student.id %}" class="btn btn-sm btn-outline-info">
-                                <i class="fas fa-envelope"></i>
-                            </a>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'courses:teacher_student_detail' enrollment.id %}" class="btn btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'notifications:message_compose_to' enrollment.student.id %}" class="btn btn-outline-info" title="Send Message">
+                                    <i class="fas fa-envelope"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="6" class="text-center py-5">
-                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <i class="fas fa-inbox fa-3x text-muted mb-3 opacity-50"></i>
                             <p class="text-muted">No students found</p>
                         </td>
                     </tr>
@@ -143,8 +232,8 @@
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination -->
+    </div>
+</div>
         {% if enrollments.has_other_pages %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center">

@@ -52,7 +52,7 @@
     
     <!-- Summary Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card stats-card bg-primary text-white shadow-sm">
                 <div class="card-body text-center">
                     <i class="fas fa-ticket-alt fa-2x mb-2"></i>
@@ -61,30 +61,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card stats-card bg-success text-white shadow-sm">
                 <div class="card-body text-center">
                     <i class="fas fa-check-circle fa-2x mb-2"></i>
                     <h3 class="mb-1">{{ total_uses }}</h3>
                     <p class="mb-0">Total Uses</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stats-card bg-warning text-dark shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-coins fa-2x mb-2"></i>
-                    <h3 class="mb-1">₹{{ total_extra_commission|floatformat:2 }}</h3>
-                    <p class="mb-0">Extra Commission Earned</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stats-card bg-info text-white shadow-sm">
-                <div class="card-body text-center">
-                    <i class="fas fa-rupee-sign fa-2x mb-2"></i>
-                    <h3 class="mb-1">₹{{ total_revenue|floatformat:2 }}</h3>
-                    <p class="mb-0">Revenue via Coupons</p>
                 </div>
             </div>
         </div>
@@ -106,7 +88,6 @@
                             <th><i class="fas fa-tag me-2"></i>Discount</th>
                             <th><i class="fas fa-chart-line me-2"></i>Times Used</th>
                             <th><i class="fas fa-rupee-sign me-2"></i>Revenue</th>
-                            <th><i class="fas fa-coins me-2"></i>Extra Commission</th>
                             <th><i class="fas fa-info-circle me-2"></i>Status</th>
                         </tr>
                     </thead>
@@ -137,9 +118,6 @@
                                 <strong class="text-success">₹{{ item.total_revenue|floatformat:2 }}</strong>
                             </td>
                             <td>
-                                <strong class="text-warning">₹{{ item.extra_commission|floatformat:2 }}</strong>
-                            </td>
-                            <td>
                                 {% if item.coupon.status == 'active' %}
                                     <span class="badge badge-custom bg-success">
                                         <i class="fas fa-check-circle me-1"></i>Active
@@ -164,22 +142,6 @@
             {% endif %}
         </div>
     </div>
-    
-    <!-- Info Box -->
-    <div class="alert alert-info mt-4 shadow-sm" style="border-left: 4px solid #0dcaf0;">
-        <h6><i class="fas fa-info-circle me-2"></i><strong>How Extra Commission Works:</strong></h6>
-        <ul class="mb-0 mt-2">
-            <li>When students use your assigned coupons, you earn <strong>extra commission equal to the coupon's discount percentage</strong> on top of your regular commission.</li>
-            <li><strong>Example:</strong> If a student uses a 10% discount coupon on a ₹1,000 course:
-                <ul class="mt-2">
-                    <li>Final price after discount: ₹900</li>
-                    <li>Your extra commission: <strong>10% of ₹900 = ₹90</strong></li>
-                    <li>This is added to your regular commission!</li>
-                </ul>
-            </li>
-            <li>The remaining revenue is split according to your default commission rate set by the platform admin.</li>
-            <li>Share your coupon codes with students to increase your earnings!</li>
-        </ul>
-    </div>
+
 </div>
 {% endblock %}

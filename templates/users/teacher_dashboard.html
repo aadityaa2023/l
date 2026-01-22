@@ -144,9 +144,9 @@
                     <i class="fas fa-rupee-sign text-white"></i>
                 </div>
                 <div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div>
-                <div class="stat-label">Total Revenue</div>
+                <div class="stat-label">Total Earnings</div>
                 <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
-                    ₹{{ revenue_7days|floatformat:0 }} this week
+                    <a href="{% url 'payments:teacher_earnings' %}" class="text-decoration-none">View Details →</a>
                 </div>
             </div>
         </div>
@@ -159,6 +159,51 @@
                 <div class="stat-label">Average Rating</div>
                 <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
                     From {{ analytics.total_reviews|default:0 }} reviews
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings Breakdown -->
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="fas fa-chart-line me-2 text-success"></i>Earnings Overview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-3 border-end">
+                                <div class="text-muted small mb-2">TOTAL EARNINGS</div>
+                                <h3 class="mb-0 fw-bold text-success">₹{{ total_revenue|floatformat:2 }}</h3>
+                                <small class="text-muted">All time</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border-end">
+                                <div class="text-muted small mb-2">LAST 30 DAYS</div>
+                                <h3 class="mb-0 fw-bold text-primary">₹{{ revenue_30days|floatformat:2 }}</h3>
+                                <small class="text-muted">Past month</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border-end">
+                                <div class="text-muted small mb-2">LAST 7 DAYS</div>
+                                <h3 class="mb-0 fw-bold text-info">₹{{ revenue_7days|floatformat:2 }}</h3>
+                                <small class="text-muted">This week</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <div class="text-muted small mb-2">YESTERDAY</div>
+                                <h3 class="mb-0 fw-bold text-warning">₹{{ revenue_yesterday|floatformat:2 }}</h3>
+                                <small class="text-muted">Previous day</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
