@@ -1,24 +1,13 @@
-
 deployment:
   tasks:
     - cd /home9/leqaudio/l
-    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/pip install --upgrade pip
-    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/pip install -r requirements.txt --no-cache-dir
+    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/pip install -r requirements.txt
     - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py migrate --noinput
-    - mkdir -p /home9/leqaudio/l/cache/django_cache
-    - chown -R leqaudio:leqaudio /home9/leqaudio/l/cache
-    - chmod -R 775 /home9/leqaudio/l/cache
-    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py collectstatic --noinput --clear
-    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py clearcache --confirm
-    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py warmcache --type all
-    - cp passenger_wsgi.py /home9/leqaudio/leqaudio/passenger_wsgi.py
-    - touch /home9/leqaudio/leqaudio/tmp/restart.txt
-    - chmod -R 755 /home9/leqaudio/public_html/media
-    - chmod -R 775 /home9/leqaudio/l/cache
-    - chmod 644 /home9/leqaudio/leqaudio/passenger_wsgi.py
-    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py cachestats
-    - echo "LeQ Production Deployment Completed Successfully"
-    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py warmcache --type all
+    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py collectstatic --noinput
+    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py clear_cache
+    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py cache_clear
+    - touch /home9/leqaudio/leqaudio/passenger_wsgi.py
+    - echo "Deployment completed successfully."
+"
 
-    
 

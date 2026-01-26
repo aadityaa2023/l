@@ -289,15 +289,9 @@ else:
 # WhiteNoise configuration for static files on shared hosting
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files (user uploaded content)
-# Allow overriding via environment variable on shared hosts (e.g. point to
-# `/home/<user>/public_html/media`), otherwise default to project `media/`.
-# Force MEDIA_URL to the canonical media URL path used by Apache on this host.
-# Do NOT allow overriding via environment variables to keep routing consistent
-# with the `.htaccess` rewrite rules that serve `/media/` directly.
+
 MEDIA_URL = '/media/'
-# Force MEDIA_ROOT to the shared-host path used in Apache `.htaccess`.
-# Allow environment variable override for flexible deployment
+
 MEDIA_ROOT = Path(env('MEDIA_ROOT', default=str(BASE_DIR / 'media')))
 
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
@@ -319,7 +313,7 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # We handle email verification via OTP
+ACCOUNT_EMAIL_VERIFICATION = 'none'  
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 LOGIN_REDIRECT_URL = '/'
@@ -436,7 +430,7 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://localhost:19006',  # Expo default web port
-    'http://localhost:19000',  # Expo Metro bundler
+    'http://localhost:19000',  
 ])
 
 # For development, allow all origins (disable in production)
