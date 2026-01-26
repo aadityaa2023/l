@@ -11,10 +11,14 @@ from django.urls import reverse_lazy
 from django.db.models import Count, Avg, Q, Sum, Max
 from django.http import JsonResponse, FileResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import cache_control
+from django.core.cache import cache
+from django.utils.decorators import method_decorator
 from datetime import datetime, timedelta
 import os
 import mimetypes
 import uuid
+
 from .models import (
     Category, Course, Module, Lesson, LessonMedia, Enrollment,
     LessonProgress, Note, Review, Announcement
@@ -22,80 +26,85 @@ from .models import (
 from apps.analytics.models import ListeningSession, TeacherAnalytics
 from apps.payments.models import Payment, CouponUsage
 from apps.payments.commission_calculator import CommissionCalculator
+from apps.common.cache_utils import cache_course_list, cache_course_detail, cache_query_result
+from apps.common.query_optimization import get_optimized_course_queryset, get_cached_course_analytics
 
 
 # Course Browsing
+@method_decorator(cache_control(public=True, max_age=300), name='dispatch')
+@method_decorator(cache_course_list(), name='dispatch')
 class CourseListView(ListView):
-    """List all published courses"""
+    """List all published courses with smart caching"""
     model = Course
     template_name = 'courses/course_list.html'
     context_object_name = 'courses'
     paginate_by = 12
     
     def get_queryset(self):
-        queryset = Course.objects.filter(status='published').annotate(
-            student_count=Count('enrollments', filter=Q(enrollments__status='active')),
-            avg_rating=Avg('reviews__rating')
-        ).select_related('teacher', 'category')
+        # Build filter dictionary from GET parameters
+        filters = {
+            'category': self.request.GET.get('category'),
+            'search': self.request.GET.get('search'),
+            'level': self.request.GET.get('level'),
+            'price_range': self.request.GET.get('price'),
+            'featured': self.request.GET.get('featured') == 'true',
+        }
         
-        # Filter by category
-        category_slug = self.request.GET.get('category')
-        if category_slug:
-            queryset = queryset.filter(category__slug=category_slug)
+        # Remove None/empty values
+        filters = {k: v for k, v in filters.items() if v}
         
-        # Filter by search query
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(title__icontains=search) |
-                Q(description__icontains=search) |
-                Q(teacher__first_name__icontains=search) |
-                Q(teacher__last_name__icontains=search)
+        # Get sort parameter
+        sort = self.request.GET.get('sort', '-created_at')
+        
+        # Build cache key for this specific query
+        cache_key_parts = [settings.CACHE_KEYS['COURSE_LIST']]
+        cache_key_parts.append(f"page:{self.request.GET.get('page', '1')}")
+        
+        for key, value in filters.items():
+            cache_key_parts.append(f"{key}:{value}")
+        cache_key_parts.append(f"sort:{sort}")
+        
+        cache_key = ":".join(cache_key_parts)
+        
+        # Try to get from cache
+        def fetch_courses():
+            return get_optimized_course_queryset(
+                filters=filters,
+                order_by=sort,
+                limit=self.paginate_by * 10  # Cache more than one page
             )
         
-        # Filter by level
-        level = self.request.GET.get('level')
-        if level:
-            queryset = queryset.filter(level=level)
-
-        # Filter by price
-        price_filter = self.request.GET.get('price')
-        if price_filter == 'free':
-            queryset = queryset.filter(Q(price=0) | Q(is_free=True))
-        elif price_filter == 'paid':
-            queryset = queryset.filter(price__gt=0)
+        cached_courses = cache_query_result(
+            cache_key,
+            fetch_courses,
+            timeout=settings.CACHE_TTL['SEMI_STATIC']
+        )
         
-        # Sort
-        sort = self.request.GET.get('sort', '-created_at')
-        if sort == 'popular':
-            queryset = queryset.order_by('-student_count')
-        elif sort == 'trending':
-            # Trending: combine popularity with recency
-            queryset = queryset.order_by('-student_count', '-created_at')
-        elif sort == 'rating':
-            queryset = queryset.order_by('-avg_rating')
-        elif sort == 'price_low':
-            queryset = queryset.order_by('price')
-        elif sort == 'price_high':
-            queryset = queryset.order_by('-price')
-        else:
-            queryset = queryset.order_by(sort)
-        
-        return queryset
+        return cached_courses
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories'] = Category.objects.all()
+        
+        # Cache categories list
+        context['categories'] = cache_query_result(
+            f"{settings.CACHE_KEYS['CATEGORY_LIST']}:active",
+            lambda: Category.objects.filter(is_active=True).order_by('display_order', 'name'),
+            timeout=settings.CACHE_TTL['STATIC']
+        )
+        
         return context
 
 
+@method_decorator(cache_control(public=True, max_age=600), name='dispatch')  
+@method_decorator(cache_course_detail(), name='dispatch')
 class CourseDetailView(DetailView):
-    """Course detail page"""
+    """Course detail page with comprehensive caching"""
     model = Course
     template_name = 'courses/course_detail.html'
     context_object_name = 'course'
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
+    
     
     def get_queryset(self):
         return Course.objects.select_related('teacher', 'category').prefetch_related(
@@ -106,39 +115,59 @@ class CourseDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         course = self.get_object()
+        user = self.request.user
         
-        # Check if user is enrolled
-        if self.request.user.is_authenticated:
-            context['is_enrolled'] = Enrollment.objects.filter(
-                student=self.request.user,
-                course=course,
-                status='active'
-            ).exists()
+        # Check if user is enrolled (use cache for authenticated users)
+        if user.is_authenticated:
+            enrollment_cache_key = f"{settings.CACHE_KEYS['USER_ENROLLMENTS']}:user:{user.id}:course:{course.id}"
+            is_enrolled = cache.get(enrollment_cache_key)
+            
+            if is_enrolled is None:
+                is_enrolled = Enrollment.objects.filter(
+                    student=user,
+                    course=course,
+                    status='active'
+                ).exists()
+                cache.set(enrollment_cache_key, is_enrolled, settings.CACHE_TTL['DYNAMIC'])
+            
+            context['is_enrolled'] = is_enrolled
         else:
             context['is_enrolled'] = False
         
-        # Get reviews
-        context['reviews'] = Review.objects.filter(
-            course=course
-        ).select_related('student').order_by('-created_at')[:10]
+        # Get reviews with caching
+        reviews_cache_key = f"{settings.CACHE_KEYS['COURSE_DETAIL']}:reviews:course:{course.id}"
+        context['reviews'] = cache_query_result(
+            reviews_cache_key,
+            lambda: list(Review.objects.filter(course=course)
+                        .select_related('student')
+                        .order_by('-created_at')[:10]),
+            timeout=settings.CACHE_TTL['DYNAMIC']
+        )
         
-        # Get course stats
-        context['total_students'] = Enrollment.objects.filter(
-            course=course,
-            status='active'
-        ).count()
+        # Get course stats with caching
+        stats_cache_key = f"{settings.CACHE_KEYS['COURSE_DETAIL']}:stats:course:{course.id}"
+        course_stats = cache_query_result(
+            stats_cache_key,
+            lambda: _get_course_stats(course),
+            timeout=settings.CACHE_TTL['FREQUENT']
+        )
         
-        context['avg_rating'] = Review.objects.filter(
-            course=course
-        ).aggregate(avg=Avg('rating'))['avg'] or 0
+        context['total_students'] = course_stats['total_students']
+        context['avg_rating'] = course_stats['avg_rating']
         
-        # Get related courses
-        context['related_courses'] = Course.objects.filter(
-            category=course.category,
-            status='published'
-        ).exclude(id=course.id).annotate(
-            student_count=Count('enrollments')
-        )[:4]
+        # Get related courses with caching
+        related_cache_key = f"{settings.CACHE_KEYS['COURSE_DETAIL']}:related:category:{course.category.id}"
+        context['related_courses'] = cache_query_result(
+            related_cache_key,
+            lambda: list(Course.objects.filter(
+                category=course.category,
+                status='published'
+            ).exclude(id=course.id).annotate(
+                student_count=Count('enrollments')
+            )[:4]),
+            timeout=settings.CACHE_TTL['SEMI_STATIC']
+        )
+        
         # Determine visible lessons for non-enrolled users: only allow free previews + first lesson
         # Build a set of lesson ids that should be visible without enrollment
         visible_lesson_ids = set()
@@ -160,6 +189,23 @@ class CourseDetailView(DetailView):
         context['visible_lesson_ids'] = visible_lesson_ids
 
         return context
+
+
+def _get_course_stats(course):
+    """Helper function to calculate course statistics"""
+    total_students = Enrollment.objects.filter(
+        course=course,
+        status='active'
+    ).count()
+    
+    avg_rating = Review.objects.filter(
+        course=course
+    ).aggregate(avg=Avg('rating'))['avg'] or 0
+    
+    return {
+        'total_students': total_students,
+        'avg_rating': avg_rating
+    }
 
 
 # Enrollment

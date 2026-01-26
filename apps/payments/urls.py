@@ -20,6 +20,7 @@ urlpatterns = [
     
     # Payment History
     path('my-payments/', views.my_payments, name='my_payments'),
+    path('invoice/<uuid:payment_id>/', views.download_invoice, name='download_invoice'),
     # Teacher Earnings (teacher-facing)
     path('teacher/earnings/', views.teacher_earnings, name='teacher_earnings'),
     

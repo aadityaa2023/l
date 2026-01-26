@@ -116,6 +116,15 @@
         color: white;
         font-weight: 600;
         font-size: 1.2rem;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .course-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 10px;
     }
 
     .course-details h6 {
@@ -318,7 +327,12 @@
                         <td>
                             <div class="course-info">
                                 <div class="course-avatar">
-                                    {{ payment.course.title.0|upper }}
+                                    {% if payment.course.thumbnail %}
+                                        <img src="{{ payment.course.thumbnail.url }}" alt="{{ payment.course.title }}" 
+                                             style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover;">
+                                    {% else %}
+                                        {{ payment.course.title.0|upper }}
+                                    {% endif %}
                                 </div>
                                 <div class="course-details">
                                     <h6>{{ payment.course.title }}</h6>
@@ -348,7 +362,7 @@
                         </td>
                         <td>
                             {% if payment.status == 'completed' %}
-                                <a href="#" class="download-btn">
+                                <a href="{% url 'payments:download_invoice' payment.id %}" class="download-btn">
                                     <i class="fas fa-download"></i>
                                     Invoice
                                 </a>

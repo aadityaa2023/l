@@ -1,75 +1,70 @@
 from django.shortcuts import render
 from django.db.models import Count, Avg, Q, Prefetch
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.conf import settings
+from django.views.decorators.cache import cache_control
 
 from apps.courses.models import Course, Category, Enrollment, Review
+from apps.common.cache_utils import cache_homepage, cache_query_result
+from apps.common.query_optimization import (
+    get_optimized_course_queryset,
+    get_optimized_categories_with_courses,
+    get_cached_platform_stats
+)
 
 
+@cache_control(public=True, max_age=300)  # Browser cache for 5 minutes
+@cache_homepage(timeout=settings.CACHE_TTL['SEMI_STATIC'])  # Database cache for 2 hours
 def home_view(request):
     """Render the site's homepage template with category-wise course grouping.
 
     Supplies category-grouped courses, trending courses, and stats to enable
     KukuFM-style horizontal scrolling UI pattern.
+    
+    Heavily cached and optimized for performance on shared hosting.
     """
     User = get_user_model()
 
-    # Trending courses: published courses ordered by number of active enrollments
-    trending_courses = (
-        Course.objects.filter(status='published')
-        .annotate(active_students=Count('enrollments', filter=Q(enrollments__status='active')))
-        .select_related('teacher', 'category')
-        .order_by('-active_students', '-created_at')[:12]
+    # Trending courses with optimized queries and caching
+    trending_courses = cache_query_result(
+        f"{settings.CACHE_KEYS['HOME_TRENDING']}:all",
+        lambda: list(get_optimized_course_queryset(
+            order_by='popular',
+            limit=12
+        )),
+        timeout=settings.CACHE_TTL['FREQUENT']
     )
 
-    # Featured courses: manually curated featured courses
-    featured_courses = (
-        Course.objects.filter(status='published', is_featured=True)
-        .select_related('teacher', 'category')
-        .order_by('-created_at')[:12]
+    # Featured courses with optimized queries and caching
+    featured_courses = cache_query_result(
+        f"{settings.CACHE_KEYS['HOME_FEATURED']}:all",
+        lambda: list(get_optimized_course_queryset(
+            filters={'featured': True},
+            order_by='-created_at',
+            limit=12
+        )),
+        timeout=settings.CACHE_TTL['SEMI_STATIC']
     )
 
-    # Category-wise courses for horizontal scrolling sections
-    # Get active categories with published courses
-    categories_with_courses = []
-    active_categories = Category.objects.filter(
-        is_active=True,
-        parent=None  # Only main categories (not subcategories)
-    ).prefetch_related(
-        Prefetch(
-            'courses',
-            queryset=Course.objects.filter(status='published')
-            .select_related('teacher', 'category')
-            .order_by('-created_at')  # Limit applied per-category in Python
-        )
-    ).order_by('display_order', 'name')
-
-    # Build list of categories that have at least one published course
-    for category in active_categories:
-        # Use the prefetched queryset, convert to list and apply per-category limit in Python
-        prefetched_courses = list(category.courses.all())
-        if prefetched_courses:
-            categories_with_courses.append({
-                'category': category,
-                'courses': prefetched_courses[:15]
-            })
+    # Category-wise courses with optimized prefetching
+    categories_with_courses = cache_query_result(
+        f"{settings.CACHE_KEYS['CATEGORY_LIST']}:with_courses",
+        lambda: get_optimized_categories_with_courses(max_courses_per_category=15),
+        timeout=settings.CACHE_TTL['SEMI_STATIC']
+    )
 
     # All active categories for category filter pills
-    all_categories = Category.objects.filter(is_active=True).order_by('display_order', 'name')[:20]
+    all_categories = cache_query_result(
+        f"{settings.CACHE_KEYS['CATEGORY_LIST']}:active",
+        lambda: list(Category.objects.filter(is_active=True)
+                    .only('id', 'name', 'slug', 'display_order')
+                    .order_by('display_order', 'name')[:20]),
+        timeout=settings.CACHE_TTL['STATIC']
+    )
 
-    # Basic platform stats
-    total_students = Enrollment.objects.filter(status='active').values('student').distinct().count()
-    total_courses = Course.objects.filter(status='published').count()
-    total_instructors = User.objects.filter(role='teacher').count()
-
-    avg_rating = Review.objects.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg'] or 0
-    satisfaction_rate = int(round((avg_rating / 5.0) * 100)) if avg_rating else 0
-
-    stats = {
-        'total_students': f"{total_students}" if total_students >= 10000 else total_students,
-        'total_courses': total_courses,
-        'total_instructors': total_instructors,
-        'satisfaction_rate': satisfaction_rate,
-    }
+    # Platform stats with optimized queries and caching
+    stats = get_cached_platform_stats()
 
     context = {
         'trending_courses': trending_courses,

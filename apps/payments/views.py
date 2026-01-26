@@ -16,6 +16,15 @@ from .commission_calculator import CommissionCalculator
 from apps.courses.models import Course, Enrollment
 from django.db.models import Sum
 from decimal import Decimal
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from io import BytesIO
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -444,6 +453,129 @@ def my_payments(request):
     }
     
     return render(request, 'payments/my_payments.html', context)
+
+
+@login_required
+def download_invoice(request, payment_id):
+    """Generate and download PDF invoice for a payment"""
+    payment = get_object_or_404(Payment, id=payment_id, user=request.user, status='completed')
+    
+    # Create PDF in memory
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=72, bottomMargin=72)
+    
+    # Get styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#8B5CF6'),
+        alignment=TA_CENTER,
+        spaceAfter=30
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#374151'),
+        spaceAfter=12
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#6B7280')
+    )
+    
+    # Build PDF content
+    story = []
+    
+    # Header
+    story.append(Paragraph("INVOICE", title_style))
+    story.append(Spacer(1, 20))
+    
+    # Company Info
+    story.append(Paragraph("LeQaudio", heading_style))
+    story.append(Paragraph("Audio Learning Platform", normal_style))
+    story.append(Paragraph("support@leqaudio.com", normal_style))
+    story.append(Spacer(1, 30))
+    
+    # Invoice details table
+    invoice_data = [
+        ['Invoice Number:', str(payment.id)[:8].upper()],
+        ['Invoice Date:', payment.created_at.strftime('%B %d, %Y')],
+        ['Payment Date:', payment.completed_at.strftime('%B %d, %Y') if payment.completed_at else payment.created_at.strftime('%B %d, %Y')],
+        ['Payment ID:', payment.razorpay_payment_id or 'N/A'],
+        ['Payment Method:', payment.get_payment_method_display() or 'Online'],
+    ]
+    
+    invoice_table = Table(invoice_data, colWidths=[2*inch, 3*inch])
+    invoice_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#374151')),
+        ('TEXTCOLOR', (1, 0), (1, -1), colors.HexColor('#6B7280')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROWBACKGROUNDS', (0, 0), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')]),
+    ]))
+    
+    story.append(invoice_table)
+    story.append(Spacer(1, 30))
+    
+    # Billing Info
+    story.append(Paragraph("Bill To:", heading_style))
+    story.append(Paragraph(payment.user.get_full_name() or payment.user.email, normal_style))
+    story.append(Paragraph(payment.user.email, normal_style))
+    story.append(Spacer(1, 30))
+    
+    # Course details table - handle missing course
+    course_title = payment.course.title if payment.course else 'Course (Removed/Archived)'
+    course_data = [
+        ['Description', 'Amount'],
+        [f'Course: {course_title}', f'₹{payment.amount}'],
+        ['', ''],
+        ['Total Amount', f'₹{payment.amount}'],
+    ]
+    
+    course_table = Table(course_data, colWidths=[4*inch, 1.5*inch])
+    course_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8B5CF6')),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#374151')),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -2), 1, colors.HexColor('#E5E7EB')),
+        ('LINEBELOW', (0, -1), (-1, -1), 2, colors.HexColor('#8B5CF6')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, -1), (-1, -1), 12),
+    ]))
+    
+    story.append(course_table)
+    story.append(Spacer(1, 40))
+    
+    # Footer
+    story.append(Paragraph("Thank you for choosing LeQaudio!", 
+                          ParagraphStyle('Footer', parent=styles['Normal'], 
+                                       fontSize=12, textColor=colors.HexColor('#8B5CF6'), 
+                                       alignment=TA_CENTER)))
+    
+    # Build PDF
+    doc.build(story)
+    buffer.seek(0)
+    
+    # Return PDF response
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="leqaudio_invoice_{payment.id}.pdf"'
+    
+    return response
 
 
 @login_required

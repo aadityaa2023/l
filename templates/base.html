@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}LeQ - Audio Learning Platform{% endblock %}</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/media/favicon.ico">
+    
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
@@ -508,6 +511,14 @@
             border-color: var(--primary-color);
             color: white;
         }
+
+        /* Ensure category pills show only text (hide any icon markup) */
+        .category-pill i,
+        .category-pill .fa,
+        .category-pill .fas,
+        .category-pill .far {
+            display: none !important;
+        }
         
         .category-scroll {
             overflow-x: auto;
@@ -682,9 +693,9 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-headphones-alt"></i>
-                <span>LeQ</span>
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+                <img src="/media/Logo.png" alt="LeQ Logo" style="height: 40px; width: auto;">
+                <span class="ms-2">LeQaudio</span>
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

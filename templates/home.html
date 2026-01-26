@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load cache %}
 
-{% block title %}LeQ - Learn Through Audio{% endblock %}
+{% block title %}LeQaudio - Audio Learning Platform{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -486,22 +487,6 @@
                             Explore Categories
                         </a>
                     </div>
-                    
-                    <!-- Stats Row -->
-                    <div class="row g-4">
-                        <div class="col-4">
-                            <h4 class="fw-bold mb-1" style="color: var(--primary-color);">10K+</h4>
-                            <small style="color: var(--text-muted);">Active Learners</small>
-                        </div>
-                        <div class="col-4">
-                            <h4 class="fw-bold mb-1" style="color: var(--secondary-color);">500+</h4>
-                            <small style="color: var(--text-muted);">Audio Courses</small>
-                        </div>
-                        <div class="col-4">
-                            <h4 class="fw-bold mb-1" style="color: var(--accent-color);">100+</h4>
-                            <small style="color: var(--text-muted);">Expert Teachers</small>
-                        </div>
-                    </div>
                 </div>
                 
                 <div class="col-lg-6 text-center">
@@ -558,13 +543,10 @@
         <!-- Horizontal Scrollable Categories -->
         <div class="category-scroll d-flex gap-3 pb-3">
             <a href="{% url 'courses:course_list' %}" class="category-pill active">
-                <i class="fas fa-fire me-2"></i>All Courses
+                All Courses
             </a>
             {% for category in categories %}
             <a href="{% url 'courses:course_list' %}?category={{ category.slug }}" class="category-pill">
-                {% if category.icon %}
-                <i class="{{ category.icon }} me-2"></i>
-                {% endif %}
                 {{ category.name }}
             </a>
             {% endfor %}
@@ -572,7 +554,8 @@
     </div>
 </section>
 
-<!-- Featured Courses Section -->
+<!-- Featured Courses Section with Cache -->
+{% cache 7200 featured_courses_section featured_courses|length %}
 {% if featured_courses %}
 <section style="padding: 2rem 0; background: var(--bg-primary);">
     <div class="container-fluid px-lg-5">
@@ -594,75 +577,17 @@
         <div class="horizontal-scroll-wrapper">
             <div class="horizontal-scroll-container">
                 {% for course in featured_courses %}
-                <div class="course-card-wrapper">
-                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none">
-                        <div class="course-card">
-                            <div class="course-card-image">
-                                {% if course.thumbnail %}
-                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" loading="lazy" class="course-thumbnail">
-                                {% else %}
-                                <div class="course-placeholder" style="background: linear-gradient(135deg, var(--accent-color), var(--primary-color));">
-                                    <i class="fas fa-crown" style="font-size: 3rem; opacity: 0.3; color: white;"></i>
-                                </div>
-                                {% endif %}
-                                
-                                <div class="course-play-overlay">
-                                    <div class="play-button">
-                                        <i class="fas fa-play"></i>
-                                    </div>
-                                </div>
-
-                                <span class="course-badge" style="background: linear-gradient(135deg, var(--accent-color), #D946EF);">
-                                    <i class="fas fa-crown me-1"></i>Featured
-                                </span>
-                            </div>
-
-                            <div class="course-card-body">
-                                <h6 class="course-card-title">{{ course.title|truncatechars:50 }}</h6>
-                                
-                                <div class="course-meta">
-                                    {% if course.teacher %}
-                                    <span class="course-teacher">
-                                        <i class="fas fa-user-circle me-1"></i>{{ course.teacher.get_full_name|default:course.teacher.email|truncatechars:20 }}
-                                    </span>
-                                    {% endif %}
-                                </div>
-
-                                <div class="course-stats">
-                                    {% if course.average_rating > 0 %}
-                                    <span class="course-rating">
-                                        <i class="fas fa-star"></i>{{ course.average_rating|floatformat:1 }}
-                                    </span>
-                                    {% endif %}
-                                    {% if course.duration_hours %}
-                                    <span class="course-duration">
-                                        <i class="fas fa-clock"></i>{{ course.duration_hours }}h
-                                    </span>
-                                    {% endif %}
-                                </div>
-
-                                <div class="course-price mt-2">
-                                    {% if course.is_free %}
-                                    <span class="price-free">Free</span>
-                                    {% elif course.discount_price %}
-                                    <span class="price-current">₹{{ course.discount_price }}</span>
-                                    <span class="price-original">₹{{ course.price }}</span>
-                                    {% else %}
-                                    <span class="price-current">₹{{ course.price }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
+                {% include 'components/course_card.html' %}
                 {% endfor %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
+{% endcache %}
 
-<!-- Trending Courses Section -->
+<!-- Trending Courses Section with Cache -->
+{% cache 900 trending_courses_section trending_courses|length %}
 {% if trending_courses %}
 <section style="padding: 2rem 0; background: var(--bg-primary);">
     <div class="container-fluid px-lg-5">
@@ -684,83 +609,18 @@
         <div class="horizontal-scroll-wrapper">
             <div class="horizontal-scroll-container">
                 {% for course in trending_courses|slice:":5" %}
-                <div class="course-card-wrapper">
-                    <a href="{% url 'courses:course_detail' course.slug %}" class="text-decoration-none">
-                        <div class="course-card">
-                            <div class="course-card-image">
-                                {% if course.thumbnail %}
-                                <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" loading="lazy" class="course-thumbnail">
-                                {% else %}
-                                <div class="course-placeholder" style="background: linear-gradient(135deg, #EF4444, #F97316);">
-                                    <i class="fas fa-fire" style="font-size: 3rem; opacity: 0.3; color: white;"></i>
-                                </div>
-                                {% endif %}
-                                
-                                <div class="course-play-overlay">
-                                    <div class="play-button">
-                                        <i class="fas fa-play"></i>
-                                    </div>
-                                </div>
-
-                                {% if course.is_free %}
-                                <span class="course-badge badge-free">
-                                    <i class="fas fa-gift me-1"></i>Free
-                                </span>
-                                {% elif course.discount_price %}
-                                <span class="course-badge badge-discount">
-                                    {{ course.discount_percentage|floatformat:0 }}% OFF
-                                </span>
-                                {% endif %}
-                            </div>
-
-                            <div class="course-card-body">
-                                <h6 class="course-card-title">{{ course.title|truncatechars:50 }}</h6>
-                                
-                                <div class="course-meta">
-                                    {% if course.teacher %}
-                                    <span class="course-teacher">
-                                        <i class="fas fa-user-circle me-1"></i>{{ course.teacher.get_full_name|default:course.teacher.email|truncatechars:20 }}
-                                    </span>
-                                    {% endif %}
-                                </div>
-
-                                <div class="course-stats">
-                                    {% if course.average_rating > 0 %}
-                                    <span class="course-rating">
-                                        <i class="fas fa-star"></i>{{ course.average_rating|floatformat:1 }}
-                                    </span>
-                                    {% endif %}
-                                    {% if course.duration_hours %}
-                                    <span class="course-duration">
-                                        <i class="fas fa-clock"></i>{{ course.duration_hours }}h
-                                    </span>
-                                    {% endif %}
-                                </div>
-
-                                <div class="course-price mt-2">
-                                    {% if course.is_free %}
-                                    <span class="price-free">Free</span>
-                                    {% elif course.discount_price %}
-                                    <span class="price-current">₹{{ course.discount_price }}</span>
-                                    <span class="price-original">₹{{ course.price }}</span>
-                                    {% else %}
-                                    <span class="price-current">₹{{ course.price }}</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
+                {% include 'components/course_card.html' %}
                 {% endfor %}
             </div>
         </div>
     </div>
 </section>
 {% endif %}
+{% endcache %}
 
-<!-- Category-wise Course Sections -->
+<!-- Category-wise Course Sections with Cache -->
 {% for category_data in categories_with_courses %}
-{% include 'components/category_row.html' with category=category_data.category courses=category_data.courses %}
+{% include 'components/category_section.html' with category=category_data %}
 {% endfor %}
 
 <!-- Features Section -->
@@ -856,7 +716,7 @@
     <div class="container text-center" style="position: relative; z-index: 1;">
         <h2 class="fw-bold mb-3" style="color: white; font-size: 2.5rem;">Ready to Start Your Learning Journey?</h2>
         <p class="lead mb-4" style="color: rgba(255,255,255,0.9); font-size: 1.2rem;">
-            Join 10,000+ learners already transforming their lives with LeQ
+            Start learning audio courses and transform your skills
         </p>
         {% if not user.is_authenticated %}
         <a href="{% url 'account_signup' %}" class="btn btn-lg px-5 py-3" 
@@ -872,29 +732,6 @@
     </div>
 </section>
 
-<!-- Stats Section -->
-<section style="padding: 4rem 0; background: var(--bg-primary);">
-    <div class="container">
-        <div class="row text-center g-4">
-            <div class="col-md-3 col-6">
-                <h2 class="fw-bold mb-2" style="color: var(--primary-color); font-size: 3rem;">10K+</h2>
-                <p style="color: var(--text-muted);">Active Learners</p>
-            </div>
-            <div class="col-md-3 col-6">
-                <h2 class="fw-bold mb-2" style="color: var(--accent-color); font-size: 3rem;">500+</h2>
-                <p style="color: var(--text-muted);">Audio Courses</p>
-            </div>
-            <div class="col-md-3 col-6">
-                <h2 class="fw-bold mb-2" style="color: var(--secondary-color); font-size: 3rem;">100+</h2>
-                <p style="color: var(--text-muted);">Expert Teachers</p>
-            </div>
-            <div class="col-md-3 col-6">
-                <h2 class="fw-bold mb-2" style="color: var(--primary-color); font-size: 3rem;">{{ stats.satisfaction_rate|default:"98" }}%</h2>
-                <p style="color: var(--text-muted);">Satisfaction Rate</p>
-            </div>
-        </div>
-    </div>
-</section>
 {% endif %}
 {% endblock %}
 

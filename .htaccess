@@ -1,36 +1,51 @@
 # Apache configuration for Django on shared hosting (Domainz)
-# This file configures Apache to serve your Django app via Passenger
+# Optimized for high traffic (100k+ users) with advanced caching and security
 
 # Enable Python/WSGI application
 PassengerEnabled on
-
-# Set the startup file
 PassengerStartupFile passenger_wsgi.py
 
-# Force application restart on every request (disable in production after testing)
-# PassengerAppEnv development
-
-# Set environment to production
+# Production environment settings
 SetEnv DJANGO_SETTINGS_MODULE leq.settings
 SetEnv PYTHON_ENV production
+SetEnv DJANGO_PRODUCTION true
+
+# Performance optimizations for high traffic
+PassengerMinInstances 2
+PassengerMaxPreloaderIdleTime 30
+PassengerMaxInstancesPerApp 4
+PassengerPoolIdleTime 600
+
+# Memory and process management
+PassengerMaxRequests 5000
+PassengerStatThrottleRate 10
+
 # Tell Django where media files will be served from on this host
-# Adjust the path if your account uses a different home directory
 SetEnv MEDIA_ROOT /home9/leqaudio/public_html/media
 
-# Serve static files directly (bypass Django)
+# Advanced rewrite rules for performance
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
     # Don't show directory listings
-    Options -Indexes
+    Options -Indexes +FollowSymLinks
     
-    # Serve static files directly
+    # Serve static files directly with long cache headers
     RewriteCond %{REQUEST_URI} ^/static/ [NC]
-    RewriteRule ^(.*)$ $1 [L]
+    RewriteRule ^static/(.*)$ /static/$1 [L,E=cache:1]
     
-    # Serve media files directly
+    # Serve media files directly with cache headers
     RewriteCond %{REQUEST_URI} ^/media/ [NC]
-    RewriteRule ^(.*)$ $1 [L]
+    RewriteRule ^media/(.*)$ /media/$1 [L,E=cache:1]
+    
+    # Force HTTPS redirect (enable after SSL setup)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    
+    # API rate limiting (basic protection)
+    RewriteCond %{REQUEST_URI} ^/api/ [NC]
+    RewriteCond %{HTTP:X-Forwarded-For} ^(.+)$
+    RewriteRule . - [E=CLIENT_IP:%1]
     
     # Pass all other requests to Passenger/Django
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -38,49 +53,131 @@ SetEnv MEDIA_ROOT /home9/leqaudio/public_html/media
     RewriteRule ^(.*)$ passenger_wsgi.py [QSA,L]
 </IfModule>
 
-# Security headers
+# Advanced security headers for production
 <IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "DENY"
-    Header set X-XSS-Protection "1; mode=block"
-    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    # Security headers
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src 'self' fonts.gstatic.com; img-src 'self' data:; media-src 'self'"
+    
+    # Performance headers for static content
+    <FilesMatch "\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header set Pragma "public"
+        Header unset ETag
+        FileETag None
+    </FilesMatch>
+    
+    # Cache headers for audio files
+    <FilesMatch "\.(mp3|m4a|wav|aac)$">
+        Header set Cache-Control "public, max-age=86400"
+        Header set Accept-Ranges "bytes"
+    </FilesMatch>
+    
+    # No cache for HTML/API responses
+    <FilesMatch "\.(html|json|xml)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
 </IfModule>
 
-# Protect sensitive files
-<FilesMatch "^(\.env|\.git|\.htaccess|passenger_wsgi\.py|manage\.py|db\.sqlite3|requirements\.txt)$">
+# Protect sensitive files and directories
+<FilesMatch "^(\.env|\.git|\.htaccess|passenger_wsgi\.py|manage\.py|db\.sqlite3|requirements\.txt|\.cache|logs)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
+# Block access to Python files except WSGI
+<FilesMatch "\.py$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<Files "passenger_wsgi.py">
+    Order allow,deny
+    Allow from all
+</Files>
+
 # Allow access to static and media files
-<FilesMatch "\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|pdf|mp3|m4a|wav)$">
+<FilesMatch "\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|pdf|mp3|m4a|wav|aac)$">
     Order allow,deny
     Allow from all
 </FilesMatch>
 
-# Set proper MIME types
+# Enhanced MIME types for audio platform
 <IfModule mod_mime.c>
     AddType audio/mpeg .mp3
     AddType audio/mp4 .m4a
     AddType audio/wav .wav
     AddType audio/aac .aac
+    AddType application/font-woff .woff
+    AddType application/font-woff2 .woff2
+    AddType image/svg+xml .svg
 </IfModule>
 
-# Compression for better performance
+# Advanced compression for better performance
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+    # Compress HTML, CSS, JavaScript, JSON, XML
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
+    
+    # Don't compress already compressed files
+    SetEnvIfNoCase Request_URI \
+        \.(?:gif|jpe?g|png|mp3|m4a|wav|aac|zip|gz|rar)$ no-gzip dont-vary
 </IfModule>
 
-# Browser caching for static assets
+# Advanced browser caching for high traffic
 <IfModule mod_expires.c>
     ExpiresActive On
+    
+    # Images and media - 1 year
     ExpiresByType image/jpeg "access plus 1 year"
     ExpiresByType image/png "access plus 1 year"
     ExpiresByType image/gif "access plus 1 year"
     ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/ico "access plus 1 year"
+    
+    # Audio files - 1 day (shorter for updates)
+    ExpiresByType audio/mpeg "access plus 1 day"
+    ExpiresByType audio/mp4 "access plus 1 day"
+    ExpiresByType audio/wav "access plus 1 day"
+    ExpiresByType audio/aac "access plus 1 day"
+    
+    # CSS and JavaScript - 1 month
     ExpiresByType text/css "access plus 1 month"
     ExpiresByType text/javascript "access plus 1 month"
     ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType audio/mpeg "access plus 1 year"
-    ExpiresByType audio/mp4 "access plus 1 year"
+    
+    # Fonts - 1 year
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType font/truetype "access plus 1 year"
+    
+    # Default - 2 days
+    ExpiresDefault "access plus 2 days"
+</IfModule>
+
+# Prevent hotlinking of media files (bandwidth protection)
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_REFERER} !^$
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?yourdomain\.com [NC]
+    RewriteRule \.(mp3|m4a|wav|aac|jpg|jpeg|png|gif)$ - [F,NC]
+</IfModule>
+
+# Security: Prevent execution of scripts in uploads
+<Directory "media">
+    <FilesMatch "\.(php|pl|py|jsp|asp|aspx|sh)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</Directory>
+
+# Rate limiting for API endpoints (basic protection)
+<IfModule mod_rewrite.c>
+    # Limit rapid API requests
+    RewriteCond %{REQUEST_URI} ^/api/ [NC]
+    RewriteCond %{HTTP:X-Forwarded-For} ^(.+)$
+    RewriteRule . - [E=CLIENT_IP:%1]
 </IfModule>
