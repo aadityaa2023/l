@@ -8,6 +8,5 @@ deployment:
     - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py cache_clear
     - touch /home9/leqaudio/leqaudio/passenger_wsgi.py
     - echo "Deployment completed successfully."
-"
 
 
