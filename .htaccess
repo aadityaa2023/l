@@ -20,6 +20,9 @@ PassengerPoolIdleTime 600
 PassengerMaxRequests 5000
 PassengerStatThrottleRate 10
 
+# Tell Django where media files will be served from on this host
+SetEnv MEDIA_ROOT /home9/leqaudio/public_html/media
+
 # Advanced rewrite rules for performance
 <IfModule mod_rewrite.c>
     RewriteEngine On
@@ -29,12 +32,10 @@ PassengerStatThrottleRate 10
     
     # Serve static files directly with long cache headers
     RewriteCond %{REQUEST_URI} ^/static/ [NC]
-    RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^static/(.*)$ /static/$1 [L,E=cache:1]
     
-    # Serve media files directly with cache headers (bypass Django for better performance)
+    # Serve media files directly with cache headers
     RewriteCond %{REQUEST_URI} ^/media/ [NC]
-    RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^media/(.*)$ /media/$1 [L,E=cache:1]
     
     # Force HTTPS redirect (enable after SSL setup)
