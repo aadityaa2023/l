@@ -292,7 +292,21 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 
-MEDIA_ROOT = Path(env('MEDIA_ROOT', default=str(BASE_DIR / 'media')))
+# Support both `MEDIA_ROOT` and legacy `MEDIAROOT` env var names.
+# In production (DEBUG=False) we enforce the hosting provider's fixed
+# media directory so media always lives at the expected location.
+_media_env = env('MEDIAROOT', default=None) or env('MEDIA_ROOT', default=None)
+
+if not DEBUG:
+    # Production: always use the shared hosting media path unless explicitly overridden
+    # by setting MEDIAROOT or MEDIA_ROOT in the environment to a different path.
+    if _media_env:
+        MEDIA_ROOT = Path(_media_env)
+    else:
+        MEDIA_ROOT = Path('/home/leqaudio/public_html/media/')
+else:
+    # Development: prefer env var, fall back to project's media/ directory
+    MEDIA_ROOT = Path(_media_env) if _media_env else Path(BASE_DIR / 'media')
 
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
@@ -434,7 +448,8 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
 ])
 
 # For development, allow all origins (disable in production)
-CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=DEBUG)
+# NOTE: This forces CORS to allow any origin. Do NOT enable in production.
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 

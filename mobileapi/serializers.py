@@ -22,6 +22,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """User profile information for mobile app"""
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     profile_picture_url = serializers.SerializerMethodField()
+    profile_picture = serializers.SerializerMethodField(read_only=True)
     total_enrollments = serializers.SerializerMethodField()
     total_completed = serializers.SerializerMethodField()
     
@@ -36,6 +37,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'phone',
             'role',
             'profile_picture_url',
+            'profile_picture',
             'email_verified',
             'date_joined',
             'total_enrollments',
@@ -52,6 +54,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return obj.student_profile.profile_picture.url
         return None
     
+    def get_profile_picture(self, obj):
+        """Alias for profile_picture_url for compatibility"""
+        return self.get_profile_picture_url(obj)
+    
     def get_total_enrollments(self, obj):
         """Count active enrollments"""
         return obj.enrollments.filter(status='active').count()
@@ -59,6 +65,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_total_completed(self, obj):
         """Count completed enrollments"""
         return obj.enrollments.filter(status='completed').count()
+    
+    def update(self, instance, validated_data):
+        """Update user and handle profile picture upload"""
+        # Handle file upload
+        if 'profile_picture' in self.context.get('request').FILES:
+            profile_picture = self.context.get('request').FILES['profile_picture']
+            
+            # Get or create student profile
+            from apps.users.models import StudentProfile
+            student_profile, _ = StudentProfile.objects.get_or_create(user=instance)
+            student_profile.profile_picture = profile_picture
+            student_profile.save()
+        
+        # Update user fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
