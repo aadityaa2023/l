@@ -100,7 +100,6 @@ SITE_ID = 1
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files on shared hosting
-    'django.middleware.cache.UpdateCacheMiddleware',  # Must be first cache middleware
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -115,13 +114,7 @@ MIDDLEWARE = [
     'apps.users.otp_middleware.OTPVerificationMiddleware',
     # Teacher redirect middleware - automatically redirect teachers to dashboard
     'apps.users.teacher_middleware.TeacherRedirectMiddleware',
-    'django.middleware.cache.FetchFromCacheMiddleware',  # Must be last cache middleware
 ]
-
-# Cache middleware settings
-CACHE_MIDDLEWARE_ALIAS = 'default'
-CACHE_MIDDLEWARE_SECONDS = 300  # 5 minutes for full page cache
-CACHE_MIDDLEWARE_KEY_PREFIX = 'leq'
 
 ROOT_URLCONF = 'leq.urls'
 
@@ -292,8 +285,18 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 
-
-MEDIA_ROOT = env('MEDIA_ROOT', default=BASE_DIR / 'media')
+# Prefer the shared-hosting `public_html` media directory when available.
+# The deploy layout on the host uses: /home9/leqaudio/public_html/
+# If `MEDIA_ROOT` is explicitly set via env, respect it; otherwise prefer
+# the public_html media folder when it exists, falling back to BASE_DIR/media.
+_public_html_media = Path('/home9/leqaudio/public_html/media')
+_env_media = env('MEDIA_ROOT', default=None)
+if _env_media:
+    MEDIA_ROOT = Path(_env_media)
+elif _public_html_media.exists():
+    MEDIA_ROOT = _public_html_media
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 
 
@@ -459,30 +462,6 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'http://127.0.0.1:8000',
 ])
 
-# ==================== CLOUDFLARE R2 STORAGE ====================
-
-USE_S3 = env.bool('USE_S3', default=False)
-
-if USE_S3:
-    # Cloudflare R2 settings
-    AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
-    AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL')
-    AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='auto')
-    AWS_S3_SIGNATURE_VERSION = env('AWS_S3_SIGNATURE_VERSION', default='s3v4')
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = None
-    AWS_QUERYSTRING_AUTH = True
-    AWS_QUERYSTRING_EXPIRE = 3600  # 1 hour
-    AWS_S3_OBJECT_PARAMETERS = {
-        'CacheControl': 'max-age=86400',
-    }
-    
-    # Storage backends
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
-
 # ==================== RAZORPAY ====================
 
 RAZORPAY_KEY_ID = env('RAZORPAY_KEY_ID', default='')
@@ -503,80 +482,12 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-# Celery Beat Schedule for Cache Management
+# Celery Beat Schedule
 CELERY_BEAT_SCHEDULE = {
-    'warm-homepage-cache': {
-        'task': 'apps.common.cache_tasks.warm_homepage_cache',
-        'schedule': timedelta(minutes=30),  # Every 30 minutes
-        'options': {'queue': 'default'}
-    },
-    'warm-category-cache': {
-        'task': 'apps.common.cache_tasks.warm_category_cache',
-        'schedule': timedelta(hours=1),  # Every hour
-        'options': {'queue': 'default'}
-    },
-    'warm-popular-courses': {
-        'task': 'apps.common.cache_tasks.warm_popular_courses_cache',
-        'schedule': timedelta(hours=2),  # Every 2 hours
-        'options': {'queue': 'default'}
-    },
-    'cleanup-expired-cache': {
-        'task': 'apps.common.cache_tasks.cleanup_expired_cache',
-        'schedule': timedelta(hours=6),  # Every 6 hours
-        'options': {'queue': 'default'}
-    },
-    'generate-cache-report': {
-        'task': 'apps.common.cache_tasks.generate_cache_report',
-        'schedule': timedelta(days=1),  # Daily at midnight
-        'options': {'queue': 'default'}
-    },
+    # Add future scheduled tasks here
 }
 
-# ==================== CACHING ====================
 
-# File-Based Cache - High performance for shared hosting without database overhead
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': BASE_DIR / 'cache' / 'django_cache',
-        'TIMEOUT': 300,  # Default cache timeout: 5 minutes
-        'OPTIONS': {
-            'MAX_ENTRIES': 10000,  # Increased capacity for 100k users
-        }
-    },
-    # Fast local memory cache for frequent lookups (user sessions, small data)
-    'locmem': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'TIMEOUT': 60,  # Short timeout for dynamic data
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-            'CULL_FREQUENCY': 3,
-        }
-    }
-}
-
-# Cache configuration for different data types
-CACHE_TTL = {
-    # Static content (rarely changes)
-    'STATIC': 60 * 60 * 24,          # 24 hours - categories, course structure
-    'SEMI_STATIC': 60 * 60 * 2,      # 2 hours - course lists, featured content  
-    'DYNAMIC': 60 * 15,              # 15 minutes - user-specific data, stats
-    'FREQUENT': 60 * 5,              # 5 minutes - trending content, counters
-    'REAL_TIME': 60,                 # 1 minute - notifications, live data
-}
-
-# Cache key prefixes for organized invalidation
-CACHE_KEYS = {
-    'COURSE_LIST': 'course_list',
-    'COURSE_DETAIL': 'course_detail',
-    'CATEGORY_LIST': 'category_list', 
-    'HOME_TRENDING': 'home_trending',
-    'HOME_FEATURED': 'home_featured',
-    'HOME_STATS': 'home_stats',
-    'USER_ENROLLMENTS': 'user_enrollments',
-    'TEACHER_COURSES': 'teacher_courses',
-}
 
 # ==================== EMAIL ====================
 
@@ -686,6 +597,9 @@ os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
 # Create cache directory if it doesn't exist (for file-based caching)
 os.makedirs(BASE_DIR / 'cache' / 'django_cache', exist_ok=True)
+
+# Ensure the MEDIA_ROOT directory exists so uploaded files are saved correctly.
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # ==================== AUDIO SETTINGS ====================
 

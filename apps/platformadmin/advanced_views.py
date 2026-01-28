@@ -463,15 +463,8 @@ def system_health(request):
 @platformadmin_required
 @require_POST
 def clear_cache(request):
-    """Clear platform cache"""
-    from django.core.cache import cache
-    from apps.platformadmin.utils import DashboardStats
-    
-    try:
-        DashboardStats.clear_cache()
-        cache.clear()
-        messages.success(request, 'Cache cleared successfully')
-    except Exception as e:
-        messages.error(request, f'Error clearing cache: {str(e)}')
+    """Cache clearing functionality removed"""
+    messages.info(request, 'Cache system has been disabled. No cache to clear.')
+    return redirect('platformadmin:analytics')
     
     return redirect('platformadmin:dashboard')

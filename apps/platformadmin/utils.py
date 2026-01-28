@@ -71,19 +71,8 @@ class DashboardStats:
     """Class to handle dashboard statistics"""
     
     @staticmethod
-    def get_cache_key(stat_type):
-        """Generate cache key for stats"""
-        return f'dashboard_stats_{stat_type}_{timezone.now().date()}'
-    
-    @staticmethod
     def get_user_stats():
         """Get user-related statistics"""
-        cache_key = DashboardStats.get_cache_key('users')
-        cached_stats = cache.get(cache_key)
-        
-        if cached_stats:
-            return cached_stats
-        
         stats = {
             'total_users': User.objects.filter(is_active=True).count(),
             'total_teachers': User.objects.filter(role='teacher', is_active=True).count(),
@@ -96,19 +85,11 @@ class DashboardStats:
             'unverified_emails': User.objects.filter(email_verified=False).count(),
         }
         
-        # Cache for 1 hour
-        cache.set(cache_key, stats, 3600)
         return stats
     
     @staticmethod
     def get_course_stats():
         """Get course-related statistics"""
-        cache_key = DashboardStats.get_cache_key('courses')
-        cached_stats = cache.get(cache_key)
-        
-        if cached_stats:
-            return cached_stats
-        
         stats = {
             'total_courses': Course.objects.count(),
             'published_courses': Course.objects.filter(status='published').count(),
@@ -121,19 +102,11 @@ class DashboardStats:
             ).count(),
         }
         
-        # Cache for 1 hour
-        cache.set(cache_key, stats, 3600)
         return stats
     
     @staticmethod
     def get_revenue_stats():
         """Get revenue-related statistics"""
-        cache_key = DashboardStats.get_cache_key('revenue')
-        cached_stats = cache.get(cache_key)
-        
-        if cached_stats:
-            return cached_stats
-        
         completed_payments = Payment.objects.filter(status='completed')
         
         stats = {
@@ -151,19 +124,11 @@ class DashboardStats:
             'refunded_amount': Payment.objects.filter(status='refunded').aggregate(Sum('amount'))['amount__sum'] or Decimal('0'),
         }
         
-        # Cache for 30 minutes
-        cache.set(cache_key, stats, 1800)
         return stats
     
     @staticmethod
     def get_enrollment_stats():
         """Get enrollment statistics"""
-        cache_key = DashboardStats.get_cache_key('enrollments')
-        cached_stats = cache.get(cache_key)
-        
-        if cached_stats:
-            return cached_stats
-        
         from apps.courses.models import Enrollment
         
         stats = {
@@ -175,8 +140,6 @@ class DashboardStats:
             ).count(),
         }
         
-        # Cache for 1 hour
-        cache.set(cache_key, stats, 3600)
         return stats
     
     @staticmethod

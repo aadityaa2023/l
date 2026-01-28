@@ -48,12 +48,6 @@ MAX_REVIEW_LENGTH = 1000
 MAX_NOTIFICATIONS_FETCH = 50
 NOTIFICATION_RETENTION_DAYS = 90
 
-# Cache TTL (Time To Live) in seconds
-CACHE_DASHBOARD_TTL = 300  # 5 minutes
-CACHE_COURSES_TTL = 600  # 10 minutes
-CACHE_CATEGORIES_TTL = 3600  # 1 hour
-CACHE_BANNERS_TTL = 1800  # 30 minutes
-
 # Error Messages
 ERROR_MESSAGES = {
     'auth_required': 'Authentication required',

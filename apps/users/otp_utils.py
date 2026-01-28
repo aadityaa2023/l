@@ -18,8 +18,9 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.core.cache import cache
 from django.contrib.auth import get_user_model
+from django.contrib.sessions.models import Session
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 
 from django_otp.plugins.otp_email.models import EmailDevice
 
@@ -33,6 +34,54 @@ OTP_VALIDITY_MINUTES = 5
 MAX_OTP_ATTEMPTS = 5
 RESEND_COOLDOWN_SECONDS = 60
 MAX_RESEND_PER_HOUR = 5
+
+
+# ==================== SESSION HELPERS ====================
+
+def get_session_data(request, key, default=None):
+    """Get data from session with fallback"""
+    return request.session.get(key, default) if request else default
+
+
+def set_session_data(request, key, value):
+    """Set data in session if available"""
+    if request:
+        request.session[key] = value
+        request.session.save()
+
+
+def remove_session_data(request, key):
+    """Remove data from session if available"""
+    if request:
+        request.session.pop(key, None)
+        request.session.save()
+
+
+def get_rate_limit_data(request, user_pk, purpose):
+    """Get rate limiting data from session"""
+    if not request:
+        return {'count': 0, 'last_reset': timezone.now().timestamp()}
+    
+    key = f'otp_rate_limit_{user_pk}_{purpose}'
+    data = get_session_data(request, key, {'count': 0, 'last_reset': timezone.now().timestamp()})
+    
+    # Reset counter if more than an hour has passed
+    if timezone.now().timestamp() - data.get('last_reset', 0) > 3600:
+        data = {'count': 0, 'last_reset': timezone.now().timestamp()}
+        set_session_data(request, key, data)
+    
+    return data
+
+
+def increment_rate_limit(request, user_pk, purpose):
+    """Increment rate limit counter"""
+    if not request:
+        return
+    
+    key = f'otp_rate_limit_{user_pk}_{purpose}'
+    data = get_rate_limit_data(request, user_pk, purpose)
+    data['count'] += 1
+    set_session_data(request, key, data)
 
 
 # ==================== OTP DEVICE MANAGEMENT ====================
@@ -69,28 +118,30 @@ def generate_otp_token() -> str:
     return ''.join(random.choices(string.digits, k=OTP_LENGTH))
 
 
-def send_otp_email(user, purpose: str = 'verification') -> Tuple[bool, str, Optional[EmailDevice]]:
+def send_otp_email(user, purpose: str = 'verification', request=None) -> Tuple[bool, str, Optional[EmailDevice]]:
     """
     Generate and send OTP to user's email.
     
     Args:
         user: User object
         purpose: Purpose of OTP
+        request: HTTP request for session storage
     
     Returns:
         Tuple of (success, message, device)
     """
     # Check rate limiting for resend
-    rate_limit_key = f'otp_resend_{user.pk}_{purpose}'
-    resend_count = cache.get(rate_limit_key, 0)
+    rate_data = get_rate_limit_data(request, user.pk, purpose)
     
-    if resend_count >= MAX_RESEND_PER_HOUR:
+    if rate_data['count'] >= MAX_RESEND_PER_HOUR:
         return False, 'Too many OTP requests. Please try again later.', None
     
     # Check cooldown
     cooldown_key = f'otp_cooldown_{user.pk}_{purpose}'
-    if cache.get(cooldown_key):
-        return False, f'Please wait {RESEND_COOLDOWN_SECONDS} seconds before requesting a new OTP.', None
+    cooldown_end = get_session_data(request, cooldown_key, 0)
+    if cooldown_end > timezone.now().timestamp():
+        remaining = int(cooldown_end - timezone.now().timestamp())
+        return False, f'Please wait {remaining} seconds before requesting a new OTP.', None
     
     try:
         # Create or get device
@@ -131,12 +182,12 @@ def send_otp_email(user, purpose: str = 'verification') -> Tuple[bool, str, Opti
         )
         
         # Update rate limiting
-        cache.set(rate_limit_key, resend_count + 1, 3600)  # 1 hour
-        cache.set(cooldown_key, True, RESEND_COOLDOWN_SECONDS)
+        increment_rate_limit(request, user.pk, purpose)
+        set_session_data(request, cooldown_key, timezone.now().timestamp() + RESEND_COOLDOWN_SECONDS)
         
         # Reset attempt counter
         attempt_key = f'otp_attempts_{user.pk}_{purpose}'
-        cache.delete(attempt_key)
+        remove_session_data(request, attempt_key)
         
         logger.info(f'OTP sent to {user.email} for {purpose}')
         return True, 'OTP sent successfully to your email.', device
@@ -158,7 +209,7 @@ def _get_otp_email_subject(purpose: str) -> str:
 
 # ==================== OTP VERIFICATION ====================
 
-def verify_otp(user, otp_code: str, purpose: str = 'verification') -> Tuple[bool, str]:
+def verify_otp(user, otp_code: str, purpose: str = 'verification', request=None) -> Tuple[bool, str]:
     """
     Verify OTP token for a user.
     
@@ -166,19 +217,22 @@ def verify_otp(user, otp_code: str, purpose: str = 'verification') -> Tuple[bool
         user: User object
         otp_code: The OTP code entered by user
         purpose: Purpose of OTP
+        request: HTTP request for session storage
     
     Returns:
         Tuple of (success, message)
     """
     attempt_key = f'otp_attempts_{user.pk}_{purpose}'
-    attempts = cache.get(attempt_key, 0)
+    attempts = get_session_data(request, attempt_key, 0)
     
     # Check if user is blocked due to too many attempts
     if attempts >= MAX_OTP_ATTEMPTS:
         block_key = f'otp_blocked_{user.pk}_{purpose}'
-        if not cache.get(block_key):
-            cache.set(block_key, True, 900)  # Block for 15 minutes
-        return False, 'Too many incorrect attempts. Please request a new OTP after 15 minutes.'
+        block_time = get_session_data(request, block_key, 0)
+        if block_time == 0 or block_time > timezone.now().timestamp():
+            if block_time == 0:
+                set_session_data(request, block_key, timezone.now().timestamp() + 900)  # Block for 15 minutes
+            return False, 'Too many incorrect attempts. Please request a new OTP after 15 minutes.'
     
     try:
         # Find the device
@@ -203,7 +257,7 @@ def verify_otp(user, otp_code: str, purpose: str = 'verification') -> Tuple[bool
             device.save()
             
             # Clear attempt counter
-            cache.delete(attempt_key)
+            remove_session_data(request, attempt_key)
             
             # Delete the device after successful verification
             device.delete()
@@ -212,7 +266,7 @@ def verify_otp(user, otp_code: str, purpose: str = 'verification') -> Tuple[bool
             return True, 'OTP verified successfully.'
         else:
             # Increment attempt counter
-            cache.set(attempt_key, attempts + 1, 1800)  # 30 minutes
+            set_session_data(request, attempt_key, attempts + 1)
             remaining = MAX_OTP_ATTEMPTS - attempts - 1
             return False, f'Invalid OTP. {remaining} attempts remaining.'
             

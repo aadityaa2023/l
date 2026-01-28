@@ -11,8 +11,6 @@ from django.urls import reverse_lazy
 from django.db.models import Count, Avg, Q, Sum, Max
 from django.http import JsonResponse, FileResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.cache import cache_control
-from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from datetime import datetime, timedelta
 import os
@@ -26,13 +24,10 @@ from .models import (
 from apps.analytics.models import ListeningSession, TeacherAnalytics
 from apps.payments.models import Payment, CouponUsage
 from apps.payments.commission_calculator import CommissionCalculator
-from apps.common.cache_utils import cache_course_list, cache_course_detail, cache_query_result
-from apps.common.query_optimization import get_optimized_course_queryset, get_cached_course_analytics
+from apps.common.query_optimization import get_optimized_course_queryset
 
 
 # Course Browsing
-@method_decorator(cache_control(public=True, max_age=300), name='dispatch')
-@method_decorator(cache_course_list(), name='dispatch')
 class CourseListView(ListView):
     """List all published courses with smart caching"""
     model = Course
@@ -95,8 +90,6 @@ class CourseListView(ListView):
         return context
 
 
-@method_decorator(cache_control(public=True, max_age=600), name='dispatch')  
-@method_decorator(cache_course_detail(), name='dispatch')
 class CourseDetailView(DetailView):
     """Course detail page with comprehensive caching"""
     model = Course
@@ -117,56 +110,36 @@ class CourseDetailView(DetailView):
         course = self.get_object()
         user = self.request.user
         
-        # Check if user is enrolled (use cache for authenticated users)
+        # Check if user is enrolled
         if user.is_authenticated:
-            enrollment_cache_key = f"{settings.CACHE_KEYS['USER_ENROLLMENTS']}:user:{user.id}:course:{course.id}"
-            is_enrolled = cache.get(enrollment_cache_key)
-            
-            if is_enrolled is None:
-                is_enrolled = Enrollment.objects.filter(
-                    student=user,
-                    course=course,
-                    status='active'
-                ).exists()
-                cache.set(enrollment_cache_key, is_enrolled, settings.CACHE_TTL['DYNAMIC'])
+            is_enrolled = Enrollment.objects.filter(
+                student=user,
+                course=course,
+                status='active'
+            ).exists()
             
             context['is_enrolled'] = is_enrolled
         else:
             context['is_enrolled'] = False
         
-        # Get reviews with caching
-        reviews_cache_key = f"{settings.CACHE_KEYS['COURSE_DETAIL']}:reviews:course:{course.id}"
-        context['reviews'] = cache_query_result(
-            reviews_cache_key,
-            lambda: list(Review.objects.filter(course=course)
+        # Get reviews
+        context['reviews'] = list(Review.objects.filter(course=course)
                         .select_related('student')
-                        .order_by('-created_at')[:10]),
-            timeout=settings.CACHE_TTL['DYNAMIC']
-        )
+                        .order_by('-created_at')[:10])
         
-        # Get course stats with caching
-        stats_cache_key = f"{settings.CACHE_KEYS['COURSE_DETAIL']}:stats:course:{course.id}"
-        course_stats = cache_query_result(
-            stats_cache_key,
-            lambda: _get_course_stats(course),
-            timeout=settings.CACHE_TTL['FREQUENT']
-        )
+        # Get course stats
+        course_stats = _get_course_stats(course)
         
         context['total_students'] = course_stats['total_students']
         context['avg_rating'] = course_stats['avg_rating']
         
-        # Get related courses with caching
-        related_cache_key = f"{settings.CACHE_KEYS['COURSE_DETAIL']}:related:category:{course.category.id}"
-        context['related_courses'] = cache_query_result(
-            related_cache_key,
-            lambda: list(Course.objects.filter(
-                category=course.category,
-                status='published'
-            ).exclude(id=course.id).annotate(
-                student_count=Count('enrollments')
-            )[:4]),
-            timeout=settings.CACHE_TTL['SEMI_STATIC']
-        )
+        # Get related courses
+        context['related_courses'] = list(Course.objects.filter(
+            category=course.category,
+            status='published'
+        ).exclude(id=course.id).annotate(
+            student_count=Count('enrollments')
+        )[:4])
         
         # Determine visible lessons for non-enrolled users: only allow free previews + first lesson
         # Build a set of lesson ids that should be visible without enrollment

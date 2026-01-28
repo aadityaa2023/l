@@ -5,7 +5,6 @@ Provides granular permissions for different admin roles
 from functools import wraps
 from django.shortcuts import redirect
 from django.contrib import messages
-from django.core.cache import cache
 from django.http import HttpResponseForbidden, JsonResponse
 import logging
 
@@ -139,15 +138,9 @@ class PermissionChecker:
     
     @staticmethod
     def get_user_role(user):
-        """Get user's admin role from cache or database"""
+        """Get user's admin role from database"""
         if user.is_superuser:
             return 'super_admin'
-        
-        # Check cache first
-        cache_key = f'admin_role_{user.id}'
-        cached_role = cache.get(cache_key)
-        if cached_role:
-            return cached_role
         
         # Check if user has AdminRole assignment
         from apps.platformadmin.models import AdminRole as AdminRoleModel
@@ -160,10 +153,6 @@ class PermissionChecker:
                 role = 'platform_admin'
             else:
                 role = None
-        
-        # Cache for 1 hour
-        if role:
-            cache.set(cache_key, role, 3600)
         
         return role
     
