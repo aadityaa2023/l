@@ -292,7 +292,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 
-MEDIA_ROOT = Path(env('MEDIA_ROOT'))
+
+MEDIA_ROOT = env('MEDIA_ROOT', default=BASE_DIR / 'media')
 
 
 
