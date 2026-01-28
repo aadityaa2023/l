@@ -4,7 +4,6 @@ Run reports, send notifications, and perform cleanup tasks
 """
 from celery import shared_task
 from django.utils import timezone
-from django.core.cache import cache
 from django.db.models import Sum
 from datetime import timedelta
 from decimal import Decimal
@@ -66,9 +65,6 @@ def generate_daily_dashboard_stats():
         stat.failed_transactions = Payment.objects.filter(status='failed').count()
         
         stat.save()
-        
-        # Clear cache to force refresh
-        DashboardStats.clear_cache()
         
         logger.info(f"Daily dashboard stats generated for {today}")
         return f"Stats generated for {today}"

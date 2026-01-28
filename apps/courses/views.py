@@ -29,7 +29,7 @@ from apps.common.query_optimization import get_optimized_course_queryset
 
 # Course Browsing
 class CourseListView(ListView):
-    """List all published courses with smart caching"""
+    """List all published courses"""
     model = Course
     template_name = 'courses/course_list.html'
     context_object_name = 'courses'
@@ -51,41 +51,17 @@ class CourseListView(ListView):
         # Get sort parameter
         sort = self.request.GET.get('sort', '-created_at')
         
-        # Build cache key for this specific query
-        cache_key_parts = [settings.CACHE_KEYS['COURSE_LIST']]
-        cache_key_parts.append(f"page:{self.request.GET.get('page', '1')}")
-        
-        for key, value in filters.items():
-            cache_key_parts.append(f"{key}:{value}")
-        cache_key_parts.append(f"sort:{sort}")
-        
-        cache_key = ":".join(cache_key_parts)
-        
-        # Try to get from cache
-        def fetch_courses():
-            return get_optimized_course_queryset(
-                filters=filters,
-                order_by=sort,
-                limit=self.paginate_by * 10  # Cache more than one page
-            )
-        
-        cached_courses = cache_query_result(
-            cache_key,
-            fetch_courses,
-            timeout=settings.CACHE_TTL['SEMI_STATIC']
+        # Get courses directly
+        return get_optimized_course_queryset(
+            filters=filters,
+            order_by=sort
         )
-        
-        return cached_courses
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Cache categories list
-        context['categories'] = cache_query_result(
-            f"{settings.CACHE_KEYS['CATEGORY_LIST']}:active",
-            lambda: Category.objects.filter(is_active=True).order_by('display_order', 'name'),
-            timeout=settings.CACHE_TTL['STATIC']
-        )
+        # Get categories list
+        context['categories'] = Category.objects.filter(is_active=True).order_by('display_order', 'name')
         
         return context
 

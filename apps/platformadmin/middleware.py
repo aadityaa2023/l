@@ -2,14 +2,20 @@
 Rate limiting and security middleware for platformadmin
 Protects against brute force and excessive requests
 """
-from django.core.cache import cache
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.conf import settings
 import hashlib
 import logging
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
+
+# Simple in-memory storage for rate limiting
+_rate_limit_storage = defaultdict(lambda: defaultdict(int))
+_violation_storage = defaultdict(int)
+_lockout_storage = defaultdict(lambda: None)
 
 
 class RateLimitMiddleware:
@@ -71,43 +77,45 @@ class RateLimitMiddleware:
             ip = request.META.get('REMOTE_ADDR')
         return ip
     
-    def get_cache_key(self, ip_address, key_type='requests'):
-        """Generate cache key for IP address"""
-        ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()[:16]
-        return f'admin_rate_limit:{key_type}:{ip_hash}'
-    
     def check_rate_limit(self, ip_address):
         """Check if IP is within rate limit"""
-        cache_key = self.get_cache_key(ip_address)
-        request_count = cache.get(cache_key, 0)
+        now = timezone.now()
+        current_window = int(now.timestamp()) // self.time_window
+        request_count = _rate_limit_storage[ip_address].get(current_window, 0)
         
         return request_count < self.rate_limit
     
     def record_request(self, ip_address):
         """Record a request from IP address"""
-        cache_key = self.get_cache_key(ip_address)
-        request_count = cache.get(cache_key, 0)
-        cache.set(cache_key, request_count + 1, self.time_window)
+        now = timezone.now()
+        current_window = int(now.timestamp()) // self.time_window
+        _rate_limit_storage[ip_address][current_window] += 1
+        
+        # Clean old entries
+        cutoff_time = current_window - 1
+        for window in list(_rate_limit_storage[ip_address].keys()):
+            if window < cutoff_time:
+                del _rate_limit_storage[ip_address][window]
     
     def record_violation(self, ip_address):
         """Record a rate limit violation"""
-        violation_key = self.get_cache_key(ip_address, 'violations')
-        violation_count = cache.get(violation_key, 0)
-        violation_count += 1
-        
-        # Store violation count for 1 hour
-        cache.set(violation_key, violation_count, 3600)
+        _violation_storage[ip_address] += 1
         
         # Lock out if too many violations
-        if violation_count >= self.max_violations:
-            lockout_key = self.get_cache_key(ip_address, 'lockout')
-            cache.set(lockout_key, True, self.lockout_duration)
+        if _violation_storage[ip_address] >= self.max_violations:
+            _lockout_storage[ip_address] = timezone.now() + timedelta(seconds=self.lockout_duration)
             logger.error(f"IP locked out due to excessive violations: {ip_address}")
     
     def is_locked_out(self, ip_address):
         """Check if IP is currently locked out"""
-        lockout_key = self.get_cache_key(ip_address, 'lockout')
-        return cache.get(lockout_key, False)
+        lockout_time = _lockout_storage.get(ip_address)
+        if lockout_time and timezone.now() < lockout_time:
+            return True
+        elif lockout_time and timezone.now() >= lockout_time:
+            # Clean expired lockout
+            del _lockout_storage[ip_address]
+            _violation_storage[ip_address] = 0
+        return False
 
 
 class AdminActivityLoggerMiddleware:

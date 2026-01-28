@@ -4,7 +4,6 @@ Utility functions for platformadmin
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum, Q, F
 from django.utils import timezone
-from django.core.cache import cache
 from datetime import datetime, timedelta
 from decimal import Decimal
 from apps.courses.models import Course
@@ -151,16 +150,6 @@ class DashboardStats:
             'revenue': DashboardStats.get_revenue_stats(),
             'enrollments': DashboardStats.get_enrollment_stats(),
         }
-    
-    @staticmethod
-    def clear_cache():
-        """Clear all cached statistics"""
-        cache.delete_many([
-            DashboardStats.get_cache_key('users'),
-            DashboardStats.get_cache_key('courses'),
-            DashboardStats.get_cache_key('revenue'),
-            DashboardStats.get_cache_key('enrollments'),
-        ])
 
 
 class ReportGenerator:
