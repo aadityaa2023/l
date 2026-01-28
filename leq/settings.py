@@ -294,6 +294,8 @@ MEDIA_URL = '/media/'
 
 MEDIA_ROOT = Path(env('MEDIA_ROOT'))
 
+
+
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 
