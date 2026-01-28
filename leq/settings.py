@@ -292,10 +292,13 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 
-
-MEDIA_ROOT = env('MEDIA_ROOT', default=BASE_DIR / 'media')
-
-
+# Handle both string paths (from .env) and Path objects (default)
+_media_root = env('MEDIA_ROOT', default=None)
+if _media_root:
+    # Convert string path to Path object if it's a string
+    MEDIA_ROOT = Path(_media_root) if isinstance(_media_root, str) else _media_root
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
@@ -686,6 +689,9 @@ os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
 # Create cache directory if it doesn't exist (for file-based caching)
 os.makedirs(BASE_DIR / 'cache' / 'django_cache', exist_ok=True)
+
+# Create media directory if it doesn't exist
+os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # ==================== AUDIO SETTINGS ====================
 
