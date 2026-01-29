@@ -196,10 +196,7 @@
                             <div class="flex-grow-1">
                                 <h6 class="mb-1">{{ course.title|truncatewords:4 }}</h6>
                                 <small class="text-muted d-block mb-2">by {{ course.teacher.get_full_name }}</small>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>{{ course.average_rating|floatformat:1 }}
-                                    </small>
+                                <div class="d-flex justify-content-end align-items-center">
                                     <span class="fw-bold" style="color: var(--primary-color);">₹{{ course.actual_price }}</span>
                                 </div>
                             </div>

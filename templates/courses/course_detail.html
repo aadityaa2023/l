@@ -23,41 +23,6 @@
                 <p class="lead text-white-50 mb-4">{{ course.short_description }}</p>
                 
                 <div class="d-flex flex-wrap gap-3 align-items-center text-white mb-4">
-                    <div class="d-flex align-items-center">
-                        {% if course.avg_rating %}
-                        <span class="fw-bold me-2">{{ course.avg_rating|floatformat:1 }}</span>
-                        <div class="text-warning me-2">
-                            {% for i in "12345" %}
-                                {% if forloop.counter <= course.avg_rating %}
-                                <i class="fas fa-star"></i>
-                                {% else %}
-                                <i class="far fa-star"></i>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        <small>({{ course.total_reviews }} reviews)</small>
-                        {% else %}
-                        <i class="far fa-star me-2"></i>
-                        <small>No ratings yet</small>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="vr"></div>
-                    
-                    <div>
-                        <i class="fas fa-users me-2"></i>
-                        <span>{{ total_students }} students enrolled</span>
-                    </div>
-                    
-                    <div class="vr"></div>
-                    
-                    <div>
-                        <i class="fas fa-clock me-2"></i>
-                        <span>{{ course.duration_hours }}h total</span>
-                    </div>
-                    
-                    <div class="vr"></div>
-                    
                     <div>
                         <i class="fas fa-signal me-2"></i>
                         <span>{{ course.level|title }}</span>
@@ -190,38 +155,7 @@
                     </div>
                 </div>
                 
-                <!-- Reviews -->
-                <div class="card-custom p-4">
-                    <h4 class="fw-bold mb-4">Student Reviews</h4>
-                    
-                    {% if reviews %}
-                        {% for review in reviews %}
-                        <div class="mb-4 pb-4 border-bottom">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                    {{ review.student.first_name.0|default:review.student.email.0|upper }}
-                                </div>
-                                <div>
-                                    <h6 class="mb-0">{{ review.student.get_full_name|default:review.student.email }}</h6>
-                                    <div class="text-warning small">
-                                        {% for i in "12345" %}
-                                            {% if forloop.counter <= review.rating %}
-                                            <i class="fas fa-star"></i>
-                                            {% else %}
-                                            <i class="far fa-star"></i>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                            <p class="text-muted mb-0">{{ review.comment }}</p>
-                            <small class="text-muted">{{ review.created_at|timesince }} ago</small>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-muted">No reviews yet. Be the first to review!</p>
-                    {% endif %}
-                </div>
+                <!-- Reviews removed: handled elsewhere or hidden by design -->
             </div>
             
             <!-- Sidebar -->

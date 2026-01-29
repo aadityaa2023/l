@@ -42,6 +42,7 @@ class CourseListView(ListView):
             'search': self.request.GET.get('search'),
             'level': self.request.GET.get('level'),
             'price_range': self.request.GET.get('price'),
+            'language': self.request.GET.get('language'),
             'featured': self.request.GET.get('featured') == 'true',
         }
         
@@ -62,6 +63,9 @@ class CourseListView(ListView):
         
         # Get categories list
         context['categories'] = Category.objects.filter(is_active=True).order_by('display_order', 'name')
+        
+        # Get distinct languages from published courses
+        context['languages'] = Course.objects.filter(status='published').values_list('language', flat=True).distinct().order_by('language')
         
         return context
 

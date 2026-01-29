@@ -534,6 +534,9 @@
         
         /* Category Pills */
         .category-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
@@ -544,6 +547,7 @@
             transition: all 0.3s ease;
             white-space: nowrap;
             cursor: pointer;
+            text-decoration: none; /* remove underline */
         }
         
         .category-pill:hover,

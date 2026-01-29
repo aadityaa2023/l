@@ -36,6 +36,8 @@ def get_optimized_course_queryset(filters=None, order_by='-created_at', limit=No
                     queryset = queryset.filter(teacher__id=value)
                 elif key == 'level':
                     queryset = queryset.filter(level=value)
+                elif key == 'language':
+                    queryset = queryset.filter(language=value)
                 elif key == 'price_range':
                     if value == 'free':
                         queryset = queryset.filter(Q(price=0) | Q(is_free=True))
@@ -54,6 +56,8 @@ def get_optimized_course_queryset(filters=None, order_by='-created_at', limit=No
     # Apply ordering
     if order_by == 'popular':
         queryset = queryset.order_by('-student_count', '-created_at')
+    elif order_by == 'trending':
+        queryset = queryset.order_by('-avg_rating', '-student_count', '-created_at')
     elif order_by == 'rating':
         queryset = queryset.order_by('-avg_rating', '-created_at')
     elif order_by == 'price_low':
