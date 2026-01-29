@@ -57,7 +57,7 @@
                             <small class="text-muted">{{ enrollment.progress_percentage }}%</small>
                         </td>
                         <td>
-                            <span class="badge bg-{{ enrollment.status == 'active' and 'success' or 'secondary' }}">
+                            <span class="badge bg-{% if enrollment.status == 'active' %}success{% else %}secondary{% endif %}">
                                 {{ enrollment.status|title }}
                             </span>
                         </td>

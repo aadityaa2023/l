@@ -13,6 +13,8 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap Icons (used by some templates for eye/toggle icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -203,9 +205,48 @@
             color: var(--text-primary) !important;
         }
 
+        /* Custom checkbox styling for dark card UI: show a visible tick without filling the box */
         .card-custom .form-check-input {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
             background: var(--bg-secondary) !important;
             border: 1px solid var(--border-color) !important;
+            border-radius: 4px;
+            display: inline-block;
+            position: relative;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        .card-custom .form-check-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.12rem rgba(139,92,246,0.18) !important;
+        }
+
+        /* draw a checkmark using a pseudo-element so the tick color is controlled separately */
+        .card-custom .form-check-input::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 6px;
+            height: 10px;
+            border: solid var(--text-primary);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg) scale(0);
+            transition: transform 0.12s ease-in-out;
+            pointer-events: none;
+        }
+
+        .card-custom .form-check-input:checked {
+            background: var(--bg-secondary) !important;
+            border-color: var(--primary-color) !important;
+        }
+
+        .card-custom .form-check-input:checked::after {
+            transform: rotate(45deg) scale(1);
         }
 
         /* Make text inputs and textareas dark with visible white text and placeholders */
@@ -695,7 +736,7 @@
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
                 <img src="/media/Logo.png" alt="LeQ Logo" style="height: 40px; width: auto;">
-                <span class="ms-2">LeQaudio</span>
+                <span class="ms-2">LeQ Audio</span>
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
