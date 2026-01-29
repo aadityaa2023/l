@@ -544,12 +544,6 @@
           >
             <i class="fas fa-envelope"></i> Email Templates
           </a>
-          <a
-            href="{% url 'platformadmin:platform_settings' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'platform_settings' %}active{% endif %}"
-          >
-            <i class="fas fa-cog"></i> Settings
-          </a>
         </div>
 
         <div class="menu-section">
@@ -602,13 +596,6 @@
                   class="dropdown-item"
                   href="{% url 'platformadmin:dashboard' %}"
                   ><i class="fas fa-chart-line me-2"></i>Dashboard</a
-                >
-              </li>
-              <li>
-                <a
-                  class="dropdown-item"
-                  href="{% url 'platformadmin:platform_settings' %}"
-                  ><i class="fas fa-cog me-2"></i>Settings</a
                 >
               </li>
               <li><hr class="dropdown-divider" /></li>

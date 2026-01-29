@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum, Count, Avg
+from django.db import models
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 from django.http import JsonResponse
@@ -25,7 +26,12 @@ from apps.payments.models import Payment, Subscription, Coupon, CouponUsage
 from apps.payments.commission_calculator import CommissionCalculator
 from apps.notifications.models import Notification
 from django.contrib.auth import get_user_model
+from apps.platformadmin.forms import SendBulkNotificationForm
+from apps.platformadmin.notifications import AdminEmailNotifier
+from django.utils import timezone
+import logging
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
@@ -951,16 +957,14 @@ def notification_management(request):
     status_filter = request.GET.get('status', '')
     search = request.GET.get('search', '')
     
-    from apps.notifications.models import Notification
-    notifications = Notification.objects.all()
+    from apps.notifications.models import BulkNotification
+    notifications = BulkNotification.objects.all()
     
     if type_filter:
         notifications = notifications.filter(notification_type=type_filter)
     
-    if status_filter == 'sent':
-        notifications = notifications.filter(is_sent=True)
-    elif status_filter == 'pending':
-        notifications = notifications.filter(is_sent=False)
+    if status_filter:
+        notifications = notifications.filter(status=status_filter)
     
     if search:
         notifications = notifications.filter(Q(title__icontains=search) | Q(message__icontains=search))
@@ -979,10 +983,10 @@ def notification_management(request):
     
     # Stats
     context['stats'] = {
-        'total_sent': Notification.objects.filter(is_sent=True).count(),
-        'delivered': Notification.objects.filter(is_read=False).count(),
-        'read': Notification.objects.filter(is_read=True).count(),
-        'pending': Notification.objects.filter(is_sent=False).count(),
+        'total_sent': BulkNotification.objects.filter(status='sent').count(),
+        'delivered': BulkNotification.objects.aggregate(total=models.Sum('delivered_count'))['total'] or 0,
+        'read': BulkNotification.objects.aggregate(total=models.Sum('read_count'))['total'] or 0,
+        'pending': BulkNotification.objects.filter(status='pending').count(),
     }
     
     return render(request, 'platformadmin/notification_management.html', context)
@@ -993,32 +997,150 @@ def notification_management(request):
 def send_bulk_notification(request):
     """Send bulk push notifications"""
     if request.method == 'POST':
-        target_role = request.POST.get('target_role', 'all')
-        title = request.POST.get('title')
-        message = request.POST.get('message')
-        
-        # Get target users
-        if target_role == 'all':
-            users = User.objects.filter(is_active=True)
-        else:
-            users = User.objects.filter(role=target_role, is_active=True)
-        
-        # Create notifications
-        notifications_created = 0
-        for user in users:
-            Notification.objects.create(
-                user=user,
-                notification_type='announcement',
+        form = SendBulkNotificationForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            target_role = cd.get('target_role')
+            title = cd.get('title')
+            message = cd.get('message')
+            notification_type = cd.get('notification_type') or 'announcement'
+            action_url = cd.get('action_url')
+            send_email = cd.get('send_email', False)
+            send_push = cd.get('send_push', False)
+
+            # Determine recipients
+            if target_role == 'all':
+                users = User.objects.filter(is_active=True)
+            elif target_role == 'admin':
+                users = User.objects.filter(is_superuser=True, is_active=True)
+            else:
+                users = User.objects.filter(role=target_role, is_active=True)
+
+            # Create bulk notification record
+            from apps.notifications.models import BulkNotification
+            bulk_notification = BulkNotification.objects.create(
                 title=title,
-                message=message
+                message=message,
+                notification_type=notification_type,
+                target_role=target_role,
+                send_email=send_email,
+                send_push=send_push,
+                action_url=action_url or '',
+                created_by=request.user,
+                recipient_count=users.count(),
+                status='sending'
             )
-            notifications_created += 1
-        
-        messages.success(request, f"Sent {notifications_created} notifications successfully.")
-        return redirect('platformadmin:notification_management')
+
+            # Create individual notifications and track results
+            notifications_created = 0
+            emails_sent = 0
+            email_failures = 0
+            
+            for user in users:
+                try:
+                    # Create notification record
+                    notification = Notification.objects.create(
+                        user=user,
+                        notification_type=notification_type,
+                        title=title,
+                        message=message,
+                        link_url=action_url or '',
+                        send_email=send_email,
+                        is_sent=True,
+                        bulk_notification=bulk_notification
+                    )
+                    notifications_created += 1
+
+                    # Send email if requested
+                    if send_email:
+                        try:
+                            from apps.notifications.models import EmailLog
+                            
+                            # Create email log entry
+                            email_log = EmailLog.objects.create(
+                                user=user,
+                                to_email=user.email,
+                                subject=title,
+                                template_type='bulk_message',
+                                status='pending'
+                            )
+                            
+                            # Send email using AdminEmailNotifier
+                            email_context = {
+                                'subject': title,
+                                'message': message,
+                                'sender': request.user.get_full_name() or 'Platform Admin',
+                                'user': user
+                            }
+                            
+                            sent = AdminEmailNotifier.send_email(
+                                subject=title,
+                                to_email=user.email,
+                                template_name='bulk_message',
+                                context=email_context
+                            )
+                            
+                            if sent:
+                                notification.email_sent = True
+                                notification.save()
+                                email_log.status = 'sent'
+                                email_log.sent_at = timezone.now()
+                                email_log.save()
+                                emails_sent += 1
+                            else:
+                                email_log.status = 'failed'
+                                email_log.error_message = 'Email sending failed'
+                                email_log.save()
+                                email_failures += 1
+                        except Exception as e:
+                            email_failures += 1
+                            logger.error(f"Failed to send email to {user.email}: {str(e)}")
+                            continue
+                
+                except Exception as e:
+                    email_failures += 1
+                    continue
+
+            # Update bulk notification status and counters
+            bulk_notification.sent_count = notifications_created
+            bulk_notification.delivered_count = emails_sent if send_email else notifications_created
+            bulk_notification.failed_count = email_failures
+            bulk_notification.status = 'sent' if email_failures == 0 else ('failed' if notifications_created == 0 else 'sent')
+            bulk_notification.sent_at = timezone.now()
+            bulk_notification.save()
+
+            # Show results
+            success_msg = f"Created {notifications_created} notifications"
+            if send_email:
+                if emails_sent > 0:
+                    success_msg += f", sent {emails_sent} emails"
+                if email_failures > 0:
+                    success_msg += f", {email_failures} email failures"
+            
+            if email_failures > 0:
+                messages.warning(request, f"{success_msg}. Some emails failed to send.")
+            else:
+                messages.success(request, f"{success_msg} successfully.")
+            
+            return redirect('platformadmin:notification_management')
+        else:
+            # Form invalid: fall through to render with errors in context
+            context = get_context_data(request)
+            context['form'] = form
+            # User counts for estimated reach
+            context['user_counts'] = {
+                'all': User.objects.filter(is_active=True).count(),
+                'students': User.objects.filter(role='student', is_active=True).count(),
+                'teachers': User.objects.filter(role='teacher', is_active=True).count(),
+                'admins': User.objects.filter(is_superuser=True, is_active=True).count(),
+            }
+            from apps.notifications.models import BulkNotification
+            context['last_notification'] = BulkNotification.objects.order_by('-created_at').first()
+            return render(request, 'platformadmin/send_bulk_notification.html', context)
     
     context = get_context_data(request)
-    
+    # provide empty form for GET
+    context['form'] = SendBulkNotificationForm()
     # User counts for estimated reach
     context['user_counts'] = {
         'all': User.objects.filter(is_active=True).count(),
@@ -1026,10 +1148,9 @@ def send_bulk_notification(request):
         'teachers': User.objects.filter(role='teacher', is_active=True).count(),
         'admins': User.objects.filter(is_superuser=True, is_active=True).count(),
     }
-    
     # Last notification
-    context['last_notification'] = Notification.objects.order_by('-created_at').first()
-    
+    from apps.notifications.models import BulkNotification
+    context['last_notification'] = BulkNotification.objects.order_by('-created_at').first()
     return render(request, 'platformadmin/send_bulk_notification.html', context)
 
 

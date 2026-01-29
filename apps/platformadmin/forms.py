@@ -508,6 +508,33 @@ class BulkNotificationForm(forms.Form):
     )
 
 
+class SendBulkNotificationForm(forms.Form):
+    """Form for composing bulk notifications from platform admin."""
+
+    TARGET_CHOICES = (
+        ('all', 'All Users'),
+        ('student', 'Students'),
+        ('teacher', 'Teachers'),
+        ('admin', 'Platform Admins'),
+    )
+
+    NOTIFICATION_TYPE_CHOICES = (
+        ('announcement', 'Announcement'),
+        ('reminder', 'Reminder'),
+        ('promotion', 'Promotion'),
+    )
+
+    target_role = forms.ChoiceField(choices=TARGET_CHOICES, required=True, widget=forms.Select(attrs={'class': 'form-select'}))
+    notification_type = forms.ChoiceField(choices=NOTIFICATION_TYPE_CHOICES, required=True, widget=forms.Select(attrs={'class': 'form-select'}))
+    title = forms.CharField(max_length=100, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter notification title'}))
+    message = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 6, 'placeholder': 'Enter notification message'}))
+    action_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://example.com/action'}))
+    send_email = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    send_push = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    scheduled_time = forms.DateTimeField(required=False, widget=forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}))
+
+
+
 class PayoutApprovalForm(forms.Form):
     """Form for approving payouts"""
     
@@ -705,5 +732,65 @@ class BannerFilterForm(forms.Form):
         }),
         label='Search'
     )
+
+
+class SendBulkNotificationForm(forms.Form):
+    """Form for composing bulk notifications from platform admin."""
+
+    TARGET_CHOICES = (
+        ('all', 'All Users'),
+        ('student', 'Students'),
+        ('teacher', 'Teachers'),
+        ('admin', 'Platform Admins'),
+    )
+
+    NOTIFICATION_TYPE_CHOICES = (
+        ('announcement', 'Announcement'),
+        ('reminder', 'Reminder'),
+        ('promotion', 'Promotion'),
+    )
+
+    target_role = forms.ChoiceField(
+        choices=TARGET_CHOICES, 
+        required=True, 
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Target Audience'
+    )
+    notification_type = forms.ChoiceField(
+        choices=NOTIFICATION_TYPE_CHOICES, 
+        required=True, 
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Notification Type'
+    )
+    title = forms.CharField(
+        max_length=100, 
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter notification title'}),
+        label='Title'
+    )
+    message = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 6, 'placeholder': 'Enter notification message'}),
+        label='Message'
+    )
+    action_url = forms.URLField(
+        required=False, 
+        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://example.com/action'}),
+        label='Action URL'
+    )
+    send_email = forms.BooleanField(
+        required=False, 
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Send Email Notification'
+    )
+    send_push = forms.BooleanField(
+        required=False, 
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Send Push Notification'
+    )
+    scheduled_time = forms.DateTimeField(
+        required=False, 
+        widget=forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+        label='Schedule Time'
+    )
+
 
 

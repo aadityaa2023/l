@@ -1,0 +1,40 @@
+{% extends 'platformadmin/email_previews/welcome.html' %}
+
+{% block email_subject %}{{ subject|default:"Platform Notification" }}{% endblock %}
+
+{% block email_content %}
+<div class="email-header">
+    <h1>{{ subject|default:"Platform Notification" }}</h1>
+    {% if sender %}
+    <p class="sender-info">From: {{ sender }}</p>
+    {% endif %}
+</div>
+
+<div class="email-body">
+    <div class="message-content">
+        {{ message|linebreaks }}
+    </div>
+    
+    {% if action_required %}
+    <div class="action-required">
+        <p><strong>⚠️ Action Required</strong></p>
+        {% if deadline %}
+        <p>Please respond by: {{ deadline|date:"F d, Y" }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div class="email-footer">
+    <p>Best regards,<br>
+    {% if sender %}{{ sender }}{% else %}Platform Administration{% endif %}<br>
+    LeQ Learning Platform</p>
+    
+    <div class="footer-links">
+        <p><small>
+            If you have any questions, please contact our support team.<br>
+            <a href="mailto:support@leqlearning.com">support@leqlearning.com</a>
+        </small></p>
+    </div>
+</div>
+{% endblock %}

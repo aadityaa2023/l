@@ -1190,12 +1190,14 @@ def admin_course_assign(request, course_id):
                 except Exception:
                     commission_percentage = None
             
-            # Create assignment
+            # Create assignment with accepted status (auto-assigned)
+            from django.utils import timezone
             assignment = CourseAssignment.objects.create(
                 course=course,
                 teacher=teacher,
                 assigned_by=request.user,
-                status='assigned',
+                status='accepted',
+                accepted_at=timezone.now(),
                 can_edit_content=request.POST.get('can_edit_content') == 'on',
                 can_delete_content=request.POST.get('can_delete_content') == 'on',
                 can_edit_details=request.POST.get('can_edit_details') == 'on',
@@ -1214,10 +1216,10 @@ def admin_course_assign(request, course_id):
             Notification.objects.create(
                 user=teacher,
                 notification_type='course_assignment',
-                title='New Course Assignment',
-                message=f'You have been assigned to teach "{course.title}". Please review and accept or reject this assignment.',
+                title='Course Assigned',
+                message=f'You have been assigned to teach "{course.title}". You can now manage course content and students.',
                 link_url='/courses/teacher/assignments/',
-                link_text='View Assignments',
+                link_text='View Assignment',
                 course=course,
                 send_email=True
             )

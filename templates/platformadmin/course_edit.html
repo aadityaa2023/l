@@ -283,9 +283,7 @@
                                 <br>
                                 <small class="text-muted">
                                     Status: 
-                                    {% if assignment.status == 'assigned' %}
-                                        <span class="badge bg-info">Assigned</span>
-                                    {% elif assignment.status == 'accepted' %}
+                                    {% if assignment.status == 'accepted' %}
                                         <span class="badge bg-success">Accepted</span>
                                     {% elif assignment.status == 'rejected' %}
                                         <span class="badge bg-danger">Rejected</span>

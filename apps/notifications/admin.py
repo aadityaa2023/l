@@ -3,10 +3,25 @@ from unfold.admin import ModelAdmin
 from unfold.contrib.forms.widgets import WysiwygWidget
 from django.utils.translation import gettext_lazy as _
 from django.db import models
-from .models import Notification, EmailTemplate, EmailLog, Message, CourseQuestion, QuestionAnswer
+from .models import Notification, EmailTemplate, EmailLog, Message, CourseQuestion, QuestionAnswer, BulkNotification
 
 # All notification-related models are hidden from Django admin
 # Superadmin uses /platformadmin/ for notification management
+
+# @admin.register(BulkNotification)
+class BulkNotificationAdmin(ModelAdmin):
+    list_display = ('title', 'notification_type', 'target_role', 'recipient_count', 'sent_count', 'status', 'created_by', 'created_at')
+    list_filter = ('notification_type', 'target_role', 'status', 'send_email', 'created_at')
+    search_fields = ('title', 'message', 'created_by__email')
+    readonly_fields = ('created_at', 'sent_at', 'sent_count', 'delivered_count', 'read_count', 'failed_count')
+    
+    fieldsets = (
+        (_('Content'), {'fields': ('title', 'message', 'notification_type', 'action_url')}),
+        (_('Targeting'), {'fields': ('target_role', 'recipient_count')}),
+        (_('Options'), {'fields': ('send_email', 'send_push')}),
+        (_('Status'), {'fields': ('status', 'sent_count', 'delivered_count', 'read_count', 'failed_count')}),
+        (_('Metadata'), {'fields': ('created_by', 'created_at', 'sent_at')}),
+    )
 
 # @admin.register(Notification)
 class NotificationAdmin(ModelAdmin):

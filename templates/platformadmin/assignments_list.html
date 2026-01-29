@@ -24,14 +24,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-dark">
-            <div class="card-body">
-                <h3>{{ pending_assignments }}</h3>
-                <p class="mb-0">Pending Acceptance</p>
-            </div>
-        </div>
-    </div>
+    <!-- Pending Assignments Card - Removed (all assignments are auto-accepted) -->
     <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body">
@@ -58,7 +51,6 @@
                 <label for="status" class="form-label">Status</label>
                 <select class="form-select" id="status" name="status">
                     <option value="">All Statuses</option>
-                    <option value="assigned" {% if request.GET.status == 'assigned' %}selected{% endif %}>Pending</option>
                     <option value="accepted" {% if request.GET.status == 'accepted' %}selected{% endif %}>Accepted</option>
                     <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
                     <option value="revoked" {% if request.GET.status == 'revoked' %}selected{% endif %}>Revoked</option>
@@ -127,9 +119,8 @@
                             <small class="text-muted">{{ assignment.teacher.email }}</small>
                         </td>
                         <td>
-                            {% if assignment.status == 'assigned' %}
-                                <span class="badge bg-warning">Pending</span>
-                            {% elif assignment.status == 'accepted' %}
+                        <td>
+                            {% if assignment.status == 'accepted' %}
                                 <span class="badge bg-success">Accepted</span>
                             {% elif assignment.status == 'rejected' %}
                                 <span class="badge bg-danger">Rejected</span>
@@ -139,7 +130,6 @@
                                 <span class="badge bg-info">{{ assignment.status|title }}</span>
                             {% endif %}
                         </td>
-                        <td>
                             <small>
                                 {% if assignment.can_edit_content %}
                                     <span class="badge bg-primary">Content</span>

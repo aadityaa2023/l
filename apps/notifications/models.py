@@ -35,6 +35,7 @@ class Notification(models.Model):
     # Related Objects (optional)
     course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
     lesson = models.ForeignKey('courses.Lesson', on_delete=models.CASCADE, null=True, blank=True, related_name='notifications')
+    bulk_notification = models.ForeignKey('BulkNotification', on_delete=models.CASCADE, null=True, blank=True, related_name='individual_notifications')
     
     # Status
     is_read = models.BooleanField(_('read'), default=False)
@@ -57,6 +58,60 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.title}"
+
+
+class BulkNotification(models.Model):
+    """Bulk notification campaigns"""
+    
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('sending', 'Sending'),
+        ('sent', 'Sent'),
+        ('failed', 'Failed'),
+    )
+    
+    TARGET_CHOICES = (
+        ('all', 'All Users'),
+        ('student', 'Students'),
+        ('teacher', 'Teachers'),
+        ('admin', 'Platform Admins'),
+    )
+    
+    # Campaign Info
+    title = models.CharField(_('title'), max_length=255)
+    message = models.TextField(_('message'))
+    notification_type = models.CharField(_('type'), max_length=20, choices=Notification.TYPE_CHOICES)
+    target_role = models.CharField(_('target role'), max_length=20, choices=TARGET_CHOICES)
+    
+    # Settings
+    send_email = models.BooleanField(_('send email'), default=False)
+    send_push = models.BooleanField(_('send push'), default=False)
+    action_url = models.CharField(_('action URL'), max_length=500, blank=True)
+    
+    # Status
+    status = models.CharField(_('status'), max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Counters
+    recipient_count = models.PositiveIntegerField(_('recipient count'), default=0)
+    sent_count = models.PositiveIntegerField(_('sent count'), default=0)
+    delivered_count = models.PositiveIntegerField(_('delivered count'), default=0)
+    read_count = models.PositiveIntegerField(_('read count'), default=0)
+    failed_count = models.PositiveIntegerField(_('failed count'), default=0)
+    
+    # Metadata
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_bulk_notifications')
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    sent_at = models.DateTimeField(_('sent at'), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _('bulk notification')
+        verbose_name_plural = _('bulk notifications')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_target_role_display()}) - {self.get_status_display()}"
 
 
 class Message(models.Model):
