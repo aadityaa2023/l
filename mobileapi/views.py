@@ -804,6 +804,80 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             'enrollment_id': enrollment.id,
             'course_id': payment.course.id,
         })
+    @action(detail=False, methods=['post'], url_path='validate-coupon')
+    def validate_coupon(self, request):
+        """Validate a coupon code for a course"""
+        from apps.payments.models import Coupon, CouponUsage
+        from decimal import Decimal
+        
+        coupon_code = request.data.get('coupon_code', '').strip()
+        course_id = request.data.get('course_id')
+        
+        if not coupon_code:
+            return Response(
+                {'valid': False, 'message': 'Please enter a coupon code.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not course_id:
+            return Response(
+                {'valid': False, 'message': 'Course not specified.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            course = Course.objects.get(id=course_id, status='published')
+        except Course.DoesNotExist:
+            return Response(
+                {'valid': False, 'message': 'Course not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            coupon = Coupon.objects.get(code__iexact=coupon_code, status='active')
+        except Coupon.DoesNotExist:
+            return Response({'valid': False, 'message': 'Invalid coupon code.'})
+        
+        # Check coupon validity
+        is_valid, message = coupon.is_valid()
+        if not is_valid:
+            return Response({'valid': False, 'message': message})
+        
+        # Check course applicability
+        if coupon.applicable_courses.exists() and course not in coupon.applicable_courses.all():
+            return Response({'valid': False, 'message': 'This coupon is not applicable to this course.'})
+        
+        if coupon.applicable_categories.exists() and course.category not in coupon.applicable_categories.all():
+            return Response({'valid': False, 'message': 'This coupon is not applicable to this course category.'})
+        
+        # Use actual_price if available, otherwise use price
+        course_price = getattr(course, 'actual_price', course.price)
+        
+        if course_price < coupon.min_purchase_amount:
+            return Response({
+                'valid': False,
+                'message': f'Minimum purchase amount of ₹{coupon.min_purchase_amount} required for this coupon.'
+            })
+        
+        # Check user usage limit
+        user_usage_count = CouponUsage.objects.filter(coupon=coupon, user=request.user).count()
+        if user_usage_count >= coupon.max_uses_per_user:
+            return Response({'valid': False, 'message': 'You have already used this coupon the maximum number of times.'})
+        
+        # Calculate discount
+        discount_amount = coupon.calculate_discount(course_price)
+        final_amount = course_price - Decimal(str(discount_amount))
+        
+        return Response({
+            'valid': True,
+            'message': f'Coupon applied! You save ₹{discount_amount}',
+            'discount_amount': float(discount_amount),
+            'final_amount': float(final_amount),
+            'original_amount': float(course_price),
+            'discount_type': coupon.discount_type,
+            'discount_value': float(coupon.discount_value)
+        })
+
 
 
 class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
