@@ -707,6 +707,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 'amount': float(payment.amount),
                 'currency': payment.currency,
                 'course_title': course.title,
+                 'key_id': settings.RAZORPAY_KEY_ID,
             })
             
         except Exception as e:
