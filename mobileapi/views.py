@@ -601,7 +601,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(notifications, many=True)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='mark-read')
     def mark_read(self, request, pk=None):
         """Mark notification as read"""
         notification = self.get_object()
@@ -612,7 +612,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(notification)
         return Response(serializer.data)
     
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='mark-read')
     def mark_all_read(self, request):
         """Mark all notifications as read"""
         self.get_queryset().filter(is_read=False).update(
