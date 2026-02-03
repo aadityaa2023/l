@@ -62,7 +62,7 @@
                             </span>
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary">View Details</button>
+                            <a href="{% url 'courses:teacher_student_detail' enrollment.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
                         </td>
                     </tr>
                     {% endfor %}
