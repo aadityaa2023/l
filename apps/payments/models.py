@@ -31,10 +31,18 @@ class Payment(models.Model):
     course = models.ForeignKey('courses.Course', on_delete=models.SET_NULL, null=True, related_name='payments')
     
     # Payment Details
-    amount = models.DecimalField(_('amount'), max_digits=10, decimal_places=2)
+    amount = models.DecimalField(_('amount'), max_digits=10, decimal_places=2, help_text="Gross amount paid by user")
     currency = models.CharField(_('currency'), max_length=3, default='INR')
     status = models.CharField(_('status'), max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_method = models.CharField(_('payment method'), max_length=20, choices=PAYMENT_METHOD_CHOICES, blank=True)
+    
+    # Razorpay Fee Breakdown
+    razorpay_fee = models.DecimalField(_('Razorpay fee'), max_digits=10, decimal_places=2, default=0, 
+                                       help_text="2% transaction fee charged by Razorpay")
+    razorpay_gst = models.DecimalField(_('GST on Razorpay fee'), max_digits=10, decimal_places=2, default=0,
+                                       help_text="18% GST on Razorpay transaction fee")
+    net_amount = models.DecimalField(_('net amount'), max_digits=10, decimal_places=2, default=0,
+                                     help_text="Amount after deducting Razorpay fee and GST (used for commission split)")
     
     # Razorpay Details
     razorpay_order_id = models.CharField(_('Razorpay order ID'), max_length=255, blank=True, unique=True)
@@ -79,6 +87,49 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.amount} {self.currency} ({self.status})"
+    
+    def calculate_and_set_fees(self):
+        """
+        Calculate Razorpay fees, GST, and net amount
+        
+        Fee Structure:
+        - Razorpay transaction fee: 2% of gross amount
+        - GST on Razorpay fee: 18% of the transaction fee
+        - Net amount: Gross amount - (Razorpay fee + GST)
+        
+        Example for ₹100 payment:
+        - Razorpay fee: ₹100 × 2% = ₹2.00
+        - GST: ₹2.00 × 18% = ₹0.36
+        - Net amount: ₹100 - ₹2.00 - ₹0.36 = ₹97.64
+        """
+        from decimal import Decimal, ROUND_HALF_UP
+        
+        # Convert amount to Decimal for precise calculation
+        gross_amount = Decimal(str(self.amount))
+        
+        # Calculate Razorpay fee (2%)
+        razorpay_fee_rate = Decimal('0.02')  # 2%
+        razorpay_fee = (gross_amount * razorpay_fee_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        # Calculate GST on Razorpay fee (18%)
+        gst_rate = Decimal('0.18')  # 18%
+        razorpay_gst = (razorpay_fee * gst_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        # Calculate net amount
+        net_amount = gross_amount - razorpay_fee - razorpay_gst
+        net_amount = net_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        # Update fields
+        self.razorpay_fee = razorpay_fee
+        self.razorpay_gst = razorpay_gst
+        self.net_amount = net_amount
+        
+        return {
+            'gross_amount': gross_amount,
+            'razorpay_fee': razorpay_fee,
+            'razorpay_gst': razorpay_gst,
+            'net_amount': net_amount
+        }
     
     # Payment Method Encryption/Decryption Methods
     

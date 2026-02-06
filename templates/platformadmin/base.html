@@ -440,6 +440,12 @@
             <i class="fas fa-users"></i> Users
           </a>
           <a
+            href="{% url 'platformadmin:free_users_list' %}"
+            class="menu-item {% if 'free_user' in request.resolver_match.url_name %}active{% endif %}"
+          >
+            <i class="fas fa-user-check"></i> Free Users
+          </a>
+          <a
             href="{% url 'platformadmin:teacher_verification' %}"
             class="menu-item {% if request.resolver_match.url_name == 'teacher_verification' %}active{% endif %}"
           >

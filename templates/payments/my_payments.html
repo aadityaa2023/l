@@ -105,38 +105,24 @@
         gap: 1rem;
     }
 
-    .course-avatar {
-        width: 50px;
-        height: 50px;
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 600;
-        font-size: 1.2rem;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-
-    .course-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 10px;
+    .course-details {
+        display: block;
     }
 
     .course-details h6 {
-        margin: 0;
-        color: var(--text-primary);
+        margin: 0 0 0.5rem 0;
+        color: #FFFFFF !important;
         font-weight: 600;
+        font-size: 1rem;
+        padding: 0.5rem 0;
+        display: block;
     }
 
     .course-teacher {
         color: var(--text-secondary);
         font-size: 0.85rem;
         margin: 0;
+        display: block;
     }
 
     .payment-amount {
@@ -317,7 +303,6 @@
                         <th>Course Details</th>
                         <th>Amount</th>
                         <th>Date</th>
-                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -325,19 +310,14 @@
                     {% for payment in payments %}
                     <tr>
                         <td>
-                            <div class="course-info">
-                                <div class="course-avatar">
-                                    {% if payment.course.thumbnail and payment.course.thumbnail.url %}
-                                        <img src="{{ payment.course.thumbnail.url }}" alt="{{ payment.course.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
-                                    {% else %}
-                                        <span style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 1.2rem; font-weight: 600; color: white;">{{ payment.course.title.0|upper }}</span>
-                                    {% endif %}
-                                </div>
+                            {% if payment.course %}
                                 <div class="course-details">
                                     <h6>{{ payment.course.title }}</h6>
                                     <p class="course-teacher">{{ payment.course.teacher.get_full_name }}</p>
                                 </div>
-                            </div>
+                            {% else %}
+                                <span style="color: #FFFFFF;">Course Information Unavailable</span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="payment-amount">₹{{ payment.amount }}</span>
@@ -348,26 +328,10 @@
                             <small style="color: var(--text-muted);">{{ payment.created_at|date:"h:i A" }}</small>
                         </td>
                         <td>
-                            <span class="status-badge status-{{ payment.status }}">
-                                {% if payment.status == 'completed' %}
-                                    <i class="fas fa-check-circle me-1"></i>
-                                {% elif payment.status == 'pending' %}
-                                    <i class="fas fa-clock me-1"></i>
-                                {% else %}
-                                    <i class="fas fa-times-circle me-1"></i>
-                                {% endif %}
-                                {{ payment.status|title }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if payment.status == 'completed' %}
-                                <a href="{% url 'payments:download_invoice' payment.id %}" class="download-btn">
-                                    <i class="fas fa-download"></i>
-                                    Invoice
-                                </a>
-                            {% else %}
-                                <span style="color: var(--text-muted);">-</span>
-                            {% endif %}
+                            <a href="{% url 'payments:download_invoice' payment.id %}" class="download-btn">
+                                <i class="fas fa-download"></i>
+                                Invoice
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}

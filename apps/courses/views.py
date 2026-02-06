@@ -181,13 +181,20 @@ def enroll_course(request, course_id):
             existing_enrollment.save()
             messages.success(request, 'Enrollment reactivated successfully!')
     else:
-        # For free courses, enroll directly
-        if course.price == 0:
+        # Check if user is a free user (has access to all paid courses)
+        is_free_user = request.user.is_free_user
+        
+        # For free courses or free users, enroll directly
+        if course.price == 0 or is_free_user:
             Enrollment.objects.create(
                 student=request.user,
-                course=course
+                course=course,
+                payment_amount=0 if is_free_user else course.actual_price
             )
-            messages.success(request, 'Successfully enrolled in the course!')
+            if is_free_user and course.price > 0:
+                messages.success(request, 'Successfully enrolled in the course! (Free user access)')
+            else:
+                messages.success(request, 'Successfully enrolled in the course!')
         else:
             # For paid courses, redirect to payment
             messages.info(request, 'Please complete the payment to enroll.')
@@ -844,12 +851,12 @@ def teacher_course_delete(request, course_id):
 
 @login_required
 def teacher_course_students(request, course_id):
-    """View students enrolled in a course"""
+    """View students enrolled in a course - Free users excluded"""
     if not request.user.is_teacher:
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    from apps.platformadmin.models import CourseAssignment
+    from apps.platformadmin.models import CourseAssignment, FreeUser
     
     # Check if course is assigned to this teacher
     assignment = CourseAssignment.objects.filter(
@@ -864,7 +871,12 @@ def teacher_course_students(request, course_id):
     
     course = get_object_or_404(Course, id=course_id)
     
-    enrollments = Enrollment.objects.filter(course=course).select_related(
+    # Get enrollments excluding free users
+    free_user_ids = FreeUser.objects.filter(is_active=True).values_list('user_id', flat=True)
+    
+    enrollments = Enrollment.objects.filter(course=course).exclude(
+        student_id__in=free_user_ids
+    ).select_related(
         'student', 'student__student_profile'
     ).order_by('-enrolled_at')
     
@@ -874,6 +886,33 @@ def teacher_course_students(request, course_id):
     }
     
     return render(request, 'courses/teacher_course_students.html', context)
+    
+    # Original functionality commented out as requested
+    # from apps.platformadmin.models import CourseAssignment
+    # 
+    # # Check if course is assigned to this teacher
+    # assignment = CourseAssignment.objects.filter(
+    #     course_id=course_id,
+    #     teacher=request.user,
+    #     status__in=['assigned', 'accepted']
+    # ).first()
+    # 
+    # if not assignment:
+    #     messages.error(request, 'You do not have access to this course')
+    #     return redirect('courses:teacher_courses')
+    # 
+    # course = get_object_or_404(Course, id=course_id)
+    # 
+    # enrollments = Enrollment.objects.filter(course=course).select_related(
+    #     'student', 'student__student_profile'
+    # ).order_by('-enrolled_at')
+    # 
+    # context = {
+    #     'course': course,
+    #     'enrollments': enrollments,
+    # }
+    # 
+    # return render(request, 'courses/teacher_course_students.html', context)
 
 
 @login_required
@@ -1500,14 +1539,20 @@ def serve_lesson_audio(request, slug):
 
 @login_required
 def teacher_students_list(request):
-    """List all students enrolled in teacher's courses"""
+    """List all students enrolled in teacher's courses - Free users excluded"""
     if not request.user.is_teacher:
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
     
-    # Get all enrollments for teacher's courses
+    from apps.platformadmin.models import FreeUser
+    
+    # Get all enrollments for teacher's courses, excluding free users
+    free_user_ids = FreeUser.objects.filter(is_active=True).values_list('user_id', flat=True)
+    
     enrollments = Enrollment.objects.filter(
         course__teacher=request.user
+    ).exclude(
+        student_id__in=free_user_ids
     ).select_related(
         'student', 'course', 'student__student_profile'
     ).prefetch_related(
@@ -1534,14 +1579,14 @@ def teacher_students_list(request):
             Q(course__title__icontains=search)
         )
     
-    # Stats
+    # Stats (excluding free users)
     stats = {
-        'total': Enrollment.objects.filter(course__teacher=request.user).count(),
-        'active': Enrollment.objects.filter(course__teacher=request.user, status='active').count(),
-        'completed': Enrollment.objects.filter(course__teacher=request.user, status='completed').count(),
+        'total': Enrollment.objects.filter(course__teacher=request.user).exclude(student_id__in=free_user_ids).count(),
+        'active': Enrollment.objects.filter(course__teacher=request.user, status='active').exclude(student_id__in=free_user_ids).count(),
+        'completed': Enrollment.objects.filter(course__teacher=request.user, status='completed').exclude(student_id__in=free_user_ids).count(),
         'unique_students': Enrollment.objects.filter(
             course__teacher=request.user
-        ).values('student').distinct().count()
+        ).exclude(student_id__in=free_user_ids).values('student').distinct().count()
     }
     
     # Get teacher's courses for filter
@@ -1563,14 +1608,76 @@ def teacher_students_list(request):
     }
     
     return render(request, 'courses/teacher_students.html', context)
+    
+    # Original functionality commented out as requested
+    # # Get all enrollments for teacher's courses
+    # enrollments = Enrollment.objects.filter(
+    #     course__teacher=request.user
+    # ).select_related(
+    #     'student', 'course', 'student__student_profile'
+    # ).prefetch_related(
+    #     'lesson_progress'
+    # ).order_by('-enrolled_at')
+    # 
+    # # Filter by status
+    # status_filter = request.GET.get('status', 'all')
+    # if status_filter != 'all':
+    #     enrollments = enrollments.filter(status=status_filter)
+    # 
+    # # Filter by course
+    # course_filter = request.GET.get('course')
+    # if course_filter:
+    #     enrollments = enrollments.filter(course_id=course_filter)
+    # 
+    # # Search
+    # search = request.GET.get('search', '').strip()
+    # if search:
+    #     enrollments = enrollments.filter(
+    #         Q(student__first_name__icontains=search) |
+    #         Q(student__last_name__icontains=search) |
+    #         Q(student__email__icontains=search) |
+    #         Q(course__title__icontains=search)
+    #     )
+    # 
+    # # Stats
+    # stats = {
+    #     'total': Enrollment.objects.filter(course__teacher=request.user).count(),
+    #     'active': Enrollment.objects.filter(course__teacher=request.user, status='active').count(),
+    #     'completed': Enrollment.objects.filter(course__teacher=request.user, status='completed').count(),
+    #     'unique_students': Enrollment.objects.filter(
+    #         course__teacher=request.user
+    #     ).values('student').distinct().count()
+    # }
+    # 
+    # # Get teacher's courses for filter
+    # teacher_courses = Course.objects.filter(teacher=request.user).only('id', 'title')
+    # 
+    # # Pagination
+    # from django.core.paginator import Paginator
+    # paginator = Paginator(enrollments, 25)
+    # page = request.GET.get('page', 1)
+    # enrollments_page = paginator.get_page(page)
+    # 
+    # context = {
+    #     'enrollments': enrollments_page,
+    #     'stats': stats,
+    #     'teacher_courses': teacher_courses,
+    #     'status_filter': status_filter,
+    #     'course_filter': course_filter,
+    #     'search': search,
+    # }
+    # 
+    # return render(request, 'courses/teacher_students.html', context)
 
 
 @login_required
 def teacher_student_detail(request, enrollment_id):
-    """Detailed view of a student's progress"""
+    """Detailed view of a student's progress - Free users excluded"""
     if not request.user.is_teacher:
         messages.error(request, 'You do not have teacher access')
         return redirect('users:dashboard')
+    
+    from apps.platformadmin.models import FreeUser
     
     enrollment = get_object_or_404(
         Enrollment.objects.select_related(
@@ -1581,6 +1688,11 @@ def teacher_student_detail(request, enrollment_id):
         id=enrollment_id,
         course__teacher=request.user
     )
+    
+    # Check if student is a free user - redirect if so
+    if FreeUser.objects.filter(user=enrollment.student, is_active=True).exists():
+        messages.error(request, 'Access to free user details is restricted.')
+        return redirect('courses:teacher_students_list')
     
     # Get all lesson progress
     lesson_progress = enrollment.lesson_progress.all().order_by('lesson__order')
@@ -1601,6 +1713,37 @@ def teacher_student_detail(request, enrollment_id):
     }
     
     return render(request, 'courses/teacher_student_detail.html', context)
+    
+    # Original functionality commented out as requested
+    # enrollment = get_object_or_404(
+    #     Enrollment.objects.select_related(
+    #         'student', 'course', 'student__student_profile'
+    #     ).prefetch_related(
+    #         'lesson_progress__lesson', 'notes'
+    #     ),
+    #     id=enrollment_id,
+    #     course__teacher=request.user
+    # )
+    # 
+    # # Get all lesson progress
+    # lesson_progress = enrollment.lesson_progress.all().order_by('lesson__order')
+    # 
+    # # Get notes
+    # notes = enrollment.notes.select_related('lesson').order_by('-created_at')
+    # 
+    # # Calculate detailed stats
+    # total_lessons = enrollment.course.lessons.count()
+    # completed_lessons = lesson_progress.filter(is_completed=True).count()
+    # 
+    # context = {
+    #     'enrollment': enrollment,
+    #     'lesson_progress': lesson_progress,
+    #     'notes': notes,
+    #     'total_lessons': total_lessons,
+    #     'completed_lessons': completed_lessons,
+    # }
+    # 
+    # return render(request, 'courses/teacher_student_detail.html', context)
 
 
 # ==================== TEACHER REVIEWS MANAGEMENT ====================

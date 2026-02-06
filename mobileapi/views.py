@@ -402,11 +402,15 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Check if user is a free user or course is free
+        is_free_user = request.user.is_free_user
+        payment_amount = 0 if (course.actual_price == 0 or is_free_user) else course.actual_price
+        
         # Create enrollment
         enrollment = Enrollment.objects.create(
             student=request.user,
             course=course,
-            payment_amount=course.actual_price
+            payment_amount=payment_amount
         )
         
         serializer = EnrollmentSerializer(enrollment, context={'request': request})
@@ -659,6 +663,20 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         if Enrollment.objects.filter(student=request.user, course=course, status='active').exists():
             return Response(
                 {'error': 'Already enrolled in this course'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if user is a free user
+        if request.user.is_free_user:
+            return Response(
+                {'error': 'You have free access to this course. Use the enroll endpoint directly.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if course is free
+        if course.actual_price == 0:
+            return Response(
+                {'error': 'This is a free course. Use the enroll endpoint directly.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         

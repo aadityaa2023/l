@@ -86,6 +86,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_admin(self):
         return self.role == 'admin'
+    
+    @property
+    def is_free_user(self):
+        """Check if user has free access to all paid courses"""
+        if self.role != 'student':
+            return False
+        
+        try:
+            from apps.platformadmin.models import FreeUser
+            free_user = FreeUser.objects.filter(user=self).first()
+            return free_user.has_access() if free_user else False
+        except Exception:
+            return False
 
 
 class StudentProfile(models.Model):

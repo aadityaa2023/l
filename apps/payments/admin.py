@@ -8,17 +8,26 @@ from .models import Payment, Subscription, Refund, PaymentWebhook, Coupon, Coupo
 
 # @admin.register(Payment)
 class PaymentAdmin(ModelAdmin):
-    list_display = ('user', 'course', 'amount', 'currency', 'status', 'payment_method', 'created_at', 'completed_at')
+    list_display = ('user', 'course', 'amount', 'net_amount', 'currency', 'status', 'payment_method', 'created_at', 'completed_at')
     list_filter = ('status', 'payment_method', 'created_at', 'completed_at')
     search_fields = ('user__email', 'course__title', 'razorpay_order_id', 'razorpay_payment_id')
-    readonly_fields = ('id', 'created_at', 'updated_at', 'completed_at', 'razorpay_signature')
+    readonly_fields = ('id', 'razorpay_fee', 'razorpay_gst', 'net_amount', 'created_at', 'updated_at', 'completed_at', 'razorpay_signature')
     
     # Unfold customizations
     list_filter_submit = True
     list_fullwidth = True
     
     fieldsets = (
-        (_('Basic Information'), {'fields': ('user', 'course', 'amount', 'currency')}),
+        (_('Basic Information'), {'fields': ('user', 'course')}),
+        (_('Payment Amount'), {
+            'fields': ('amount', 'currency'),
+            'description': 'Gross amount paid by user'
+        }),
+        (_('Razorpay Fee Breakdown'), {
+            'fields': ('razorpay_fee', 'razorpay_gst', 'net_amount'),
+            'description': 'Fee deductions and net amount for commission split',
+            'classes': ('collapse',)
+        }),
         (_('Payment Details'), {'fields': ('status', 'payment_method', 'description')}),
         (_('Razorpay Details'), {'fields': ('razorpay_order_id', 'razorpay_payment_id', 'razorpay_signature')}),
         (_('Additional Info'), {'fields': ('failure_reason', 'notes', 'ip_address', 'user_agent')}),

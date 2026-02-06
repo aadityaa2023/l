@@ -29,3 +29,4 @@ celerybeat-schedule
 .env.production
 .env.local
 .env.demo
+reset_earnings_script.py

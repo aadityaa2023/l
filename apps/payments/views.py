@@ -39,6 +39,11 @@ def course_payment(request, course_id):
         messages.info(request, 'You are already enrolled in this course!')
         return redirect('courses:course_detail', slug=course.slug)
     
+    # Check if user is a free user
+    if request.user.is_free_user:
+        messages.info(request, 'You have free access! Enrolling you directly.')
+        return redirect('courses:enroll_course', course_id=course.id)
+    
     if course.price == 0:
         messages.info(request, 'This is a free course!')
         return redirect('courses:enroll_course', course_id=course.id)
@@ -237,9 +242,14 @@ def verify_payment(request):
             # Calculate and record commission distribution
             commission_data = CommissionCalculator.record_commission_on_payment(payment, coupon_usage)
             
-            logger.info(f"Commission calculated - Scenario: {commission_data['scenario']}, "
-                       f"Platform: {commission_data['platform_commission']}, "
-                       f"Teacher: {commission_data['teacher_revenue']}")
+            logger.info(f"Payment {payment.id} completed - "
+                       f"Gross: ₹{commission_data.get('gross_amount', 0)}, "
+                       f"Razorpay Fee: ₹{commission_data.get('razorpay_fee', 0)}, "
+                       f"GST: ₹{commission_data.get('razorpay_gst', 0)}, "
+                       f"Net: ₹{commission_data.get('net_amount', 0)}, "
+                       f"Platform: ₹{commission_data['platform_commission']}, "
+                       f"Teacher: ₹{commission_data['teacher_revenue']} "
+                       f"(Scenario: {commission_data['scenario']})")
 
             
             # Create enrollment and unlock course
@@ -437,11 +447,37 @@ def payment_failed(request):
 @login_required
 def my_payments(request):
     """List user's payment history"""
-    payments = Payment.objects.filter(user=request.user).select_related('course').order_by('-created_at')
+    from apps.courses.models import Enrollment
+    
+    # Get all completed payments
+    payments = Payment.objects.filter(user=request.user, status='completed').order_by('-created_at')
+    
+    # For each payment, ensure it has course information
+    for payment in payments:
+        if not payment.course:
+            # Try to find enrollment for this user and match by amount and date
+            enrollment = Enrollment.objects.filter(
+                student=request.user,
+                enrolled_at__year=payment.created_at.year,
+                enrolled_at__month=payment.created_at.month,
+                enrolled_at__day=payment.created_at.day,
+            ).select_related('course', 'course__teacher').first()
+            
+            if enrollment:
+                payment.course = enrollment.course
+            else:
+                # Last resort: get any enrollment from the same day, ordered by closest time
+                enrollment = Enrollment.objects.filter(
+                    student=request.user,
+                    enrolled_at__date=payment.created_at.date()
+                ).select_related('course', 'course__teacher').first()
+                
+                if enrollment:
+                    payment.course = enrollment.course
     
     # Calculate stats
     total_payments = payments.count()
-    completed_payments = payments.filter(status='completed')
+    completed_payments = payments
     successful_payments = completed_payments.count()
     total_spent = completed_payments.aggregate(total=models.Sum('amount'))['total'] or 0
     
@@ -581,17 +617,22 @@ def download_invoice(request, payment_id):
 @login_required
 def teacher_earnings(request):
     """Teacher-facing earnings view: sums sales for courses taught by the current user and
-    calculates accurate commission using CommissionCalculator.
+    calculates accurate commission using CommissionCalculator. Excludes free users.
     """
     from apps.payments.commission_calculator import CommissionCalculator
-    from apps.platformadmin.models import TeacherCommission, PayoutTransaction
+    from apps.platformadmin.models import TeacherCommission, PayoutTransaction, FreeUser
     
     user = request.user
 
-    # Get all payments for this teacher's courses
+    # Get free user IDs to exclude
+    free_user_ids = FreeUser.objects.filter(is_active=True).values_list('user_id', flat=True)
+
+    # Get all payments for this teacher's courses, excluding free users
     teacher_payments = Payment.objects.filter(
         course__teacher=user,
         status='completed'
+    ).exclude(
+        user_id__in=free_user_ids
     ).select_related('course').order_by('-completed_at')
 
     total_sales = Decimal('0')

@@ -27,18 +27,33 @@ class CommissionCalculator:
         Calculate commission distribution for a payment
         
         Commission Logic:
-        - Commission is calculated ONLY on the final amount (after discount) according to the 
-          commission percentage set by platform admin while assigning teacher to course
+        - First, Razorpay fees (2% + 18% GST on fee) are deducted from gross amount
+        - Commission is calculated ONLY on the net amount (after Razorpay fees and discount)
         - The discount is absorbed - nobody gets it as extra commission
         
-        Example: 100 rupee course with 10% coupon and 30% platform commission:
-        - User pays: 90 rupees (100 - 10% discount)
-        - Platform commission: 27 rupees (30% of 90)
-        - Teacher revenue: 63 rupees (70% of 90)
+        Example: 100 rupee payment with 30% platform commission:
+        - User pays: ₹100 (gross amount)
+        - Razorpay fee: ₹2.00 (2% of ₹100)
+        - GST on fee: ₹0.36 (18% of ₹2.00)
+        - Net amount: ₹97.64 (₹100 - ₹2.00 - ₹0.36)
+        - Platform commission: ₹29.29 (30% of ₹97.64)
+        - Teacher revenue: ₹68.35 (70% of ₹97.64)
+        
+        With coupon: 100 rupee course with 10% coupon and 30% platform commission:
+        - User pays: ₹90 (100 - 10% discount)
+        - Razorpay fee: ₹1.80 (2% of ₹90)
+        - GST on fee: ₹0.32 (18% of ₹1.80)
+        - Net amount: ₹87.88 (₹90 - ₹1.80 - ₹0.32)
+        - Platform commission: ₹26.36 (30% of ₹87.88)
+        - Teacher revenue: ₹61.52 (70% of ₹87.88)
         - The 10 rupee discount is absorbed (nobody gets it)
         
         Returns:
             dict: {
+                'gross_amount': Decimal,
+                'razorpay_fee': Decimal,
+                'razorpay_gst': Decimal,
+                'net_amount': Decimal,
                 'platform_commission': Decimal,
                 'teacher_revenue': Decimal,
                 'commission_rate': Decimal,
@@ -46,8 +61,21 @@ class CommissionCalculator:
             }
         """
         from apps.platformadmin.models import CourseAssignment
+        from decimal import Decimal, ROUND_HALF_UP
         
-        final_amount = payment.amount  # Amount user actually paid (after discount)
+        # Use net_amount if already calculated, otherwise use payment amount
+        if payment.net_amount and payment.net_amount > 0:
+            net_amount = payment.net_amount
+            razorpay_fee = payment.razorpay_fee
+            razorpay_gst = payment.razorpay_gst
+        else:
+            # Calculate fees if not already calculated
+            fee_data = payment.calculate_and_set_fees()
+            net_amount = fee_data['net_amount']
+            razorpay_fee = fee_data['razorpay_fee']
+            razorpay_gst = fee_data['razorpay_gst']
+        
+        gross_amount = payment.amount  # Amount user actually paid (after discount if any)
         course = payment.course
         
         # Get teacher assignment to get commission rate
@@ -72,12 +100,16 @@ class CommissionCalculator:
         if base_commission_rate is None:
             base_commission_rate = Decimal('0.00')
         
-        # Calculate commission on final_amount (amount user paid after discount)
-        platform_commission = (final_amount * base_commission_rate) / 100
-        teacher_revenue = final_amount - platform_commission
+        # Calculate commission on net_amount (after Razorpay fees deduction)
+        platform_commission = (net_amount * base_commission_rate / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        teacher_revenue = (net_amount - platform_commission).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         
         # Initialize result
         result = {
+            'gross_amount': gross_amount,
+            'razorpay_fee': razorpay_fee,
+            'razorpay_gst': razorpay_gst,
+            'net_amount': net_amount,
             'platform_commission': platform_commission,
             'teacher_revenue': teacher_revenue,
             'commission_rate': base_commission_rate,

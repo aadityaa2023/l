@@ -53,6 +53,8 @@ def dashboard(request):
 @platformadmin_required
 def user_management(request):
     """Manage users (students and teachers)"""
+    from django.http import JsonResponse
+    
     role_filter = request.GET.get('role', '')
     status_filter = request.GET.get('status', '')
     search = request.GET.get('search', '')
@@ -62,6 +64,9 @@ def user_management(request):
     # Filter by role
     if role_filter in ['student', 'teacher']:
         users = users.filter(role=role_filter)
+    else:
+        # Default to students for free user assignment
+        users = users.filter(role='student')
     
     # Filter by status
     if status_filter == 'active':
@@ -76,6 +81,20 @@ def user_management(request):
             Q(first_name__icontains=search) |
             Q(last_name__icontains=search)
         )
+    
+    # Check if JSON response is requested
+    if request.GET.get('json') == '1':
+        from apps.platformadmin.models import FreeUser
+        users_list = []
+        for user in users[:10]:  # Limit to 10 results
+            is_free_user = FreeUser.objects.filter(user=user, is_active=True).exists()
+            users_list.append({
+                'id': user.id,
+                'name': user.get_full_name() or user.email,
+                'email': user.email,
+                'is_free_user': is_free_user,
+            })
+        return JsonResponse({'users': users_list})
     
     # Pagination
     paginator = Paginator(users.order_by('-date_joined'), 20)
@@ -2099,6 +2118,245 @@ def admin_lesson_media_delete(request, media_id):
         return JsonResponse({'success': True})
     
     return JsonResponse({'success': False, 'error': 'Invalid request'})
+
+
+# =============================================================================
+# Free User Management Views
+# =============================================================================
+
+@platformadmin_required
+@platformadmin_required
+@require_http_methods(['GET'])
+def free_users_list(request):
+    """List all free users"""
+    from apps.platformadmin.models import FreeUser
+    
+    search = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', 'all')
+    
+    # Base queryset
+    free_users = FreeUser.objects.select_related('user', 'assigned_by').order_by('-assigned_at')
+    
+    # Apply filters
+    if search:
+        free_users = free_users.filter(
+            Q(user__email__icontains=search) |
+            Q(user__first_name__icontains=search) |
+            Q(user__last_name__icontains=search)
+        )
+    
+    if status_filter == 'active':
+        free_users = free_users.filter(is_active=True)
+    elif status_filter == 'inactive':
+        free_users = free_users.filter(is_active=False)
+    
+    # Pagination
+    paginator = Paginator(free_users, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    
+    # Statistics
+    stats = {
+        'total': FreeUser.objects.count(),
+        'active': FreeUser.objects.filter(is_active=True).count(),
+        'inactive': FreeUser.objects.filter(is_active=False).count(),
+        'expired': FreeUser.objects.filter(
+            is_active=True,
+            expires_at__lt=timezone.now()
+        ).count(),
+    }
+    
+    context = get_context_data(request)
+    context.update({
+        'page_obj': page_obj,
+        'search': search,
+        'status_filter': status_filter,
+        'stats': stats,
+    })
+    
+    return render(request, 'platformadmin/free_users_list.html', context)
+
+
+@platformadmin_required
+@require_http_methods(['GET'])
+def select_user_for_free_access(request):
+    """Select a user to assign free access"""
+    from apps.platformadmin.models import FreeUser
+    
+    search = request.GET.get('search', '').strip()
+    
+    # Get students who are not already free users
+    existing_free_user_ids = FreeUser.objects.filter(is_active=True).values_list('user_id', flat=True)
+    users = User.objects.filter(role='student', is_active=True).exclude(id__in=existing_free_user_ids)
+    
+    # Apply search
+    if search:
+        users = users.filter(
+            Q(email__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search)
+        )
+    
+    # Pagination
+    paginator = Paginator(users.order_by('first_name', 'email'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    
+    context = get_context_data(request)
+    context.update({
+        'page_obj': page_obj,
+        'search': search,
+    })
+    
+    return render(request, 'platformadmin/select_user_for_free_access.html', context)
+
+
+@platformadmin_required
+@require_http_methods(['GET', 'POST'])
+def assign_free_user(request, user_id):
+    """Assign free access to a user"""
+    from apps.platformadmin.models import FreeUser
+    
+    user = get_object_or_404(User, id=user_id, role='student')
+    
+    # Check if already a free user
+    existing_free_user = FreeUser.objects.filter(user=user).first()
+    
+    if request.method == 'POST':
+        if existing_free_user:
+            # Update existing record
+            existing_free_user.is_active = True
+            existing_free_user.reason = request.POST.get('reason', '')
+            existing_free_user.assigned_by = request.user
+            
+            expires_at = request.POST.get('expires_at')
+            if expires_at:
+                try:
+                    from datetime import datetime
+                    existing_free_user.expires_at = datetime.fromisoformat(expires_at)
+                except ValueError:
+                    existing_free_user.expires_at = None
+            else:
+                existing_free_user.expires_at = None
+            
+            max_courses = request.POST.get('max_courses')
+            if max_courses and max_courses.isdigit():
+                existing_free_user.max_courses = int(max_courses)
+            else:
+                existing_free_user.max_courses = None
+            
+            existing_free_user.save()
+            action = 'update'
+            
+        else:
+            # Create new free user record
+            expires_at = request.POST.get('expires_at')
+            expires_at_parsed = None
+            if expires_at:
+                try:
+                    from datetime import datetime
+                    expires_at_parsed = datetime.fromisoformat(expires_at)
+                except ValueError:
+                    pass
+            
+            max_courses = request.POST.get('max_courses')
+            max_courses_parsed = None
+            if max_courses and max_courses.isdigit():
+                max_courses_parsed = int(max_courses)
+            
+            FreeUser.objects.create(
+                user=user,
+                assigned_by=request.user,
+                is_active=True,
+                reason=request.POST.get('reason', ''),
+                expires_at=expires_at_parsed,
+                max_courses=max_courses_parsed
+            )
+            action = 'create'
+        
+        # Log the action
+        AdminLog.objects.create(
+            admin=request.user,
+            action=action,
+            content_type='FreeUser',
+            object_id=str(user.id),
+            object_repr=f"Free User: {user.email}",
+            old_values={},
+            new_values={
+                'user': user.email,
+                'reason': request.POST.get('reason', ''),
+                'expires_at': request.POST.get('expires_at'),
+                'max_courses': request.POST.get('max_courses'),
+            }
+        )
+        
+        messages.success(request, f'Free access assigned to {user.email} successfully!')
+        return redirect('platformadmin:free_users_list')
+    
+    context = get_context_data(request)
+    context.update({
+        'user': user,
+        'existing_free_user': existing_free_user,
+        'active_enrollments_count': user.enrollments.filter(status='active').count(),
+    })
+    
+    return render(request, 'platformadmin/assign_free_user.html', context)
+
+
+@platformadmin_required
+@require_http_methods(['POST'])
+def remove_free_user(request, user_id):
+    """Remove free access from a user"""
+    from apps.platformadmin.models import FreeUser
+    
+    user = get_object_or_404(User, id=user_id)
+    free_user = get_object_or_404(FreeUser, user=user)
+    
+    # Log the action before removal
+    AdminLog.objects.create(
+        admin=request.user,
+        action='delete',
+        content_type='FreeUser',
+        object_id=str(free_user.id),
+        object_repr=f"Free User: {user.email}",
+        old_values={
+            'user': user.email,
+            'is_active': free_user.is_active,
+            'reason': free_user.reason,
+        },
+        new_values={}
+    )
+    
+    free_user.delete()
+    messages.success(request, f'Free access removed from {user.email}!')
+    return redirect('platformadmin:free_users_list')
+
+
+@platformadmin_required
+@require_http_methods(['POST'])
+def toggle_free_user_status(request, user_id):
+    """Toggle active status of free user"""
+    from apps.platformadmin.models import FreeUser
+    
+    user = get_object_or_404(User, id=user_id)
+    free_user = get_object_or_404(FreeUser, user=user)
+    
+    old_status = free_user.is_active
+    free_user.is_active = not free_user.is_active
+    free_user.save()
+    
+    # Log the action
+    AdminLog.objects.create(
+        admin=request.user,
+        action='update',
+        content_type='FreeUser',
+        object_id=str(free_user.id),
+        object_repr=f"Free User: {user.email}",
+        old_values={'is_active': old_status},
+        new_values={'is_active': free_user.is_active}
+    )
+    
+    status_text = 'activated' if free_user.is_active else 'deactivated'
+    messages.success(request, f'Free access {status_text} for {user.email}!')
+    return redirect('platformadmin:free_users_list')
 
 
 

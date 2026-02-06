@@ -828,11 +828,23 @@ class PayoutTransaction(models.Model):
 # Signal to update TeacherCommission when Payment is completed
 @receiver(post_save, sender='payments.Payment')
 def update_teacher_commission_on_payment(sender, instance, created, **kwargs):
-    """Update teacher commission balance when a payment is completed"""
+    """
+    Update teacher commission balance when a payment is completed
+    
+    This signal:
+    1. Calculates and deducts Razorpay fees (2% + 18% GST) from gross payment
+    2. Splits the net amount between platform admin and teacher based on commission percentage
+    3. Updates teacher's total_earned with their share of the net amount
+    """
     if instance.status == 'completed' and instance.course:
         from apps.payments.commission_calculator import CommissionCalculator
         
-        # Calculate teacher commission
+        # First, ensure Razorpay fees are calculated and stored
+        if not instance.net_amount or instance.net_amount == 0:
+            instance.calculate_and_set_fees()
+            instance.save(update_fields=['razorpay_fee', 'razorpay_gst', 'net_amount'])
+        
+        # Calculate teacher commission on net amount (after Razorpay fees)
         commission_data = CommissionCalculator.calculate_commission(instance)
         teacher_revenue = commission_data.get('teacher_revenue', 0)
         
@@ -850,6 +862,64 @@ def update_teacher_commission_on_payment(sender, instance, created, **kwargs):
                 teacher=teacher
             )
             
-            # Add to total earned
+            # Add to total earned (teacher's share of net amount)
             commission.total_earned += teacher_revenue
             commission.save()
+
+
+class FreeUser(models.Model):
+    """Users assigned free access to all paid courses by platform admin"""
+    
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='free_user_profile',
+        limit_choices_to={'role': 'student'}
+    )
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_free_users',
+        limit_choices_to={'role': 'admin'}
+    )
+    
+    # Status and details
+    is_active = models.BooleanField(_('active'), default=True, help_text="If inactive, user loses free access")
+    reason = models.TextField(_('reason for free access'), blank=True, help_text="Admin notes about why this user has free access")
+    
+    # Restrictions (optional)
+    expires_at = models.DateTimeField(_('expires at'), null=True, blank=True, help_text="Leave empty for unlimited access")
+    max_courses = models.PositiveIntegerField(_('max courses'), null=True, blank=True, help_text="Leave empty for unlimited courses")
+    
+    # Timestamps
+    assigned_at = models.DateTimeField(_('assigned at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('free user')
+        verbose_name_plural = _('free users')
+        ordering = ['-assigned_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['is_active', '-assigned_at']),
+        ]
+    
+    def __str__(self):
+        return f"Free User: {self.user.email} ({'Active' if self.is_active else 'Inactive'})"
+    
+    def is_expired(self):
+        """Check if free access has expired"""
+        if self.expires_at:
+            from django.utils import timezone
+            return timezone.now() > self.expires_at
+        return False
+    
+    def has_access(self):
+        """Check if user currently has free access"""
+        return self.is_active and not self.is_expired()
+    
+    def get_enrolled_courses_count(self):
+        """Get count of courses user is enrolled in"""
+        return self.user.enrollments.filter(status='active').count()

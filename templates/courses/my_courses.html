@@ -32,7 +32,14 @@
                     {% endif %}
                     
                     <div class="card-body">
-                        <h5 class="fw-bold mb-2">{{ enrollment.course.title }}</h5>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold mb-0">{{ enrollment.course.title }}</h5>
+                            {% if enrollment.payment_amount == 0 and enrollment.course.price > 0 and user.is_free_user %}
+                                <span class="badge bg-info ms-2" title="Accessed via Free User privilege">
+                                    <i class="fas fa-star me-1"></i>Free Access
+                                </span>
+                            {% endif %}
+                        </div>
                         <p class="small text-muted mb-3">{{ enrollment.course.teacher.get_full_name }}</p>
                         
                         <div class="progress mb-2" style="height: 8px;">

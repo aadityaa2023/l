@@ -8,7 +8,8 @@ from django.contrib.auth import get_user_model
 from apps.platformadmin.models import (
     AdminLog, CourseApproval, DashboardStat, PlatformSetting,
     LoginHistory, CMSPage, FAQ, Announcement, InstructorPayout,
-    VideoSettings, CourseAssignment, TeacherCommission, PayoutTransaction
+    VideoSettings, CourseAssignment, TeacherCommission, PayoutTransaction,
+    FreeUser
 )
 
 User = get_user_model()
@@ -199,6 +200,28 @@ class PayoutTransactionAdmin(admin.ModelAdmin):
     
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(FreeUser)
+class FreeUserAdmin(admin.ModelAdmin):
+    """Admin interface for free users"""
+    list_display = ['user', 'is_active', 'assigned_by', 'expires_at', 'max_courses', 'assigned_at']
+    list_filter = ['is_active', 'assigned_at', 'expires_at']
+    search_fields = ['user__email', 'user__first_name', 'user__last_name', 'assigned_by__email']
+    readonly_fields = ['assigned_at', 'updated_at']
+    date_hierarchy = 'assigned_at'
+    
+    fieldsets = (
+        ('User Information', {
+            'fields': ('user', 'assigned_by')
+        }),
+        ('Access Details', {
+            'fields': ('is_active', 'reason', 'expires_at', 'max_courses')
+        }),
+        ('Timestamps', {
+            'fields': ('assigned_at', 'updated_at')
+        }),
+    )
 
 
 class PlatformSettingAdmin(admin.ModelAdmin):

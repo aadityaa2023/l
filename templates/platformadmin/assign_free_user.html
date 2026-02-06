@@ -1,0 +1,175 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Assign Free User - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-user-plus me-2"></i>
+            {% if existing_free_user %}Edit Free User Access{% else %}Assign Free User Access{% endif %}
+        </h2>
+        <p class="text-muted mb-0">{{ user.email }}</p>
+    </div>
+    <a href="{% url 'platformadmin:free_users_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Free Users
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- User Information Card -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user me-2"></i>User Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-lg bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                {{ user.first_name.0|default:user.email.0|upper }}
+                            </div>
+                            <div>
+                                <h5 class="mb-1">{{ user.get_full_name|default:user.email }}</h5>
+                                <p class="text-muted mb-0">{{ user.email }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>Joined {{ user.date_joined|date:"M d, Y" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h6 class="mb-1">{{ user.enrollments.count }}</h6>
+                                    <small class="text-muted">Total Enrollments</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h6 class="mb-1">{{ active_enrollments_count }}</h6>
+                                    <small class="text-muted">Active Courses</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Free Access Status -->
+        {% if existing_free_user %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Current Free Access Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            {% if existing_free_user.has_access %}
+                                <span class="badge bg-success">Active</span>
+                            {% elif existing_free_user.is_expired %}
+                                <span class="badge bg-warning">Expired</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Assigned:</strong> {{ existing_free_user.assigned_at|date:"M d, Y H:i" }}</p>
+                        {% if existing_free_user.assigned_by %}
+                            <p><strong>Assigned By:</strong> {{ existing_free_user.assigned_by.get_full_name|default:existing_free_user.assigned_by.email }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Expires:</strong> 
+                            {% if existing_free_user.expires_at %}
+                                {{ existing_free_user.expires_at|date:"M d, Y" }}
+                            {% else %}
+                                <span class="text-muted">Never</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Max Courses:</strong> 
+                            {% if existing_free_user.max_courses %}
+                                {{ existing_free_user.max_courses }}
+                            {% else %}
+                                <span class="text-muted">Unlimited</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Current Enrollments:</strong> {{ existing_free_user.get_enrolled_courses_count }}</p>
+                    </div>
+                </div>
+                {% if existing_free_user.reason %}
+                <hr>
+                <p><strong>Current Reason:</strong></p>
+                <p class="text-muted">{{ existing_free_user.reason }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Assignment Form -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Free Access Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="reason" class="form-label">Reason for Free Access <small class="text-muted">(required)</small></label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" 
+                                  placeholder="Explain why this user should have free access (e.g., Beta tester, Community contributor, Special case)"
+                                  required>{% if existing_free_user %}{{ existing_free_user.reason }}{% endif %}</textarea>
+                        <div class="form-text">This will be logged for audit purposes.</div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="expires_at" class="form-label">Expires On <small class="text-muted">(optional)</small></label>
+                            <input type="datetime-local" class="form-control" id="expires_at" name="expires_at" 
+                                   value="{% if existing_free_user.expires_at %}{{ existing_free_user.expires_at|date:'Y-m-d\TH:i' }}{% endif %}">
+                            <div class="form-text">Leave empty for unlimited access.</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="max_courses" class="form-label">Maximum Courses <small class="text-muted">(optional)</small></label>
+                            <input type="number" class="form-control" id="max_courses" name="max_courses" min="1" 
+                                   value="{% if existing_free_user.max_courses %}{{ existing_free_user.max_courses }}{% endif %}"
+                                   placeholder="e.g., 5">
+                            <div class="form-text">Leave empty for unlimited courses.</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> Free users can access any paid course without payment. They will see "Free user access" in their enrollment messages.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-2"></i>
+                            {% if existing_free_user %}Update Free Access{% else %}Assign Free Access{% endif %}
+                        </button>
+                        <a href="{% url 'platformadmin:free_users_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set minimum date to today for expiry
+document.addEventListener('DOMContentLoaded', function() {
+    const expiryInput = document.getElementById('expires_at');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    expiryInput.min = now.toISOString().slice(0, 16);
+});
+</script>
+{% endblock %}

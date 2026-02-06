@@ -15,6 +15,13 @@ urlpatterns = [
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),
     path('teachers/', views.teacher_verification, name='teacher_verification'),
     
+    # Free User Management
+    path('free-users/', views.free_users_list, name='free_users_list'),
+    path('free-users/select/', views.select_user_for_free_access, name='select_user_for_free_access'),
+    path('free-users/assign/<int:user_id>/', views.assign_free_user, name='assign_free_user'),
+    path('free-users/remove/<int:user_id>/', views.remove_free_user, name='remove_free_user'),
+    path('free-users/toggle/<int:user_id>/', views.toggle_free_user_status, name='toggle_free_user_status'),
+    
     # Bulk User Actions
     path('users/bulk-action/', advanced_views.bulk_user_action, name='bulk_user_action'),
     

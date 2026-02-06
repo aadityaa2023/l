@@ -103,7 +103,7 @@ def teacher_dashboard(request):
     from django.db.models import Sum
     from datetime import datetime, timedelta
     
-    # Get teacher's ASSIGNED courses with detailed stats
+    # Get teacher's ASSIGNED courses with detailed stats (hiding student stats as requested)
     assignments = CourseAssignment.objects.filter(
         teacher=request.user,
         status__in=['assigned', 'accepted']
@@ -111,7 +111,7 @@ def teacher_dashboard(request):
     
     course_ids = [assignment.course.id for assignment in assignments]
     courses = Course.objects.filter(id__in=course_ids).annotate(
-        student_count=Count('enrollments', filter=Q(enrollments__status='active')),
+        # student_count=Count('enrollments', filter=Q(enrollments__status='active')),  # Hidden as requested
         avg_rating=Avg('reviews__rating'),
         total_revenue=Sum('enrollments__payment_amount', filter=Q(enrollments__status='active'))
     ).order_by('-created_at')
@@ -133,18 +133,21 @@ def teacher_dashboard(request):
     except TeacherAnalytics.DoesNotExist:
         analytics = None
     
-    # Total students across all assigned courses
-    total_students = Enrollment.objects.filter(
-        course__id__in=course_ids,
-        status='active'
-    ).values('student').distinct().count()
+    # Hide student statistics as requested by removing these sections
+    # total_students = Enrollment.objects.filter(
+    #     course__id__in=course_ids,
+    #     status='active'
+    # ).values('student').distinct().count()
+    # 
+    # # Recent enrollments with course details
+    # recent_enrollments = Enrollment.objects.filter(
+    #     course__id__in=course_ids
+    # ).select_related('student', 'course').order_by('-enrolled_at')[:10]
     
-    # Recent enrollments with course details
-    recent_enrollments = Enrollment.objects.filter(
-        course__id__in=course_ids
-    ).select_related('student', 'course').order_by('-enrolled_at')[:10]
+    total_students = 0  # Hide student count
+    recent_enrollments = []  # Hide recent enrollments
     
-    # Get recent reviews
+    # Get recent reviews (keeping this as it's about course feedback, not student stats)
     recent_reviews = Review.objects.filter(
         course__id__in=course_ids
     ).select_related('student', 'course').order_by('-created_at')[:5]
@@ -231,7 +234,7 @@ def teacher_dashboard(request):
         })
     
     # Top performing courses
-    top_courses = courses.filter(status='published').order_by('-student_count', '-avg_rating')[:5]
+    top_courses = courses.filter(status='published').order_by('-total_enrollments', '-average_rating')[:5]
     
     context = {
         'teacher_profile': teacher_profile,
