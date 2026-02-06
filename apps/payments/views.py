@@ -358,6 +358,13 @@ def razorpay_webhook(request):
                 payment.completed_at = timezone.now()
                 payment.save()
                 
+                # Calculate and record commission
+                try:
+                    from apps.payments.commission_calculator import CommissionCalculator
+                    CommissionCalculator.record_commission_on_payment(payment)
+                except Exception as e:
+                    logger.error(f"Failed to record commission for payment {payment.id} in webhook: {str(e)}")
+                
                 # Create enrollment if not exists and unlock course
                 Enrollment.objects.get_or_create(
                     student=payment.user,

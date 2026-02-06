@@ -321,6 +321,14 @@ def verify_pending_payments():
                     payment.status = 'completed'
                     payment.completed_at = timezone.now()
                     payment.save()
+                    
+                    # Calculate and record commission
+                    try:
+                        from apps.payments.commission_calculator import CommissionCalculator
+                        CommissionCalculator.record_commission_on_payment(payment)
+                    except Exception as e:
+                        logger.error(f"Failed to record commission for payment {payment.id} in background task: {str(e)}")
+                    
                     updated_count += 1
                 elif rp_payment and rp_payment.get('status') == 'failed':
                     payment.status = 'failed'

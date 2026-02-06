@@ -121,20 +121,47 @@ class CommissionCalculator:
     @staticmethod
     def record_commission_on_payment(payment, coupon_usage=None):
         """
-        Record commission distribution on a completed payment
+        Record commission distribution on a completed payment (idempotent)
+        
+        This method is idempotent - calling it multiple times for the same payment
+        will only record the commission once.
         
         Args:
             payment: Payment object
             coupon_usage: CouponUsage object if coupon was used (optional, not used in calculation)
         """
+        from apps.platformadmin.models import TeacherCommission
+        
+        # Check if commission has already been recorded for this payment
+        # We use a simple flag stored in payment.notes to track this
+        if payment.notes.get('commission_recorded'):
+            # Already recorded, return the stored commission data
+            return payment.notes.get('commission_data', {})
+        
         coupon = coupon_usage.coupon if coupon_usage else None
         
         # Calculate commission based on final amount only
         commission_data = CommissionCalculator.calculate_commission(payment, coupon)
         
-        # Note: extra_commission_earned and commission_recipient in CouponUsage are 
-        # legacy fields and not updated with new logic (discount is absorbed, not redistributed)
+        # Update TeacherCommission matching the teacher
+        teacher = payment.course.teacher
+        if teacher:
+            teacher_commission, created = TeacherCommission.objects.get_or_create(teacher=teacher)
+            teacher_commission.total_earned += commission_data['teacher_revenue']
+            teacher_commission.save()
         
-        # Store commission data in payment metadata (for future reference)
-        # You could add a JSONField to Payment model to store this, or create a separate CommissionRecord model
+        # Mark commission as recorded to prevent duplicate recording
+        payment.notes['commission_recorded'] = True
+        payment.notes['commission_data'] = {
+            'gross_amount': str(commission_data['gross_amount']),
+            'razorpay_fee': str(commission_data['razorpay_fee']),
+            'razorpay_gst': str(commission_data['razorpay_gst']),
+            'net_amount': str(commission_data['net_amount']),
+            'platform_commission': str(commission_data['platform_commission']),
+            'teacher_revenue': str(commission_data['teacher_revenue']),
+            'commission_rate': str(commission_data['commission_rate']),
+            'scenario': commission_data['scenario']
+        }
+        payment.save(update_fields=['notes'])
+        
         return commission_data

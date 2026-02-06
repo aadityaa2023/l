@@ -58,11 +58,13 @@ class Command(BaseCommand):
                     teacher_earnings[teacher.id] = {
                         'teacher': teacher,
                         'total_earned': Decimal('0.00'),
-                        'payment_count': 0
+                        'payment_count': 0,
+                        'payment_ids': []
                     }
                 
                 teacher_earnings[teacher.id]['total_earned'] += teacher_revenue
                 teacher_earnings[teacher.id]['payment_count'] += 1
+                teacher_earnings[teacher.id]['payment_ids'].append(payment.id)
         
         # Create or update TeacherCommission records
         self.stdout.write(f"\nProcessing {len(teacher_earnings)} teachers...")
@@ -115,6 +117,14 @@ class Command(BaseCommand):
                             f"  ○ No change: {teacher.email} - "
                             f"₹{total_earned:,.2f} from {payment_count} payments"
                         )
+                    
+                    # Mark all payments as commission_recorded
+                    if not dry_run:
+                        payment_ids = data.get('payment_ids', [])
+                        for payment in Payment.objects.filter(id__in=payment_ids):
+                            if not payment.notes.get('commission_recorded'):
+                                payment.notes['commission_recorded'] = True
+                                payment.save(update_fields=['notes'])
         
         # Summary
         self.stdout.write('\n' + '='*70)

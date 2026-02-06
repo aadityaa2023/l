@@ -928,6 +928,13 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         payment.completed_at = timezone.now()
         payment.save()
         
+        # Calculate and record commission
+        try:
+            from apps.payments.commission_calculator import CommissionCalculator
+            CommissionCalculator.record_commission_on_payment(payment)
+        except Exception as e:
+            logger.error(f"Failed to record commission for payment {payment.id}: {str(e)}")
+        
         # Step 4: Create enrollment (atomic operation)
         enrollment, created = Enrollment.objects.get_or_create(
             student=request.user,
