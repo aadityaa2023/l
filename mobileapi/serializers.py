@@ -319,7 +319,7 @@ class CourseListSerializer(serializers.ModelSerializer):
         """Check if current user is enrolled"""
         user = self.context.get('request').user if self.context.get('request') else None
         if user and user.is_authenticated:
-            return obj.enrollments.filter(student=user, status='active').exists()
+            return obj.enrollments.filter(student=user, status__in=['active', 'completed']).exists()
         return False
 
 
@@ -344,7 +344,7 @@ class CourseDetailSerializer(CourseListSerializer):
         """Get user's enrollment details if enrolled"""
         user = self.context.get('request').user if self.context.get('request') else None
         if user and user.is_authenticated:
-            enrollment = obj.enrollments.filter(student=user, status='active').first()
+            enrollment = obj.enrollments.filter(student=user, status__in=['active', 'completed']).first()
             if enrollment:
                 return EnrollmentSerializer(enrollment, context=self.context).data
         return None

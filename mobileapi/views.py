@@ -63,6 +63,15 @@ class LoginView(APIView):
         user = authenticate(email=email, password=password)
         
         if user:
+            # Check if email is verified
+            if not user.email_verified:
+                return Response({
+                    'error': 'Please verify your email first',
+                    'requires_verification': True,
+                    'user_id': user.id,
+                    'email': user.email
+                }, status=status.HTTP_403_FORBIDDEN)
+            
             if not user.is_active:
                 return Response(
                     {'error': 'Account is inactive'},
@@ -87,27 +96,138 @@ class LoginView(APIView):
 
 
 class RegisterView(APIView):
-    """Mobile registration endpoint"""
+    """Mobile registration endpoint - creates user and sends OTP for verification"""
     permission_classes = [permissions.AllowAny]
     
     def post(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
         
         if serializer.is_valid():
+            # Create user but keep inactive until email is verified
             user = serializer.save()
+            user.is_active = False  # User cannot login until email verified
+            user.email_verified = False
+            user.save()
             
-            # Create token for immediate login
-            token = Token.objects.create(user=user)
+            # Send OTP for email verification
+            from apps.users.otp_utils import send_otp_email
+            success, message, device = send_otp_email(user, purpose='verification', request=request)
             
-            # Serialize user data
-            user_serializer = UserProfileSerializer(user, context={'request': request})
-            
-            return Response({
-                'token': token.key,
-                'user': user_serializer.data,
-            }, status=status.HTTP_201_CREATED)
+            if success:
+                return Response({
+                    'message': 'Registration successful. Please verify your email with the OTP sent.',
+                    'user_id': user.id,
+                    'email': user.email,
+                    'requires_verification': True
+                }, status=status.HTTP_201_CREATED)
+            else:
+                # If OTP sending fails, delete the user and return error
+                user.delete()
+                return Response({
+                    'error': f'Failed to send verification email: {message}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class VerifySignupOTPView(APIView):
+    """Verify email OTP after signup"""
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        otp = request.data.get('otp')
+        
+        if not user_id or not otp:
+            return Response(
+                {'error': 'User ID and OTP are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            user = User.objects.get(id=user_id)
+            
+            # Verify OTP
+            from apps.users.otp_utils import verify_otp
+            success, message = verify_otp(user, otp, purpose='verification', request=request)
+            
+            if success:
+                # Mark email as verified and activate user
+                user.email_verified = True
+                user.is_active = True
+                user.save()
+                
+                # Create token for automatic login
+                token, created = Token.objects.get_or_create(user=user)
+                
+                # Serialize user data
+                user_serializer = UserProfileSerializer(user, context={'request': request})
+                
+                return Response({
+                    'message': 'Email verified successfully',
+                    'token': token.key,
+                    'user': user_serializer.data,
+                })
+            else:
+                return Response(
+                    {'error': message},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class ResendSignupOTPView(APIView):
+    """Resend verification OTP"""
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        email = request.data.get('email')
+        
+        if not user_id and not email:
+            return Response(
+                {'error': 'User ID or email is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            if user_id:
+                user = User.objects.get(id=user_id)
+            else:
+                user = User.objects.get(email=email)
+            
+            # Check if already verified
+            if user.email_verified:
+                return Response(
+                    {'error': 'Email is already verified'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Send OTP
+            from apps.users.otp_utils import send_otp_email
+            success, message, device = send_otp_email(user, purpose='verification', request=request)
+            
+            if success:
+                return Response({
+                    'message': 'Verification OTP has been resent to your email'
+                })
+            else:
+                return Response(
+                    {'error': message},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+                
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 
 
 class LogoutView(APIView):
@@ -171,7 +291,7 @@ class ForgotPasswordView(APIView):
             # For mobile API, we'll use the OTP system from the web app
             from apps.users.otp_utils import send_otp_email
             
-            success, message, device = send_otp_email(user, purpose='password_reset')
+            success, message, device = send_otp_email(user, purpose='password_reset', request=request)
             
             if success:
                 return Response({
@@ -215,7 +335,7 @@ class VerifyResetOTPView(APIView):
             
             from apps.users.otp_utils import verify_otp
             
-            success, message = verify_otp(user, otp, purpose='password_reset')
+            success, message = verify_otp(user, otp, purpose='password_reset', request=request)
             
             if success:
                 # Generate a temporary token for password reset
@@ -393,7 +513,7 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
         existing_enrollment = Enrollment.objects.filter(
             student=request.user,
             course=course,
-            status='active'
+            status__in=['active', 'completed']
         ).first()
         
         if existing_enrollment:
@@ -441,7 +561,7 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
             enrollment = Enrollment.objects.filter(
                 student=request.user,
                 course=lesson.course,
-                status='active'
+                status__in=['active', 'completed']
             ).first()
             
             if not enrollment:
@@ -472,7 +592,7 @@ class LessonViewSet(viewsets.ReadOnlyModelViewSet):
         enrollment = Enrollment.objects.filter(
             student=request.user,
             course=lesson.course,
-            status='active'
+            status__in=['active', 'completed']
         ).first()
         
         if not enrollment:

@@ -28,62 +28,8 @@ def dashboard_redirect(request):
 
 @login_required
 def student_dashboard(request):
-    """Student dashboard view"""
-    student_profile, created = StudentProfile.objects.get_or_create(user=request.user)
-    
-    # Get enrolled courses
-    enrollments = Enrollment.objects.filter(
-        student=request.user,
-        status='active'
-    ).select_related('course').order_by('-enrolled_at')[:6]
-    
-    # Get student analytics
-    try:
-        analytics = StudentAnalytics.objects.get(student=request.user)
-    except StudentAnalytics.DoesNotExist:
-        analytics = None
-    
-    # Get recent listening sessions
-    from apps.analytics.models import ListeningSession
-    recent_sessions = ListeningSession.objects.filter(
-        user=request.user
-    ).select_related('lesson', 'lesson__module__course').order_by('-started_at')[:5]
-    
-    # Get active subscriptions
-    active_subscriptions = Subscription.objects.filter(
-        user=request.user,
-        status='active'
-    ).select_related('course')
-    
-    # Get recommendations
-    from .student_views import get_student_recommendations
-    recommendations = get_student_recommendations(request.user, limit=4)
-    
-    # Calculate weekly goal progress
-    from django.utils import timezone
-    from datetime import timedelta
-    today = timezone.now().date()
-    week_start = today - timedelta(days=today.weekday())
-    
-    weekly_sessions = ListeningSession.objects.filter(
-        user=request.user,
-        started_at__date__gte=week_start
-    ).aggregate(total=Sum('duration_seconds'))
-    
-    weekly_hours = (weekly_sessions['total'] or 0) / 3600
-    weekly_goal_progress = min(100, (weekly_hours / (student_profile.weekly_goal_hours or 5)) * 100)
-    
-    context = {
-        'student_profile': student_profile,
-        'enrollments': enrollments,
-        'analytics': analytics,
-        'recent_sessions': recent_sessions,
-        'active_subscriptions': active_subscriptions,
-        'recommendations': recommendations,
-        'weekly_goal_progress': weekly_goal_progress,
-    }
-    
-    return render(request, 'users/student_dashboard.html', context)
+    """Student dashboard view - Redirect to My Learning"""
+    return redirect('courses:my_courses')
 
 
 @login_required

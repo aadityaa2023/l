@@ -8,6 +8,7 @@ from .views import (
     # Authentication
     LoginView, RegisterView, LogoutView, ChangePasswordView,
     ForgotPasswordView, VerifyResetOTPView, ResetPasswordView,
+    VerifySignupOTPView, ResendSignupOTPView,
     # User Profile
     UserProfileView, UserSettingsView,
     # Courses
@@ -56,6 +57,8 @@ urlpatterns = [
     # Authentication endpoints
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/register/', RegisterView.as_view(), name='register'),
+    path('auth/verify-signup-otp/', VerifySignupOTPView.as_view(), name='verify-signup-otp'),
+    path('auth/resend-signup-otp/', ResendSignupOTPView.as_view(), name='resend-signup-otp'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),

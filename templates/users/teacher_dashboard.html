@@ -9,14 +9,16 @@
         background: white;
         border-radius: 16px;
         padding: 24px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         height: 100%;
     }
+
     .stat-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
     }
+
     .stat-icon {
         width: 56px;
         height: 56px;
@@ -27,17 +29,20 @@
         font-size: 24px;
         margin-bottom: 16px;
     }
+
     .stat-value {
         font-size: 32px;
         font-weight: 700;
         margin-bottom: 4px;
         color: #1a1a1a;
     }
+
     .stat-label {
         color: #6b7280;
         font-size: 14px;
         font-weight: 500;
     }
+
     .trend-badge {
         display: inline-flex;
         align-items: center;
@@ -47,48 +52,62 @@
         font-weight: 600;
         margin-top: 8px;
     }
+
     .trend-up {
         background: #d1fae5;
         color: #065f46;
     }
+
     .trend-down {
         background: #fee2e2;
         color: #991b1b;
     }
+
     .course-card {
         background: white;
         border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         transition: all 0.3s ease;
         margin-bottom: 20px;
+        max-height: 200px;
     }
+
     .course-card:hover {
-        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
         transform: translateY(-2px);
     }
+
+    .course-card .course-thumbnail {
+        max-height: 200px;
+        object-fit: cover;
+    }
+
     .enrollment-item {
         background: white;
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 12px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
         transition: all 0.2s ease;
     }
+
     .enrollment-item:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
+
     .section-title {
         font-size: 20px;
         font-weight: 700;
         color: #1a1a1a;
         margin-bottom: 20px;
     }
+
     .chart-container {
         background: white;
         border-radius: 16px;
         padding: 24px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         height: 300px;
     }
 </style>
@@ -112,305 +131,241 @@
 </div>
 
 <!-- Stats Overview -->
-    <div class="row g-4 mb-5">
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <i class="fas fa-book text-white"></i>
-                </div>
-                <div class="stat-value">{{ total_courses }}</div>
-                <div class="stat-label">Total Courses</div>
-                <div class="d-flex justify-content-between mt-3" style="font-size: 12px;">
-                    <span class="text-success">{{ courses_published }} Published</span>
-                    <span class="text-warning">{{ courses_draft }} Draft</span>
-                </div>
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-book text-white"></i>
+            </div>
+            <div class="stat-value">{{ total_courses }}</div>
+            <div class="stat-label">Total Courses</div>
+            <div class="d-flex justify-content-between mt-3" style="font-size: 12px;">
+                <span class="text-success">{{ courses_published }} Published</span>
+                <span class="text-warning">{{ courses_draft }} Draft</span>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                    <i class="fas fa-users text-white"></i>
-                </div>
-                <div class="stat-value">{{ total_students }}</div>
-                <div class="stat-label">Total Students</div>
-                <div class="trend-badge trend-up mt-2">
-                    <i class="fas fa-arrow-up me-1"></i> Active learners
-                </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-users text-white"></i>
+            </div>
+            <div class="stat-value">{{ total_students }}</div>
+            <div class="stat-label">Total Students</div>
+            <div class="trend-badge trend-up mt-2">
+                <i class="fas fa-arrow-up me-1"></i> Active learners
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <i class="fas fa-rupee-sign text-white"></i>
-                </div>
-                <div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div>
-                <div class="stat-label">Total Earnings</div>
-                <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
-                    <a href="{% url 'payments:teacher_earnings' %}" class="text-decoration-none">View Details →</a>
-                </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-rupee-sign text-white"></i>
+            </div>
+            <div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div>
+            <div class="stat-label">Total Earnings</div>
+            <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+                <a href="{% url 'payments:teacher_earnings' %}" class="text-decoration-none">View Details →</a>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                    <i class="fas fa-star text-white"></i>
-                </div>
-                <div class="stat-value">{{ analytics.average_rating|default:0|floatformat:1 }}</div>
-                <div class="stat-label">Average Rating</div>
-                <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
-                    From {{ analytics.total_reviews|default:0 }} reviews
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <i class="fas fa-star text-white"></i>
+            </div>
+            <div class="stat-value">{{ analytics.average_rating|default:0|floatformat:1 }}</div>
+            <div class="stat-label">Average Rating</div>
+            <div style="font-size: 12px; color: #6b7280; margin-top: 8px;">
+                From {{ analytics.total_reviews|default:0 }} reviews
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Earnings Breakdown -->
+<div class="row g-4 mb-5">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="fas fa-chart-line me-2 text-success"></i>Earnings Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3 border-end">
+                            <div class="text-muted small mb-2">TOTAL EARNINGS</div>
+                            <h3 class="mb-0 fw-bold text-success">₹{{ total_revenue|floatformat:2 }}</h3>
+                            <small class="text-muted">All time</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border-end">
+                            <div class="text-muted small mb-2">LAST 30 DAYS</div>
+                            <h3 class="mb-0 fw-bold text-primary">₹{{ revenue_30days|floatformat:2 }}</h3>
+                            <small class="text-muted">Past month</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border-end">
+                            <div class="text-muted small mb-2">LAST 7 DAYS</div>
+                            <h3 class="mb-0 fw-bold text-info">₹{{ revenue_7days|floatformat:2 }}</h3>
+                            <small class="text-muted">This week</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <div class="text-muted small mb-2">YESTERDAY</div>
+                            <h3 class="mb-0 fw-bold text-warning">₹{{ revenue_yesterday|floatformat:2 }}</h3>
+                            <small class="text-muted">Previous day</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Earnings Breakdown -->
-    <div class="row g-4 mb-5">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 fw-semibold">
-                        <i class="fas fa-chart-line me-2 text-success"></i>Earnings Overview
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="p-3 border-end">
-                                <div class="text-muted small mb-2">TOTAL EARNINGS</div>
-                                <h3 class="mb-0 fw-bold text-success">₹{{ total_revenue|floatformat:2 }}</h3>
-                                <small class="text-muted">All time</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-3 border-end">
-                                <div class="text-muted small mb-2">LAST 30 DAYS</div>
-                                <h3 class="mb-0 fw-bold text-primary">₹{{ revenue_30days|floatformat:2 }}</h3>
-                                <small class="text-muted">Past month</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-3 border-end">
-                                <div class="text-muted small mb-2">LAST 7 DAYS</div>
-                                <h3 class="mb-0 fw-bold text-info">₹{{ revenue_7days|floatformat:2 }}</h3>
-                                <small class="text-muted">This week</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-3">
-                                <div class="text-muted small mb-2">YESTERDAY</div>
-                                <h3 class="mb-0 fw-bold text-warning">₹{{ revenue_yesterday|floatformat:2 }}</h3>
-                                <small class="text-muted">Previous day</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="row">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <!-- Enrollment Trend Chart -->
+        <div class="chart-container mb-4">
+            <h3 class="section-title">Enrollment Trend (Last 7 Days)</h3>
+            <canvas id="enrollmentChart"></canvas>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Main Content -->
-        <div class="col-lg-8">
-            <!-- Recent Courses -->
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="section-title mb-0">Recent Courses</h2>
-                    <a href="{% url 'courses:teacher_courses' %}" class="btn btn-sm btn-outline-primary">View All</a>
-                </div>
-                
-                {% for course in courses %}
-                <div class="course-card">
-                    <div class="row g-0">
-                        <div class="col-md-4">
-                            {% if course.thumbnail %}
-                            <img src="{{ course.thumbnail.url }}" class="img-fluid h-100" alt="{{ course.title }}" style="object-fit: cover;">
-                            {% else %}
-                            <div class="h-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                                <i class="fas fa-headphones fa-3x text-white opacity-50"></i>
-                            </div>
-                            {% endif %}
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Recent Enrollments -->
+        <div class="mb-4">
+            <h3 class="section-title">Recent Enrollments</h3>
+            {% for enrollment in recent_enrollments %}
+            <div class="enrollment-item">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        {% if enrollment.student.student_profile.profile_picture %}
+                        <img src="{{ enrollment.student.student_profile.profile_picture.url }}" class="rounded-circle"
+                            width="40" height="40" alt="{{ enrollment.student.get_full_name }}">
+                        {% else %}
+                        <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center"
+                            style="width: 40px; height: 40px;">
+                            <span class="text-white fw-bold">{{ enrollment.student.first_name|first|upper }}</span>
                         </div>
-                        <div class="col-md-8">
-                            <div class="p-4">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
-                                        <h5 class="fw-bold mb-2">{{ course.title }}</h5>
-                                        <span class="badge {% if course.status == 'published' %}bg-success{% elif course.status == 'draft' %}bg-warning text-dark{% else %}bg-secondary{% endif %} mb-2">
-                                            {{ course.status|title }}
-                                        </span>
-                                    </div>
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="{% url 'courses:teacher_course_edit' course.id %}"><i class="fas fa-edit me-2"></i>Edit</a></li>
-                                            <li><a class="dropdown-item" href="{% url 'courses:course_detail' course.slug %}"><i class="fas fa-eye me-2"></i>View</a></li>
-                                            <li><a class="dropdown-item" href="{% url 'courses:teacher_course_students' course.id %}"><i class="fas fa-users me-2"></i>Students</a></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><a class="dropdown-item text-danger" href="{% url 'courses:teacher_course_delete' course.id %}"><i class="fas fa-trash me-2"></i>Delete</a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="row mt-3">
-                                    <div class="col-4 text-center">
-                                        <i class="fas fa-users text-primary me-1"></i>
-                                        <strong>{{ course.student_count }}</strong>
-                                        <div style="font-size: 11px; color: #6b7280;">Students</div>
-                                    </div>
-                                    <div class="col-4 text-center">
-                                        <i class="fas fa-star text-warning me-1"></i>
-                                        <strong>{{ course.avg_rating|default:0|floatformat:1 }}</strong>
-                                        <div style="font-size: 11px; color: #6b7280;">Rating</div>
-                                    </div>
-                                    <div class="col-4 text-center">
-                                        <i class="fas fa-rupee-sign text-success me-1"></i>
-                                        <strong>{{ course.total_revenue|default:0|floatformat:0 }}</strong>
-                                        <div style="font-size: 11px; color: #6b7280;">Revenue</div>
-                                    </div>
-                                </div>
-                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold" style="font-size: 14px;">{{
+                            enrollment.student.get_full_name|default:enrollment.student.email }}</div>
+                        <div class="text-muted" style="font-size: 12px;">{{ enrollment.course.title|truncatewords:5 }}
                         </div>
                     </div>
+                    <div class="text-end">
+                        <small class="text-muted">{{ enrollment.enrolled_at|timesince }} ago</small>
+                    </div>
                 </div>
-                {% empty %}
-                <div class="text-center py-5">
-                    <i class="fas fa-book fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No courses yet</h5>
-                    <p class="text-muted">Create your first course to get started!</p>
-                </div>
-                {% endfor %}
             </div>
-
-            <!-- Enrollment Trend Chart -->
-            <div class="chart-container mb-4">
-                <h3 class="section-title">Enrollment Trend (Last 7 Days)</h3>
-                <canvas id="enrollmentChart"></canvas>
-            </div>
+            {% empty %}
+            <p class="text-muted text-center py-3">No recent enrollments</p>
+            {% endfor %}
         </div>
 
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Recent Enrollments -->
-            <div class="mb-4">
-                <h3 class="section-title">Recent Enrollments</h3>
-                {% for enrollment in recent_enrollments %}
-                <div class="enrollment-item">
-                    <div class="d-flex align-items-center">
-                        <div class="me-3">
-                            {% if enrollment.student.student_profile.profile_picture %}
-                            <img src="{{ enrollment.student.student_profile.profile_picture.url }}" class="rounded-circle" width="40" height="40" alt="{{ enrollment.student.get_full_name }}">
-                            {% else %}
-                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <span class="text-white fw-bold">{{ enrollment.student.first_name|first|upper }}</span>
-                            </div>
-                            {% endif %}
+        <!-- Recent Reviews -->
+        <div>
+            <h3 class="section-title">Recent Reviews</h3>
+            {% for review in recent_reviews %}
+            <div class="enrollment-item">
+                <div class="d-flex align-items-start">
+                    <div class="me-3">
+                        {% if review.student.student_profile.profile_picture %}
+                        <img src="{{ review.student.student_profile.profile_picture.url }}" class="rounded-circle"
+                            width="40" height="40" alt="{{ review.student.get_full_name }}">
+                        {% else %}
+                        <div class="rounded-circle bg-success d-flex align-items-center justify-content-center"
+                            style="width: 40px; height: 40px;">
+                            <span class="text-white fw-bold">{{ review.student.first_name|first|upper }}</span>
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-bold" style="font-size: 14px;">{{ enrollment.student.get_full_name|default:enrollment.student.email }}</div>
-                            <div class="text-muted" style="font-size: 12px;">{{ enrollment.course.title|truncatewords:5 }}</div>
-                        </div>
-                        <div class="text-end">
-                            <small class="text-muted">{{ enrollment.enrolled_at|timesince }} ago</small>
-                        </div>
+                        {% endif %}
                     </div>
-                </div>
-                {% empty %}
-                <p class="text-muted text-center py-3">No recent enrollments</p>
-                {% endfor %}
-            </div>
-
-            <!-- Recent Reviews -->
-            <div>
-                <h3 class="section-title">Recent Reviews</h3>
-                {% for review in recent_reviews %}
-                <div class="enrollment-item">
-                    <div class="d-flex align-items-start">
-                        <div class="me-3">
-                            {% if review.student.student_profile.profile_picture %}
-                            <img src="{{ review.student.student_profile.profile_picture.url }}" class="rounded-circle" width="40" height="40" alt="{{ review.student.get_full_name }}">
-                            {% else %}
-                            <div class="rounded-circle bg-success d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <span class="text-white fw-bold">{{ review.student.first_name|first|upper }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                <div class="fw-bold" style="font-size: 14px;">{{ review.student.get_full_name|default:review.student.email }}</div>
-                                <div>
-                                    {% for i in "12345" %}
-                                        {% if forloop.counter <= review.rating %}
-                                        <i class="fas fa-star text-warning" style="font-size: 10px;"></i>
-                                        {% else %}
-                                        <i class="far fa-star text-warning" style="font-size: 10px;"></i>
-                                        {% endif %}
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <div class="fw-bold" style="font-size: 14px;">{{
+                                review.student.get_full_name|default:review.student.email }}</div>
+                            <div>
+                                {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %} <i class="fas fa-star text-warning"
+                                    style="font-size: 10px;"></i>
+                                    {% else %}
+                                    <i class="far fa-star text-warning" style="font-size: 10px;"></i>
+                                    {% endif %}
                                     {% endfor %}
-                                </div>
                             </div>
-                            <div class="text-muted" style="font-size: 12px;">{{ review.course.title|truncatewords:4 }}</div>
-                            <p class="mb-1 mt-2" style="font-size: 13px;">{{ review.comment|truncatewords:15 }}</p>
-                            <small class="text-muted">{{ review.created_at|timesince }} ago</small>
                         </div>
+                        <div class="text-muted" style="font-size: 12px;">{{ review.course.title|truncatewords:4 }}</div>
+                        <p class="mb-1 mt-2" style="font-size: 13px;">{{ review.comment|truncatewords:15 }}</p>
+                        <small class="text-muted">{{ review.created_at|timesince }} ago</small>
                     </div>
                 </div>
-                {% empty %}
-                <p class="text-muted text-center py-3">No reviews yet</p>
-                {% endfor %}
             </div>
+            {% empty %}
+            <p class="text-muted text-center py-3">No reviews yet</p>
+            {% endfor %}
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-// Enrollment Trend Chart
-const ctx = document.getElementById('enrollmentChart');
-if (ctx) {
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [
-                {% for day in enrollment_trend %}
-                '{{ day.date }}'{% if not forloop.last %},{% endif %}
-                {% endfor %}
-            ],
-            datasets: [{
-                label: 'Enrollments',
-                data: [
+    // Enrollment Trend Chart
+    const ctx = document.getElementById('enrollmentChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [
                     {% for day in enrollment_trend %}
-                    {{ day.count }}{% if not forloop.last %},{% endif %}
-                    {% endfor %}
+                '{{ day.date }}'{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+            ],
+    datasets: [{
+        label: 'Enrollments',
+        data: [
+            {% for day in enrollment_trend %}
+                    {{ day.count }}{% if not forloop.last %}, {% endif %}
+    {% endfor %}
                 ],
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4,
+    borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
                 fill: true,
-                pointRadius: 4,
-                pointBackgroundColor: '#667eea',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
+                    pointRadius: 4,
+                        pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
             }]
         },
-        options: {
-            responsive: true,
+    options: {
+        responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
+                plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
                     ticks: {
-                        stepSize: 1
-                    }
+                    stepSize: 1
                 }
             }
         }
+    }
     });
 }
 </script>

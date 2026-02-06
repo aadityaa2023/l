@@ -95,7 +95,7 @@ class CourseDetailView(DetailView):
             is_enrolled = Enrollment.objects.filter(
                 student=user,
                 course=course,
-                status='active'
+                status__in=['active', 'completed']
             ).exists()
             
             context['is_enrolled'] = is_enrolled
@@ -174,7 +174,7 @@ def enroll_course(request, course_id):
     ).first()
     
     if existing_enrollment:
-        if existing_enrollment.status == 'active':
+        if existing_enrollment.status in ['active', 'completed']:
             messages.info(request, 'You are already enrolled in this course!')
         else:
             existing_enrollment.status = 'active'
@@ -213,7 +213,7 @@ def course_learn(request, course_id):
     enrollment = Enrollment.objects.filter(
         student=request.user,
         course=course,
-        status='active'
+        status__in=['active', 'completed']
     ).first()
 
     if not enrollment:
@@ -302,7 +302,7 @@ def lesson_view(request, slug):
         enrollment = Enrollment.objects.filter(
             student=request.user,
             course=course,
-            status='active'
+            status__in=['active', 'completed']
         ).first()
         is_enrolled = bool(enrollment)
 
@@ -386,7 +386,7 @@ def mark_lesson_complete(request, slug):
             Enrollment,
             student=request.user,
             course=lesson.module.course,
-            status='active'
+            status__in=['active', 'completed']
         )
         
         progress, created = LessonProgress.objects.get_or_create(
@@ -415,7 +415,7 @@ def lesson_audio_player(request, slug):
         enrollment = Enrollment.objects.filter(
             student=request.user,
             course=course,
-            status='active'
+            status__in=['active', 'completed']
         ).first()
         is_enrolled = bool(enrollment)
 
@@ -478,7 +478,7 @@ def lesson_video_player(request, slug):
         enrollment = Enrollment.objects.filter(
             student=request.user,
             course=course,
-            status='active'
+            status__in=['active', 'completed']
         ).first()
         is_enrolled = bool(enrollment)
 
@@ -546,7 +546,7 @@ def lesson_update_progress(request, slug):
             Enrollment,
             student=request.user,
             course=lesson.module.course,
-            status='active'
+            status__in=['active', 'completed']
         )
         
         progress, created = LessonProgress.objects.get_or_create(
@@ -591,7 +591,7 @@ def create_note(request, slug):
             Enrollment,
             student=request.user,
             course=lesson.module.course,
-            status='active'
+            status__in=['active', 'completed']
         )
         
         Note.objects.create(
@@ -627,7 +627,7 @@ def create_review(request, course_id):
         Enrollment,
         student=request.user,
         course=course,
-        status='active'
+        status__in=['active', 'completed']
     )
     
     if request.method == 'POST':
@@ -658,7 +658,7 @@ def my_courses(request):
     """List user's enrolled courses"""
     enrollments = Enrollment.objects.filter(
         student=request.user,
-        status='active'
+        status__in=['active', 'completed']
     ).select_related('course').order_by('-enrolled_at')
     
     context = {
