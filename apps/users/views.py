@@ -100,12 +100,13 @@ def teacher_dashboard(request):
     
     # Revenue calculations - Calculate actual teacher earnings using commission calculator
     from decimal import Decimal
-    from datetime import datetime, timedelta
+    from datetime import timedelta
+    from django.utils import timezone
     
-    thirty_days_ago = datetime.now() - timedelta(days=30)
-    seven_days_ago = datetime.now() - timedelta(days=7)
-    yesterday_start = (datetime.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-    yesterday_end = (datetime.now() - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    yesterday_start = (timezone.now() - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_end = (timezone.now() - timedelta(days=1)).replace(hour=23, minute=59, second=59, microsecond=999999)
     
     # Calculate revenue for last 30 days
     payments_30days = Payment.objects.filter(
@@ -166,7 +167,7 @@ def teacher_dashboard(request):
     # Enrollment trends (last 7 days)
     enrollment_trend = []
     for i in range(6, -1, -1):
-        day = datetime.now() - timedelta(days=i)
+        day = timezone.now() - timedelta(days=i)
         day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day.replace(hour=23, minute=59, second=59, microsecond=999999)
         count = Enrollment.objects.filter(

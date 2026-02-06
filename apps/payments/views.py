@@ -243,12 +243,12 @@ def verify_payment(request):
             commission_data = CommissionCalculator.record_commission_on_payment(payment, coupon_usage)
             
             logger.info(f"Payment {payment.id} completed - "
-                       f"Gross: ₹{commission_data.get('gross_amount', 0)}, "
-                       f"Razorpay Fee: ₹{commission_data.get('razorpay_fee', 0)}, "
-                       f"GST: ₹{commission_data.get('razorpay_gst', 0)}, "
-                       f"Net: ₹{commission_data.get('net_amount', 0)}, "
-                       f"Platform: ₹{commission_data['platform_commission']}, "
-                       f"Teacher: ₹{commission_data['teacher_revenue']} "
+                       f"Gross: Rs.{commission_data.get('gross_amount', 0)}, "
+                       f"Razorpay Fee: Rs.{commission_data.get('razorpay_fee', 0)}, "
+                       f"GST: Rs.{commission_data.get('razorpay_gst', 0)}, "
+                       f"Net: Rs.{commission_data.get('net_amount', 0)}, "
+                       f"Platform: Rs.{commission_data['platform_commission']}, "
+                       f"Teacher: Rs.{commission_data['teacher_revenue']} "
                        f"(Scenario: {commission_data['scenario']})")
 
             

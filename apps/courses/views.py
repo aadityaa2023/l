@@ -394,8 +394,9 @@ def mark_lesson_complete(request, slug):
             lesson=lesson
         )
         
+        from django.utils import timezone
         progress.completed = True
-        progress.completed_at = datetime.now()
+        progress.completed_at = timezone.now()
         progress.save()
         
         return JsonResponse({'success': True})
@@ -562,8 +563,9 @@ def lesson_update_progress(request, slug):
             # Update progress
             progress.last_position_seconds = watch_time
             if is_completed and not progress.is_completed:
+                from django.utils import timezone
                 progress.is_completed = True
-                progress.completed_at = datetime.now()
+                progress.completed_at = timezone.now()
             
             # Calculate completion percentage
             if lesson.duration_seconds > 0:
@@ -947,9 +949,10 @@ def teacher_analytics(request):
         total_revenue += commission_data['teacher_revenue']
     
     # Monthly revenue for last 6 months
+    from django.utils import timezone
     monthly_revenue = []
     for i in range(5, -1, -1):
-        month_start = (datetime.now() - timedelta(days=30*i)).replace(day=1)
+        month_start = (timezone.now() - timedelta(days=30*i)).replace(day=1)
         month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
         
         month_payments = Payment.objects.filter(
@@ -1890,10 +1893,10 @@ def teacher_export_students(request):
     
     import csv
     from django.http import HttpResponse
-    from datetime import datetime
+    from django.utils import timezone
     
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="students_{datetime.now().strftime("%Y%m%d")}.csv"'
+    response['Content-Disposition'] = f'attachment; filename="students_{timezone.now().strftime("%Y%m%d")}.csv"'
     
     writer = csv.writer(response)
     writer.writerow(['Student Name', 'Email', 'Course', 'Enrolled Date', 'Status', 'Progress %', 'Lessons Completed'])
@@ -1924,11 +1927,11 @@ def teacher_export_earnings(request):
     
     import csv
     from django.http import HttpResponse
-    from datetime import datetime
+    from django.utils import timezone
     from apps.payments.models import Payment
     
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="earnings_{datetime.now().strftime("%Y%m%d")}.csv"'
+    response['Content-Disposition'] = f'attachment; filename="earnings_{timezone.now().strftime("%Y%m%d")}.csv"'
     
     writer = csv.writer(response)
     writer.writerow(['Date', 'Student', 'Course', 'Amount', 'Status', 'Payment Reference'])

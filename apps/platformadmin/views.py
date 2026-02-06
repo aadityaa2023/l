@@ -678,17 +678,18 @@ def email_preview(request, template_name):
         'price': Decimal('999.00')
     })()
     
+    from django.utils import timezone as tz
     sample_payment = type('Payment', (), {
         'amount': Decimal('999.00'),
         'transaction_id': 'TXN123456',
-        'created_at': datetime.now()
+        'created_at': tz.now()
     })()
     
     sample_refund = type('Refund', (), {
         'amount': Decimal('999.00'),
         'refund_id': 'RFN123456',
         'status': 'processed',
-        'processed_at': datetime.now()
+        'processed_at': tz.now()
     })()
     
     context = {

@@ -826,45 +826,49 @@ class PayoutTransaction(models.Model):
 
 
 # Signal to update TeacherCommission when Payment is completed
-@receiver(post_save, sender='payments.Payment')
-def update_teacher_commission_on_payment(sender, instance, created, **kwargs):
-    """
-    Update teacher commission balance when a payment is completed
-    
-    This signal:
-    1. Calculates and deducts Razorpay fees (2% + 18% GST) from gross payment
-    2. Splits the net amount between platform admin and teacher based on commission percentage
-    3. Updates teacher's total_earned with their share of the net amount
-    """
-    if instance.status == 'completed' and instance.course:
-        from apps.payments.commission_calculator import CommissionCalculator
-        
-        # First, ensure Razorpay fees are calculated and stored
-        if not instance.net_amount or instance.net_amount == 0:
-            instance.calculate_and_set_fees()
-            instance.save(update_fields=['razorpay_fee', 'razorpay_gst', 'net_amount'])
-        
-        # Calculate teacher commission on net amount (after Razorpay fees)
-        commission_data = CommissionCalculator.calculate_commission(instance)
-        teacher_revenue = commission_data.get('teacher_revenue', 0)
-        
-        # Get the teacher from course assignment
-        teacher = None
-        assignment = CommissionCalculator.get_teacher_assignment(instance.course)
-        if assignment:
-            teacher = assignment.teacher
-        elif instance.course.teacher:
-            teacher = instance.course.teacher
-        
-        if teacher and teacher_revenue > 0:
-            # Get or create TeacherCommission record
-            commission, created = TeacherCommission.objects.get_or_create(
-                teacher=teacher
-            )
-            
-            # Add to total earned (teacher's share of net amount)
-            commission.total_earned += teacher_revenue
-            commission.save()
+# DISABLED: This signal was causing double-counting of teacher commissions.
+# Commission updates are now handled exclusively by CommissionCalculator.record_commission_on_payment()
+# which includes proper idempotency checks to prevent duplicate recording.
+#
+# @receiver(post_save, sender='payments.Payment')
+# def update_teacher_commission_on_payment(sender, instance, created, **kwargs):
+#     """
+#     Update teacher commission balance when a payment is completed
+#     
+#     This signal:
+#     1. Calculates and deducts Razorpay fees (2% + 18% GST) from gross payment
+#     2. Splits the net amount between platform admin and teacher based on commission percentage
+#     3. Updates teacher's total_earned with their share of the net amount
+#     """
+#     if instance.status == 'completed' and instance.course:
+#         from apps.payments.commission_calculator import CommissionCalculator
+#         
+#         # First, ensure Razorpay fees are calculated and stored
+#         if not instance.net_amount or instance.net_amount == 0:
+#             instance.calculate_and_set_fees()
+#             instance.save(update_fields=['razorpay_fee', 'razorpay_gst', 'net_amount'])
+#         
+#         # Calculate teacher commission on net amount (after Razorpay fees)
+#         commission_data = CommissionCalculator.calculate_commission(instance)
+#         teacher_revenue = commission_data.get('teacher_revenue', 0)
+#         
+#         # Get the teacher from course assignment
+#         teacher = None
+#         assignment = CommissionCalculator.get_teacher_assignment(instance.course)
+#         if assignment:
+#             teacher = assignment.teacher
+#         elif instance.course.teacher:
+#             teacher = instance.course.teacher
+#         
+#         if teacher and teacher_revenue > 0:
+#             # Get or create TeacherCommission record
+#             commission, created = TeacherCommission.objects.get_or_create(
+#                 teacher=teacher
+#             )
+#             
+#             # Add to total earned (teacher's share of net amount)
+#             commission.total_earned += teacher_revenue
+#             commission.save()
 
 
 class FreeUser(models.Model):
