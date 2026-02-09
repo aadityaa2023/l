@@ -148,9 +148,6 @@ urlpatterns = [
     
     path('feature-settings/footer/', feature_settings_views.footer_settings, name='footer_settings'),
     
-    path('feature-settings/pages/', feature_settings_views.page_content_list, name='page_content_list'),
-    path('feature-settings/pages/create/', feature_settings_views.page_content_create, name='page_content_create'),
-    path('feature-settings/pages/<int:page_id>/edit/', feature_settings_views.page_content_edit, name='page_content_edit'),
-    path('feature-settings/pages/<int:page_id>/delete/', feature_settings_views.page_content_delete, name='page_content_delete'),
+    # Page Content management removed from platformadmin routes (feature disabled)
 ]
 

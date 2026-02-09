@@ -72,7 +72,7 @@
                                 </div>
                             </div>
                             <h6 class="fw-bold mb-2">Address</h6>
-                            <p class="text-white-50 small mb-0">Beta 2 <br>Greater Noida </p>
+                            <p class="text-white-50 small mb-0">{{ footer_settings.contact_address|default:'Company address'|linebreaksbr }}</p>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -83,7 +83,13 @@
                                 </div>
                             </div>
                             <h6 class="fw-bold mb-2">Email</h6>
-                            <p class="text-white-50 small mb-0"><a href="mailto:learnequick@gmail.com" class="text-white text-decoration-underline">learnequick@gmail.com</a></p>
+                            <p class="text-white-50 small mb-0">
+                                {% if footer_settings.contact_email %}
+                                <a href="mailto:{{ footer_settings.contact_email }}" class="text-white text-decoration-underline">{{ footer_settings.contact_email }}</a>
+                                {% else %}
+                                <a href="mailto:contact@example.com" class="text-white text-decoration-underline">contact@example.com</a>
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -94,7 +100,7 @@
                                 </div>
                             </div>
                             <h6 class="fw-bold mb-2">Phone</h6>
-                            <p class="text-white-50 small mb-0">+91 9934556012</p>
+                            <p class="text-white-50 small mb-0">{{ footer_settings.contact_phone|default:'+1 234 567 8900' }}</p>
                         </div>
                     </div>
                 </div>

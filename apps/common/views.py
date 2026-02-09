@@ -106,11 +106,13 @@ from django.shortcuts import render, redirect
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib import messages
+from apps.platformadmin.models import TeamMember
 
 
 def about_view(request):
     """Render About Us page"""
-    return render(request, 'pages/about.html')
+    team_members = TeamMember.objects.filter(is_active=True).order_by('display_order', 'name')
+    return render(request, 'pages/about.html', {'team_members': team_members})
 
 
 def contact_view(request):

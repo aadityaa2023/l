@@ -1063,6 +1063,7 @@ class FooterSettingsForm(forms.Form):
     
     newsletter_heading = forms.CharField(
         max_length=200,
+        required=False,
         initial='Subscribe to our Newsletter',
         widget=forms.TextInput(attrs={
             'class': 'form-control',

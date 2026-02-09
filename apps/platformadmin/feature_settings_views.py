@@ -354,7 +354,7 @@ def page_content_create(request):
             )
             
             messages.success(request, f'Page "{page.title}" created successfully!')
-            return redirect('platformadmin:page_content_list')
+            return redirect('platformadmin:footer_settings')
     else:
         form = PageContentForm()
     
@@ -411,7 +411,7 @@ def page_content_edit(request, page_id):
             )
             
             messages.success(request, f'Page "{page.title}" updated successfully!')
-            return redirect('platformadmin:page_content_list')
+            return redirect('platformadmin:footer_settings')
     else:
         # Pre-populate form with existing data
         initial_data = {
@@ -460,7 +460,7 @@ def page_content_delete(request, page_id):
         
         page.delete()
         messages.success(request, f'Page "{title}" deleted successfully!')
-        return redirect('platformadmin:page_content_list')
+        return redirect('platformadmin:footer_settings')
     
     context = {'page': page}
     return render(request, 'platformadmin/feature_settings/page_content_confirm_delete.html', context)
