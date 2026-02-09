@@ -1,667 +1,625 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Platform Admin - LeQ{% endblock %}</title>
 
-    <!-- Bootstrap 5 CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Platform Admin - LeQ{% endblock %}</title>
 
-    <!-- Font Awesome -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 
-    <!-- Google Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    <style>
-          :root {
-              --primary-color: #667eea;
-              --primary-dark: #5568d3;
-              --secondary-color: #764ba2;
-              --sidebar-width: 260px;
-              --topbar-height: 70px;
-          }
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-          * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-              font-family: 'Inter', sans-serif;
-          }
+  <style>
+    :root {
+      --primary-color: #667eea;
+      --primary-dark: #5568d3;
+      --secondary-color: #764ba2;
+      --sidebar-width: 260px;
+      --topbar-height: 70px;
+    }
 
-          body {
-              background: #f5f7fb;
-              overflow-x: hidden;
-          }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
 
-          /* Sidebar Styles */
-          .sidebar {
-              position: fixed;
-              top: 0;
-              left: 0;
-              height: 100vh;
-              width: var(--sidebar-width);
-              background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-              z-index: 1000;
-              transition: all 0.3s ease;
-              overflow-y: auto;
-              box-shadow: 4px 0 10px rgba(0,0,0,0.1);
-          }
+    body {
+      background: #f5f7fb;
+      overflow-x: hidden;
+    }
 
-          .sidebar::-webkit-scrollbar {
-              width: 5px;
-          }
+    /* Sidebar Styles */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: var(--sidebar-width);
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      z-index: 1000;
+      transition: all 0.3s ease;
+      overflow-y: auto;
+      box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+    }
 
-          .sidebar::-webkit-scrollbar-thumb {
-              background: rgba(255,255,255,0.2);
-              border-radius: 10px;
-          }
+    .sidebar::-webkit-scrollbar {
+      width: 5px;
+    }
 
-          .sidebar-header {
-              padding: 20px;
-              border-bottom: 1px solid rgba(255,255,255,0.1);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-          }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+    }
 
-          .sidebar-logo {
-              font-size: 28px;
-              font-weight: 800;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-              background-clip: text;
-              color: transparent;
-          }
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-          .sidebar-menu {
-              padding: 20px 0;
-          }
+    .sidebar-logo {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: transparent;
+    }
 
-          .menu-section {
-              margin-bottom: 30px;
-          }
+    .sidebar-menu {
+      padding: 20px 0;
+    }
 
-          .menu-section-title {
-              padding: 0 20px 10px;
-              font-size: 11px;
-              font-weight: 700;
-              text-transform: uppercase;
-              color: rgba(255,255,255,0.5);
-              letter-spacing: 1px;
-          }
+    .menu-section {
+      margin-bottom: 30px;
+    }
 
-          .menu-item {
-              padding: 12px 20px;
-              color: rgba(255,255,255,0.8);
-              text-decoration: none;
-              display: flex;
-              align-items: center;
-              transition: all 0.3s ease;
-              position: relative;
-              font-size: 14px;
-              font-weight: 500;
-          }
+    .menu-section-title {
+      padding: 0 20px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 1px;
+    }
 
-          .menu-item:hover {
-              background: rgba(255,255,255,0.05);
-              color: white;
-              padding-left: 25px;
-          }
+    .menu-item {
+      padding: 12px 20px;
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+      position: relative;
+      font-size: 14px;
+      font-weight: 500;
+    }
 
-          .menu-item.active {
-              background: linear-gradient(90deg, rgba(102,126,234,0.2) 0%, transparent 100%);
-              color: #667eea;
-              border-left: 3px solid #667eea;
-              font-weight: 600;
-          }
+    .menu-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      padding-left: 25px;
+    }
 
-          .menu-item i {
-              width: 20px;
-              margin-right: 12px;
-              font-size: 16px;
-          }
+    .menu-item.active {
+      background: linear-gradient(90deg, rgba(102, 126, 234, 0.2) 0%, transparent 100%);
+      color: #667eea;
+      border-left: 3px solid #667eea;
+      font-weight: 600;
+    }
 
-          .menu-item .badge {
-              margin-left: auto;
-              background: #667eea;
-              font-size: 10px;
-              padding: 3px 8px;
-          }
+    .menu-item i {
+      width: 20px;
+      margin-right: 12px;
+      font-size: 16px;
+    }
 
-          /* Main Content */
-          .main-content {
-              margin-left: var(--sidebar-width);
-              min-height: 100vh;
-              transition: all 0.3s ease;
-          }
+    .menu-item .badge {
+      margin-left: auto;
+      background: #667eea;
+      font-size: 10px;
+      padding: 3px 8px;
+    }
 
-          /* Top Bar */
-          .topbar {
-              height: var(--topbar-height);
-              background: white;
-              border-bottom: 1px solid #e5e7eb;
-              display: flex;
-              align-items: center;
-              padding: 0 30px;
-              position: sticky;
-              top: 0;
-              z-index: 900;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.04);
-          }
+    /* Main Content */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      min-height: 100vh;
+      transition: all 0.3s ease;
+    }
 
-          .topbar-left {
-              display: flex;
-              align-items: center;
-              flex: 1;
-          }
+    /* Top Bar */
+    .topbar {
+      height: var(--topbar-height);
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      padding: 0 30px;
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
 
-          .topbar-search {
-              position: relative;
-              width: 400px;
-          }
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
 
-          .topbar-search input {
-              width: 100%;
-              padding: 10px 15px 10px 45px;
-              border: 1px solid #e5e7eb;
-              border-radius: 10px;
-              font-size: 14px;
-              transition: all 0.3s ease;
-          }
+    .topbar-search {
+      position: relative;
+      width: 400px;
+    }
 
-          .topbar-search input:focus {
-              outline: none;
-              border-color: #667eea;
-              box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
-          }
+    .topbar-search input {
+      width: 100%;
+      padding: 10px 15px 10px 45px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
 
-          .topbar-search i {
-              position: absolute;
-              left: 15px;
-              top: 50%;
-              transform: translateY(-50%);
-              color: #9ca3af;
-          }
+    .topbar-search input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
 
-          .topbar-right {
-              display: flex;
-              align-items: center;
-              gap: 20px;
-          }
+    .topbar-search i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+    }
 
-          .topbar-icon {
-              width: 40px;
-              height: 40px;
-              border-radius: 10px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: #6b7280;
-              background: #f9fafb;
-              cursor: pointer;
-              transition: all 0.3s ease;
-              position: relative;
-          }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
 
-          .topbar-icon:hover {
-              background: #667eea;
-              color: white;
-          }
+    .topbar-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6b7280;
+      background: #f9fafb;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
 
-          .topbar-icon .notification-badge {
-              position: absolute;
-              top: -5px;
-              right: -5px;
-              width: 18px;
-              height: 18px;
-              background: #ef4444;
-              border-radius: 50%;
-              font-size: 10px;
-              color: white;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-weight: 700;
-              border: 2px solid white;
-          }
+    .topbar-icon:hover {
+      background: #667eea;
+      color: white;
+    }
 
-          .user-dropdown {
-              display: flex;
-              align-items: center;
-              gap: 12px;
-              padding: 8px 12px;
-              border-radius: 10px;
-              cursor: pointer;
-              transition: all 0.3s ease;
-          }
+    .topbar-icon .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 18px;
+      height: 18px;
+      background: #ef4444;
+      border-radius: 50%;
+      font-size: 10px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      border: 2px solid white;
+    }
 
-          .user-dropdown:hover {
-              background: #f9fafb;
-          }
+    .user-dropdown {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
-          .user-avatar {
-              width: 40px;
-              height: 40px;
-              border-radius: 10px;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-weight: 700;
-              font-size: 16px;
-          }
+    .user-dropdown:hover {
+      background: #f9fafb;
+    }
 
-          .user-info {
-              display: flex;
-              flex-direction: column;
-          }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+    }
 
-          .user-name {
-              font-size: 14px;
-              font-weight: 600;
-              color: #1f2937;
-          }
+    .user-info {
+      display: flex;
+      flex-direction: column;
+    }
 
-          .user-role {
-              font-size: 12px;
-              color: #9ca3af;
-          }
+    .user-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1f2937;
+    }
 
-          /* Content Area */
-          .content-area {
-              padding: 30px;
-          }
+    .user-role {
+      font-size: 12px;
+      color: #9ca3af;
+    }
 
-      .stat-card {
-          background: white;
-          border-radius: 10px;
-          padding: 20px;
-          margin-bottom: 20px;
-          border-left: 4px solid #3498db;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-          transition: transform 0.3s, box-shadow 0.3s;
+    /* Content Area */
+    .content-area {
+      padding: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-left: 4px solid #3498db;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card.warning {
+      border-left-color: #f39c12;
+    }
+
+    .stat-card.danger {
+      border-left-color: #e74c3c;
+    }
+
+    .stat-card.success {
+      border-left-color: #27ae60;
+    }
+
+    .stat-card.info {
+      border-left-color: #667eea;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .stat-label {
+      color: #7f8c8d;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .table-custom {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .table-custom thead th {
+      background-color: #34495e;
+      color: white;
+      border: none;
+      padding: 15px;
+      font-weight: 600;
+    }
+
+    .table-custom tbody tr {
+      border-bottom: 1px solid #ecf0f1;
+    }
+
+    .table-custom tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .table-custom tbody td {
+      padding: 12px 15px;
+      vertical-align: middle;
+    }
+
+    .badge-custom {
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .btn-sm-custom {
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: 5px;
+    }
+
+    .activity-log-item {
+      padding: 15px;
+      border-left: 3px solid #3498db;
+      margin-bottom: 10px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+    }
+
+    .pagination-custom {
+      margin-top: 20px;
+    }
+
+    .pagination-custom .page-link {
+      color: #3498db;
+      border: 1px solid #ddd;
+    }
+
+    .pagination-custom .page-link:hover {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .pagination-custom .page-item.active .page-link {
+      background-color: #3498db;
+      border-color: #3498db;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
       }
 
-      .stat-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      .sidebar.mobile-open {
+        transform: translateX(0);
       }
 
-      .stat-card.warning {
-          border-left-color: #f39c12;
+      .main-content {
+        margin-left: 0;
       }
 
-      .stat-card.danger {
-          border-left-color: #e74c3c;
+      .topbar-search {
+        display: none;
       }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
 
-      .stat-card.success {
-          border-left-color: #27ae60;
-      }
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">Admin</div>
+    </div>
 
-      .stat-card.info {
-          border-left-color: #667eea;
-      }
-
-      .stat-value {
-          font-size: 28px;
-          font-weight: bold;
-          color: #2c3e50;
-      }
-
-      .stat-label {
-          color: #7f8c8d;
-          font-size: 14px;
-          margin-top: 5px;
-      }
-
-      .table-custom {
-          border-collapse: separate;
-          border-spacing: 0;
-      }
-
-      .table-custom thead th {
-          background-color: #34495e;
-          color: white;
-          border: none;
-          padding: 15px;
-          font-weight: 600;
-      }
-
-      .table-custom tbody tr {
-          border-bottom: 1px solid #ecf0f1;
-      }
-
-      .table-custom tbody tr:hover {
-          background-color: #f8f9fa;
-      }
-
-      .table-custom tbody td {
-          padding: 12px 15px;
-          vertical-align: middle;
-      }
-
-      .badge-custom {
-          padding: 8px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 500;
-      }
-
-      .btn-sm-custom {
-          padding: 5px 10px;
-          font-size: 12px;
-          border-radius: 5px;
-      }
-
-      .activity-log-item {
-          padding: 15px;
-          border-left: 3px solid #3498db;
-          margin-bottom: 10px;
-          background-color: #f8f9fa;
-          border-radius: 5px;
-      }
-
-      .pagination-custom {
-          margin-top: 20px;
-      }
-
-      .pagination-custom .page-link {
-          color: #3498db;
-          border: 1px solid #ddd;
-      }
-
-      .pagination-custom .page-link:hover {
-          background-color: #3498db;
-          color: white;
-      }
-
-      .pagination-custom .page-item.active .page-link {
-          background-color: #3498db;
-          border-color: #3498db;
-      }
-
-          /* Mobile Responsive */
-          @media (max-width: 768px) {
-              .sidebar {
-                  transform: translateX(-100%);
-              }
-
-              .sidebar.mobile-open {
-                  transform: translateX(0);
-              }
-
-              .main-content {
-                  margin-left: 0;
-              }
-
-              .topbar-search {
-                  display: none;
-              }
-          }
-
-          {% block extra_css %}{% endblock %}
-    </style>
-  </head>
-  <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">Admin</div>
+    <div class="sidebar-menu">
+      <div class="menu-section">
+        <div class="menu-section-title">Main</div>
+        <a href="{% url 'platformadmin:dashboard' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+          <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+        <a href="{% url 'platformadmin:user_management' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
+          <i class="fas fa-users"></i> Users
+        </a>
+        <a href="{% url 'platformadmin:free_users_list' %}"
+          class="menu-item {% if 'free_user' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-user-check"></i> Free Users
+        </a>
+        <a href="{% url 'platformadmin:teacher_verification' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'teacher_verification' %}active{% endif %}">
+          <i class="fas fa-chalkboard-user"></i> Teachers
+        </a>
       </div>
 
-      <div class="sidebar-menu">
-        <div class="menu-section">
-          <div class="menu-section-title">Main</div>
-          <a
-            href="{% url 'platformadmin:dashboard' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-          >
-            <i class="fas fa-chart-line"></i> Dashboard
-          </a>
-          <a
-            href="{% url 'platformadmin:user_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}"
-          >
-            <i class="fas fa-users"></i> Users
-          </a>
-          <a
-            href="{% url 'platformadmin:free_users_list' %}"
-            class="menu-item {% if 'free_user' in request.resolver_match.url_name %}active{% endif %}"
-          >
-            <i class="fas fa-user-check"></i> Free Users
-          </a>
-          <a
-            href="{% url 'platformadmin:teacher_verification' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'teacher_verification' %}active{% endif %}"
-          >
-            <i class="fas fa-chalkboard-user"></i> Teachers
-          </a>
-        </div>
+      <div class="menu-section">
+        <div class="menu-section-title">Courses</div>
+        <a href="{% url 'platformadmin:admin_courses_list' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'admin_courses_list' %}active{% endif %}">
+          <i class="fas fa-graduation-cap"></i> Course Management
+        </a>
+        <a href="{% url 'platformadmin:admin_category_management' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'admin_category_management' %}active{% endif %}">
+          <i class="fas fa-folder-tree"></i> Categories
+        </a>
+        <a href="{% url 'platformadmin:admin_view_all_assignments' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'admin_view_all_assignments' %}active{% endif %}">
+          <i class="fas fa-user-check"></i> All Assignments
+        </a>
+        <a href="{% url 'platformadmin:admin_course_create' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'admin_course_create' %}active{% endif %}">
+          <i class="fas fa-plus-circle"></i> Create Course
+        </a>
+      </div>
 
-        <div class="menu-section">
-          <div class="menu-section-title">Courses</div>
-          <a
-            href="{% url 'platformadmin:admin_courses_list' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'admin_courses_list' %}active{% endif %}"
-          >
-            <i class="fas fa-graduation-cap"></i> Course Management
-          </a>
-          <a
-            href="{% url 'platformadmin:admin_category_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'admin_category_management' %}active{% endif %}"
-          >
-            <i class="fas fa-folder-tree"></i> Categories
-          </a>
-          <a
-            href="{% url 'platformadmin:admin_view_all_assignments' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'admin_view_all_assignments' %}active{% endif %}"
-          >
-            <i class="fas fa-user-check"></i> All Assignments
-          </a>
-          <a
-            href="{% url 'platformadmin:admin_course_create' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'admin_course_create' %}active{% endif %}"
-          >
-            <i class="fas fa-plus-circle"></i> Create Course
-          </a>
-        </div>
+      <div class="menu-section">
+        <div class="menu-section-title">Marketing</div>
+        <a href="{% url 'platformadmin:coupon_management' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'coupon_management' %}active{% endif %}">
+          <i class="fas fa-ticket-alt"></i> Coupons
+        </a>
+        <!-- Referrals removed -->
+      </div>
 
-        <div class="menu-section">
-          <div class="menu-section-title">Marketing</div>
-          <a
-            href="{% url 'platformadmin:coupon_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'coupon_management' %}active{% endif %}"
-          >
-            <i class="fas fa-ticket-alt"></i> Coupons
-          </a>
-          <!-- Referrals removed -->
-        </div>
+      <div class="menu-section">
+        <div class="menu-section-title">Finance</div>
+        <a href="{% url 'platformadmin:payment_management' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'payment_management' %}active{% endif %}">
+          <i class="fas fa-credit-card"></i> Payments
+        </a>
+        {# Subscriptions removed from UI; backend model/view retained but redirected. #}
+        <a href="{% url 'platformadmin:instructor_earnings' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'instructor_earnings' %}active{% endif %}">
+          <i class="fas fa-hand-holding-usd"></i> Instructor Earnings
+        </a>
+        <a href="{% url 'platformadmin:payout_management' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'payout_management' %}active{% endif %}">
+          <i class="fas fa-money-check-alt"></i> Payout Requests
+        </a>
+      </div>
 
-        <div class="menu-section">
-          <div class="menu-section-title">Finance</div>
-          <a
-            href="{% url 'platformadmin:payment_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'payment_management' %}active{% endif %}"
-          >
-            <i class="fas fa-credit-card"></i> Payments
-          </a>
-          {# Subscriptions removed from UI; backend model/view retained but redirected. #}
-          <a
-            href="{% url 'platformadmin:instructor_earnings' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'instructor_earnings' %}active{% endif %}"
-          >
-            <i class="fas fa-hand-holding-usd"></i> Instructor Earnings
-          </a>
-          <a
-            href="{% url 'platformadmin:payout_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'payout_management' %}active{% endif %}"
-          >
-            <i class="fas fa-money-check-alt"></i> Payout Requests
-          </a>
-        </div>
+      <div class="menu-section">
+        <div class="menu-section-title">Content</div>
+        <a href="{% url 'platformadmin:banner_list' %}"
+          class="menu-item {% if 'banner' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-images"></i> Banners
+        </a>
+      </div>
 
-        <div class="menu-section">
-          <div class="menu-section-title">Content</div>
-          <a
-            href="{% url 'platformadmin:banner_list' %}"
-            class="menu-item {% if 'banner' in request.resolver_match.url_name %}active{% endif %}"
-          >
-            <i class="fas fa-images"></i> Banners
-          </a>
-        </div>
+      <div class="menu-section">
+        <div class="menu-section-title">Analytics</div>
+        <a href="{% url 'platformadmin:analytics_report' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'analytics_report' %}active{% endif %}">
+          <i class="fas fa-chart-bar"></i> Analytics
+        </a>
+      </div>
 
-        <div class="menu-section">
-          <div class="menu-section-title">Analytics</div>
-          <a
-            href="{% url 'platformadmin:analytics_report' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'analytics_report' %}active{% endif %}"
-          >
-            <i class="fas fa-chart-bar"></i> Analytics
-          </a>
-        </div>
+      <div class="menu-section">
+        <div class="menu-section-title">Settings</div>
+        {# Student Progress and Video Settings removed from UI; backend models/views retained. #}
+        <a href="{% url 'platformadmin:notification_management' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'notification_management' %}active{% endif %}">
+          <i class="fas fa-bell"></i> Notifications
+        </a>
+        <a href="{% url 'platformadmin:email_templates_list' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'email_templates_list' or request.resolver_match.url_name == 'email_preview' %}active{% endif %}">
+          <i class="fas fa-envelope"></i> Email Templates
+        </a>
+      </div>
 
-        <div class="menu-section">
-          <div class="menu-section-title">Settings</div>
-          {# Student Progress and Video Settings removed from UI; backend models/views retained. #}
-          <a
-            href="{% url 'platformadmin:notification_management' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'notification_management' %}active{% endif %}"
-          >
-            <i class="fas fa-bell"></i> Notifications
-          </a>
-          <a
-            href="{% url 'platformadmin:email_templates_list' %}"
-            class="menu-item {% if request.resolver_match.url_name == 'email_templates_list' or request.resolver_match.url_name == 'email_preview' %}active{% endif %}"
-          >
-            <i class="fas fa-envelope"></i> Email Templates
-          </a>
-        </div>
+      <div class="menu-section">
+        <div class="menu-section-title">Feature Settings</div>
+        <a href="{% url 'platformadmin:team_members_list' %}"
+          class="menu-item {% if 'team_member' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-users-cog"></i> Team Members
+        </a>
+        <a href="{% url 'platformadmin:footer_settings' %}"
+          class="menu-item {% if request.resolver_match.url_name == 'footer_settings' %}active{% endif %}">
+          <i class="fas fa-shoe-prints"></i> Footer Settings
+        </a>
+        <a href="{% url 'platformadmin:page_content_list' %}"
+          class="menu-item {% if 'page_content' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-file-alt"></i> Page Content
+        </a>
+      </div>
 
-        <div class="menu-section">
-          <a href="{% url 'home' %}" class="menu-item">
-            <i class="fas fa-home"></i> Back to Home
-          </a>
+      <div class="menu-section">
+        <a href="{% url 'home' %}" class="menu-item">
+          <i class="fas fa-home"></i> Back to Home
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search..." />
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <a href="{% url 'platformadmin:notification_management' %}" class="topbar-icon" title="Notifications">
+          <i class="fas fa-bell"></i>
+          {% if unread_notifications_count and unread_notifications_count > 0 %}
+          <span class="notification-badge">{{ unread_notifications_count }}</span>
+          {% endif %}
+        </a>
+
+        <div class="dropdown">
+          <button class="btn btn-sm dropdown-toggle user-dropdown" type="button" id="userMenu" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            <div class="user-avatar">{{ request.user.email.0|upper }}</div>
+            <div class="user-info">
+              <div class="user-name">{{ request.user.email }}</div>
+              <div class="user-role">Platform Admin</div>
+            </div>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+            <li>
+              <a class="dropdown-item" href="{% url 'platformadmin:dashboard' %}"><i
+                  class="fas fa-chart-line me-2"></i>Dashboard</a>
+            </li>
+            <li>
+              <hr class="dropdown-divider" />
+            </li>
+            <li>
+              <a class="dropdown-item text-danger" href="{% url 'account_logout' %}">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-      <!-- Top Bar -->
-      <div class="topbar">
-        <div class="topbar-left">
-          <div class="topbar-search">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search..." />
-          </div>
-        </div>
-
-        <div class="topbar-right">
-          <a href="{% url 'platformadmin:notification_management' %}" class="topbar-icon" title="Notifications">
-            <i class="fas fa-bell"></i>
-            {% if unread_notifications_count and unread_notifications_count > 0 %}
-            <span class="notification-badge">{{ unread_notifications_count }}</span>
-            {% endif %}
-          </a>
-
-          <div class="dropdown">
-            <button
-              class="btn btn-sm dropdown-toggle user-dropdown"
-              type="button"
-              id="userMenu"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              <div class="user-avatar">{{ request.user.email.0|upper }}</div>
-              <div class="user-info">
-                <div class="user-name">{{ request.user.email }}</div>
-                <div class="user-role">Platform Admin</div>
-              </div>
-            </button>
-            <ul
-              class="dropdown-menu dropdown-menu-end"
-              aria-labelledby="userMenu"
-            >
-              <li>
-                <a
-                  class="dropdown-item"
-                  href="{% url 'platformadmin:dashboard' %}"
-                  ><i class="fas fa-chart-line me-2"></i>Dashboard</a
-                >
-              </li>
-              <li><hr class="dropdown-divider" /></li>
-              <li>
-                <a
-                  class="dropdown-item text-danger"
-                  href="{% url 'account_logout' %}"
-                >
-                  <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
+    <!-- Content Area -->
+    <div class="content-area">
+      {% if messages %} {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
-
-      <!-- Content Area -->
-      <div class="content-area">
-        {% if messages %} {% for message in messages %}
-        <div
-          class="alert alert-{{ message.tags }} alert-dismissible fade show"
-          role="alert"
-        >
-          {{ message }}
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-          ></button>
-        </div>
-        {% endfor %} {% endif %} {% block platformadmin_content %}{% endblock %}
-      </div>
+      {% endfor %} {% endif %} {% block platformadmin_content %}{% endblock %}
     </div>
+  </div>
 
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-      // Auto-dismiss alerts after 5 seconds
-      document.addEventListener("DOMContentLoaded", function () {
-        const alerts = document.querySelectorAll(".alert");
-        alerts.forEach((alert) => {
-          setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-          }, 5000);
-        });
+  <script>
+    // Auto-dismiss alerts after 5 seconds
+    document.addEventListener("DOMContentLoaded", function () {
+      const alerts = document.querySelectorAll(".alert");
+      alerts.forEach((alert) => {
+        setTimeout(() => {
+          const bsAlert = new bootstrap.Alert(alert);
+          bsAlert.close();
+        }, 5000);
       });
+    });
 
-      // Mobile menu toggle
-      const mobileToggle = document.querySelector(".mobile-menu-toggle");
-      const sidebar = document.querySelector(".sidebar");
+    // Mobile menu toggle
+    const mobileToggle = document.querySelector(".mobile-menu-toggle");
+    const sidebar = document.querySelector(".sidebar");
 
-      if (mobileToggle) {
-        mobileToggle.addEventListener("click", function () {
-          sidebar.classList.toggle("mobile-open");
-        });
-      }
-    </script>
+    if (mobileToggle) {
+      mobileToggle.addEventListener("click", function () {
+        sidebar.classList.toggle("mobile-open");
+      });
+    }
+  </script>
 
-    {% block extra_js %}{% endblock %}
-  </body>
+  {% block extra_js %}{% endblock %}
+</body>
+
 </html>

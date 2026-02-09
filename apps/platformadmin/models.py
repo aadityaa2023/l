@@ -927,3 +927,243 @@ class FreeUser(models.Model):
     def get_enrolled_courses_count(self):
         """Get count of courses user is enrolled in"""
         return self.user.enrollments.filter(status='active').count()
+
+
+
+
+
+
+class TeamMember(models.Model):
+    """Team members displayed on About Us and other pages"""
+    
+    name = models.CharField(_('name'), max_length=200)
+    designation = models.CharField(_('designation'), max_length=200, help_text="e.g., CEO, Lead Instructor, etc.")
+    subject = models.CharField(_('subject/expertise'), max_length=200, blank=True, help_text="Subject area or expertise")
+    years_of_experience = models.PositiveIntegerField(_('years of experience'), default=0)
+    
+    # Profile photo with fixed size enforcement
+    photo = models.ImageField(
+        _('profile photo'), 
+        upload_to='team_members/',
+        help_text="Recommended size: 400x400 pixels. Image will be resized to fit."
+    )
+    
+    # Additional info
+    bio = models.TextField(_('biography'), blank=True, help_text="Short bio about the team member")
+    email = models.EmailField(_('email'), blank=True)
+    phone = models.CharField(_('phone'), max_length=20, blank=True)
+    
+    # Social media links
+    linkedin_url = models.URLField(_('LinkedIn URL'), blank=True)
+    twitter_url = models.URLField(_('Twitter URL'), blank=True)
+    facebook_url = models.URLField(_('Facebook URL'), blank=True)
+    
+    # Display settings
+    is_active = models.BooleanField(_('active'), default=True, help_text="Show on website")
+    display_order = models.PositiveIntegerField(_('display order'), default=0, help_text="Lower numbers appear first")
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_team_members'
+    )
+    
+    class Meta:
+
+        verbose_name = _('team member')
+        verbose_name_plural = _('team members')
+        ordering = ['display_order', 'name']
+        indexes = [
+            models.Index(fields=['is_active', 'display_order']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} - {self.designation}"
+    
+    def save(self, *args, **kwargs):
+        """Override save to resize image to fixed dimensions"""
+        super().save(*args, **kwargs)
+        
+        if self.photo:
+            try:
+                from PIL import Image
+                from django.core.files.base import ContentFile
+                from io import BytesIO
+                
+                # Open the image
+                img = Image.open(self.photo.path)
+                
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Resize to 400x400
+                target_size = (400, 400)
+                img.thumbnail(target_size, Image.Resampling.LANCZOS)
+                
+                # Create a new image with white background
+                new_img = Image.new('RGB', target_size, (255, 255, 255))
+                
+                # Paste the resized image centered
+                offset = ((target_size[0] - img.size[0]) // 2, (target_size[1] - img.size[1]) // 2)
+                new_img.paste(img, offset)
+                
+                # Save the resized image
+                output = BytesIO()
+                new_img.save(output, format='JPEG', quality=85)
+                output.seek(0)
+                
+                # Update the photo field
+                self.photo.save(
+                    self.photo.name,
+                    ContentFile(output.read()),
+                    save=False
+                )
+                super().save(update_fields=['photo'])
+            except Exception as e:
+                # If image processing fails, continue without resizing
+                pass
+
+
+class FooterSettings(models.Model):
+    """Footer content and social media links - Singleton model"""
+    
+    # Company info
+    company_name = models.CharField(_('company name'), max_length=200, default='LeQ')
+    company_description = models.TextField(_('company description'), blank=True, help_text="Short description in footer")
+    
+    # Contact info
+    contact_email = models.EmailField(_('contact email'), blank=True)
+    contact_phone = models.CharField(_('contact phone'), max_length=20, blank=True)
+    contact_address = models.TextField(_('contact address'), blank=True)
+    
+    # Social media links
+    facebook_url = models.URLField(_('Facebook URL'), blank=True)
+    twitter_url = models.URLField(_('Twitter URL'), blank=True)
+    instagram_url = models.URLField(_('Instagram URL'), blank=True)
+    linkedin_url = models.URLField(_('LinkedIn URL'), blank=True)
+    youtube_url = models.URLField(_('YouTube URL'), blank=True)
+    github_url = models.URLField(_('GitHub URL'), blank=True)
+    
+    # Footer text
+    copyright_text = models.CharField(
+        _('copyright text'), 
+        max_length=200, 
+        default='© 2024 LeQ. All rights reserved.',
+        help_text="Copyright notice in footer"
+    )
+    
+    # Additional links
+    privacy_policy_url = models.URLField(_('Privacy Policy URL'), blank=True)
+    terms_of_service_url = models.URLField(_('Terms of Service URL'), blank=True)
+    
+    # Newsletter
+    show_newsletter_signup = models.BooleanField(_('show newsletter signup'), default=True)
+    newsletter_heading = models.CharField(_('newsletter heading'), max_length=200, default='Subscribe to our Newsletter')
+    newsletter_description = models.TextField(_('newsletter description'), blank=True, default='Get the latest updates and news.')
+    
+    # Timestamps
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='footer_updates'
+    )
+    
+    class Meta:
+        verbose_name = _('footer settings')
+        verbose_name_plural = _('footer settings')
+    
+    def __str__(self):
+        return "Footer Settings"
+    
+    @classmethod
+    def get_settings(cls):
+        """Get or create the singleton instance"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class PageContent(models.Model):
+    """Manage content for template-based pages like About Us, Contact Us, etc."""
+    
+    PAGE_TYPE_CHOICES = (
+        ('about_us', 'About Us'),
+        ('contact_us', 'Contact Us'),
+        ('privacy_policy', 'Privacy Policy'),
+        ('terms_of_service', 'Terms of Service'),
+        ('faq', 'FAQ'),
+        ('custom', 'Custom Page'),
+    )
+    
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+    )
+    
+    # Page identification
+    page_type = models.CharField(_('page type'), max_length=50, choices=PAGE_TYPE_CHOICES, unique=True)
+    title = models.CharField(_('page title'), max_length=200)
+    slug = models.SlugField(_('slug'), unique=True, help_text="URL-friendly version of the title")
+    
+    # Content sections
+    hero_title = models.CharField(_('hero title'), max_length=200, blank=True, help_text="Main heading at top of page")
+    hero_subtitle = models.TextField(_('hero subtitle'), blank=True, help_text="Subtitle or tagline")
+    hero_image = models.ImageField(_('hero image'), upload_to='page_content/', blank=True)
+    
+    # Main content
+    content = models.TextField(_('main content'), help_text="Main page content (HTML supported)")
+    
+    # Additional sections (JSON for flexibility)
+    additional_sections = models.JSONField(
+        _('additional sections'), 
+        default=dict, 
+        blank=True,
+        help_text="Additional content sections in JSON format"
+    )
+    
+    # SEO
+    meta_title = models.CharField(_('meta title'), max_length=200, blank=True)
+    meta_description = models.TextField(_('meta description'), blank=True)
+    meta_keywords = models.CharField(_('meta keywords'), max_length=255, blank=True)
+    
+    # Status
+    status = models.CharField(_('status'), max_length=20, choices=STATUS_CHOICES, default='published')
+    show_in_footer = models.BooleanField(_('show in footer'), default=True, help_text="Display link in footer")
+    show_in_header = models.BooleanField(_('show in header'), default=False, help_text="Display link in header menu")
+    
+    # Display order
+    display_order = models.PositiveIntegerField(_('display order'), default=0)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_page_contents'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_page_contents'
+    )
+    
+    class Meta:
+        verbose_name = _('page content')
+        verbose_name_plural = _('page contents')
+        ordering = ['display_order', 'title']
+    
+    def __str__(self):
+        return f"{self.get_page_type_display()} - {self.title}"

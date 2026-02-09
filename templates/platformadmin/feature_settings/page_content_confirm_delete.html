@@ -1,0 +1,42 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block title %}Delete Page - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to delete the following page?</p>
+
+                <div class="alert alert-light border">
+                    <h6 class="mb-1">{{ page.title }}</h6>
+                    <p class="mb-1 text-muted">Type: {{ page.get_page_type_display }}</p>
+                    <p class="mb-0"><code>{{ page.slug }}</code></p>
+                </div>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone. The page and all its content will be
+                    permanently removed.
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Yes, Delete
+                        </button>
+                        <a href="{% url 'platformadmin:page_content_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

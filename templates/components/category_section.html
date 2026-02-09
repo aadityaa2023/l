@@ -1,8 +1,3 @@
-{% load cache %}
-
-<!-- Cached Category Section Fragment -->
-{# bump cache key so updated template renders immediately #}
-{% cache 7200 category_section_v2 category.category.id category.category.updated_at %}
 <section class="category-row-section" style="background: var(--bg-primary);">
     <div class="container-fluid px-lg-5">
         <div class="category-header d-flex justify-content-between align-items-center mb-3">
@@ -11,11 +6,12 @@
                     <h2 class="category-title mb-1">{{ category.category.name }}</h2>
                 </div>
             </div>
-            <a href="{% url 'courses:course_list' %}?category={{ category.category.slug }}" class="view-all-link text-decoration-none">
+            <a href="{% url 'courses:course_list' %}?category={{ category.category.slug }}"
+                class="view-all-link text-decoration-none">
                 View All <i class="fas fa-arrow-right ms-1"></i>
             </a>
         </div>
-        
+
         <div class="horizontal-scroll-wrapper">
             <div class="horizontal-scroll-container">
                 {% for course in category.courses %}
@@ -25,4 +21,3 @@
         </div>
     </div>
 </section>
-{% endcache %}

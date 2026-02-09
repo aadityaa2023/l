@@ -1,0 +1,254 @@
+{% extends 'platformadmin/base.html' %}
+{% load static %}
+
+{% block title %}Footer Settings - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <i class="fas fa-shoe-prints me-2"></i>Footer Settings
+    </h2>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <h5 class="mb-3">Company Information</h5>
+
+                    <div class="mb-3">
+                        <label for="id_company_name" class="form-label">{{ form.company_name.label }}</label>
+                        {{ form.company_name }}
+                        {% if form.company_name.errors %}
+                        <div class="text-danger small mt-1">{{ form.company_name.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_company_description" class="form-label">{{ form.company_description.label }}</label>
+                        {{ form.company_description }}
+                        {% if form.company_description.errors %}
+                        <div class="text-danger small mt-1">{{ form.company_description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_copyright_text" class="form-label">{{ form.copyright_text.label }}</label>
+                        {{ form.copyright_text }}
+                        {% if form.copyright_text.errors %}
+                        <div class="text-danger small mt-1">{{ form.copyright_text.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="mb-3">Contact Information</h5>
+
+                    <div class="mb-3">
+                        <label for="id_contact_email" class="form-label">{{ form.contact_email.label }}</label>
+                        {{ form.contact_email }}
+                        {% if form.contact_email.errors %}
+                        <div class="text-danger small mt-1">{{ form.contact_email.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_contact_phone" class="form-label">{{ form.contact_phone.label }}</label>
+                        {{ form.contact_phone }}
+                        {% if form.contact_phone.errors %}
+                        <div class="text-danger small mt-1">{{ form.contact_phone.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_contact_address" class="form-label">{{ form.contact_address.label }}</label>
+                        {{ form.contact_address }}
+                        {% if form.contact_address.errors %}
+                        <div class="text-danger small mt-1">{{ form.contact_address.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="mb-3">Social Media Links</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_facebook_url" class="form-label">{{ form.facebook_url.label }}</label>
+                            {{ form.facebook_url }}
+                            {% if form.facebook_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.facebook_url.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_twitter_url" class="form-label">{{ form.twitter_url.label }}</label>
+                            {{ form.twitter_url }}
+                            {% if form.twitter_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.twitter_url.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_instagram_url" class="form-label">{{ form.instagram_url.label }}</label>
+                            {{ form.instagram_url }}
+                            {% if form.instagram_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.instagram_url.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_linkedin_url" class="form-label">{{ form.linkedin_url.label }}</label>
+                            {{ form.linkedin_url }}
+                            {% if form.linkedin_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.linkedin_url.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_youtube_url" class="form-label">{{ form.youtube_url.label }}</label>
+                            {{ form.youtube_url }}
+                            {% if form.youtube_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.youtube_url.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_github_url" class="form-label">{{ form.github_url.label }}</label>
+                            {{ form.github_url }}
+                            {% if form.github_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.github_url.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="mb-3">Additional Links</h5>
+
+                    <div class="mb-3">
+                        <label for="id_privacy_policy_url" class="form-label">{{ form.privacy_policy_url.label }}</label>
+                        {{ form.privacy_policy_url }}
+                        {% if form.privacy_policy_url.errors %}
+                        <div class="text-danger small mt-1">{{ form.privacy_policy_url.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_terms_of_service_url" class="form-label">{{ form.terms_of_service_url.label }}</label>
+                        {{ form.terms_of_service_url }}
+                        {% if form.terms_of_service_url.errors %}
+                        <div class="text-danger small mt-1">{{ form.terms_of_service_url.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr class="my-4">
+                    <h5 class="mb-3">Newsletter Settings</h5>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.show_newsletter_signup }}
+                            <label class="form-check-label" for="id_show_newsletter_signup">
+                                {{ form.show_newsletter_signup.label }}
+                            </label>
+                        </div>
+                        {% if form.show_newsletter_signup.errors %}
+                        <div class="text-danger small mt-1">{{ form.show_newsletter_signup.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_newsletter_heading" class="form-label">{{ form.newsletter_heading.label }}</label>
+                        {{ form.newsletter_heading }}
+                        {% if form.newsletter_heading.errors %}
+                        <div class="text-danger small mt-1">{{ form.newsletter_heading.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_newsletter_description" class="form-label">{{ form.newsletter_description.label }}</label>
+                        {{ form.newsletter_description }}
+                        {% if form.newsletter_description.errors %}
+                        <div class="text-danger small mt-1">{{ form.newsletter_description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Footer Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-info-circle me-2"></i>About Footer Settings
+            </div>
+            <div class="card-body">
+                <p class="small">These settings control the content displayed in your website's footer section.</p>
+
+                <h6 class="mt-3">Social Media</h6>
+                <p class="small">Add your social media profile URLs. Only filled fields will be displayed in the footer.</p>
+
+                <h6 class="mt-3">Newsletter</h6>
+                <p class="small">Enable or disable the newsletter signup form in the footer. Customize the heading and description to match your brand.</p>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-eye me-2"></i>Current Settings
+            </div>
+            <div class="card-body">
+                <p class="small mb-2"><strong>Company:</strong> {{ settings.company_name }}</p>
+                <p class="small mb-2"><strong>Last Updated:</strong> {{ settings.updated_at|date:"M d, Y H:i" }}</p>
+
+                <p class="small mb-2"><strong>Social Links:</strong><br>
+                    {% if settings.facebook_url %}
+                    <i class="fab fa-facebook text-primary me-2" title="Facebook"></i>
+                    {% endif %}
+                    {% if settings.twitter_url %}
+                    <i class="fab fa-twitter text-info me-2" title="Twitter"></i>
+                    {% endif %}
+                    {% if settings.instagram_url %}
+                    <i class="fab fa-instagram text-danger me-2" title="Instagram"></i>
+                    {% endif %}
+                    {% if settings.linkedin_url %}
+                    <i class="fab fa-linkedin text-primary me-2" title="LinkedIn"></i>
+                    {% endif %}
+                    {% if settings.youtube_url %}
+                    <i class="fab fa-youtube text-danger me-2" title="YouTube"></i>
+                    {% endif %}
+                    {% if settings.github_url %}
+                    <i class="fab fa-github text-dark me-2" title="GitHub"></i>
+                    {% endif %}
+
+                    {% if not settings.facebook_url and not settings.twitter_url and not settings.instagram_url and not settings.linkedin_url and not settings.youtube_url and not settings.github_url %}
+                    <span class="text-muted fst-italic">None configured</span>
+                    {% endif %}
+                </p>
+
+                <p class="small mb-2"><strong>Newsletter:</strong>
+                    {% if settings.show_newsletter_signup %}
+                    <span class="badge bg-success">Enabled</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Disabled</span>
+                    {% endif %}
+                </p>
+
+                {% if settings.updated_by %}
+                <p class="small mb-0"><strong>Updated By:</strong> {{ settings.updated_by.email }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

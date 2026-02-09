@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load cache %}
+
 
 {% block title %}Leqaudio{% endblock %}
 
@@ -11,7 +11,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .hero-gradient::before {
         content: '';
         position: absolute;
@@ -21,7 +21,7 @@
         height: 100%;
         background: radial-gradient(ellipse at top right, rgba(139, 92, 246, 0.15), transparent);
     }
-    
+
     .hero-gradient::after {
         content: '';
         position: absolute;
@@ -31,12 +31,19 @@
         height: 80%;
         background: radial-gradient(ellipse at bottom left, rgba(167, 139, 250, 0.1), transparent);
     }
-    
+
     @keyframes float {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-20px); }
+
+        0%,
+        100% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-20px);
+        }
     }
-    
+
     .floating {
         animation: float 6s ease-in-out infinite;
     }
@@ -257,7 +264,7 @@
     .course-play-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 100%);
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.7) 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -404,7 +411,7 @@
         font-size: 0.75rem;
         font-weight: 600;
     }
-    
+
     .feature-icon {
         width: 56px;
         height: 56px;
@@ -451,76 +458,85 @@
 
 {% block content %}
 {% if user.is_authenticated %}
-    <!-- Banner Carousel for Authenticated Users -->
-    <section style="padding: 2rem 0; background: var(--bg-primary);">
-        <div class="container-fluid px-lg-5">
-            {% include 'components/banner_carousel.html' with banner_type='home' %}
-        </div>
-    </section>
+<!-- Banner Carousel for Authenticated Users -->
+<section style="padding: 2rem 0; background: var(--bg-primary);">
+    <div class="container-fluid px-lg-5">
+        {% include 'components/banner_carousel.html' with banner_type='home' %}
+    </div>
+</section>
 {% else %}
-    <!-- Hero Section for Non-Authenticated Users -->
-    <section class="hero-gradient" style="min-height: 85vh; padding: 5rem 0;">
-        <div class="container">
-            <div class="row align-items-center" style="position: relative; z-index: 1;">
-                <div class="col-lg-6 mb-5 mb-lg-0">
-                    <div class="mb-3">
-                        <span class="badge-custom">
-                            <i class="fas fa-star me-1"></i>India's #1 Audio Learning Platform
-                        </span>
-                    </div>
-                    <h1 class="display-3 fw-bold mb-4" style="color: var(--text-primary); line-height: 1.2;">
-                        Apne man se ladte raho  
-                        <span style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent;">
-                            Learn eQuick 
-                        </span>
-                        se padhte raho!
-                    </h1>
-                    <p class="lead mb-4" style="color: #FFFFFF; font-size: 1.1rem;">
-                        Apne man se ladte raho Learn eQuick se padte raho
-                    </p>
-                    
-                    <div class="d-flex gap-3 flex-wrap mb-5">
-                        <a href="{% url 'account_signup' %}" class="btn btn-primary-custom btn-lg px-5 py-3">
-                            <i class="fas fa-rocket me-2"></i>Start Learning Free
-                        </a>
-                        <a href="#categories" class="btn btn-outline-custom btn-lg px-5 py-3">
-                            Explore Categories
-                        </a>
-                    </div>
+<!-- Hero Section for Non-Authenticated Users -->
+<section class="hero-gradient" style="min-height: 85vh; padding: 5rem 0;">
+    <div class="container">
+        <div class="row align-items-center" style="position: relative; z-index: 1;">
+            <div class="col-lg-6 mb-5 mb-lg-0">
+                <div class="mb-3">
+                    <span class="badge-custom">
+                        <i class="fas fa-star me-1"></i>India's #1 Audio Learning Platform
+                    </span>
                 </div>
-                
-                <div class="col-lg-6 text-center">
-                    <div class="floating position-relative">
-                        <div style="position: relative; display: inline-block;">
-                            <!-- Main Audio Icon -->
-                            <div style="width: 320px; height: 320px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(167, 139, 250, 0.1)); 
+                <h1 class="display-3 fw-bold mb-4" style="color: var(--text-primary); line-height: 1.2;">
+                    Apne man se ladte raho
+                    <span
+                        style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent;">
+                        Learn eQuick
+                    </span>
+                    se padhte raho!
+                </h1>
+                <p class="lead mb-4" style="color: #FFFFFF; font-size: 1.1rem;">
+                    Apne man se ladte raho Learn eQuick se padte raho
+                </p>
+
+                <div class="d-flex gap-3 flex-wrap mb-5">
+                    <a href="{% url 'account_signup' %}" class="btn btn-primary-custom btn-lg px-5 py-3">
+                        <i class="fas fa-rocket me-2"></i>Start Learning Free
+                    </a>
+                    <a href="#categories" class="btn btn-outline-custom btn-lg px-5 py-3">
+                        Explore Categories
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-6 text-center">
+                <div class="floating position-relative">
+                    <div style="position: relative; display: inline-block;">
+                        <!-- Main Audio Icon -->
+                        <div style="width: 320px; height: 320px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(167, 139, 250, 0.1)); 
                                         border-radius: 50%; display: flex; align-items: center; justify-content: center; 
                                         box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);">
-                                <i class="fas fa-headphones-alt" style="font-size: 10rem; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
+                            <i class="fas fa-headphones-alt"
+                                style="font-size: 10rem; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); 
                                    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent;"></i>
-                            </div>
-                            
-                            <!-- Floating Badges -->
-                            <div class="position-absolute" style="top: 10%; right: -10%; animation: float 4s ease-in-out infinite;">
-                                <div class="card-custom p-3" style="background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fas fa-play-circle" style="color: var(--primary-color); font-size: 1.5rem;"></i>
-                                        <div>
-                                            <div style="font-size: 0.7rem; color: var(--text-muted);">Now Playing</div>
-                                            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">Python Basics</div>
-                                        </div>
+                        </div>
+
+                        <!-- Floating Badges -->
+                        <div class="position-absolute"
+                            style="top: 10%; right: -10%; animation: float 4s ease-in-out infinite;">
+                            <div class="card-custom p-3"
+                                style="background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-play-circle"
+                                        style="color: var(--primary-color); font-size: 1.5rem;"></i>
+                                    <div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Now Playing</div>
+                                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">
+                                            Python Basics</div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="position-absolute" style="bottom: 20%; left: -15%; animation: float 5s ease-in-out infinite;">
-                                <div class="card-custom p-3" style="background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="fas fa-fire" style="color: var(--secondary-color); font-size: 1.5rem;"></i>
-                                        <div>
-                                            <div style="font-size: 0.7rem; color: var(--text-muted);">Daily Streak</div>
-                                            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">7 Days 🔥</div>
-                                        </div>
+                        </div>
+
+                        <div class="position-absolute"
+                            style="bottom: 20%; left: -15%; animation: float 5s ease-in-out infinite;">
+                            <div class="card-custom p-3"
+                                style="background: var(--bg-card); box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-fire"
+                                        style="color: var(--secondary-color); font-size: 1.5rem;"></i>
+                                    <div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted);">Daily Streak</div>
+                                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">7
+                                            Days 🔥</div>
                                     </div>
                                 </div>
                             </div>
@@ -529,7 +545,8 @@
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 {% endif %}
 
 <!-- Categories Section -->
@@ -539,7 +556,7 @@
             <h2 class="section-title">Browse by Category</h2>
             <p class="section-subtitle">Explore audio courses across various topics</p>
         </div>
-        
+
         <!-- Horizontal Scrollable Categories -->
         <div class="category-scroll d-flex gap-3 pb-3">
             <a href="{% url 'courses:course_list' %}" class="category-pill active">
@@ -554,8 +571,8 @@
     </div>
 </section>
 
-<!-- Featured Courses Section with Cache -->
-{% cache 7200 featured_courses_section featured_courses|length %}
+
+
 {% if featured_courses %}
 <section style="padding: 2rem 0; background: var(--bg-primary);">
     <div class="container-fluid px-lg-5">
@@ -573,7 +590,7 @@
                 View All <i class="fas fa-arrow-right ms-1"></i>
             </a>
         </div>
-        
+
         <div class="horizontal-scroll-wrapper">
             <div class="horizontal-scroll-container">
                 {% for course in featured_courses %}
@@ -584,10 +601,10 @@
     </div>
 </section>
 {% endif %}
-{% endcache %}
 
-<!-- Trending Courses Section with Cache -->
-{% cache 900 trending_courses_section trending_courses|length %}
+
+
+
 {% if trending_courses %}
 <section style="padding: 2rem 0; background: var(--bg-primary);">
     <div class="container-fluid px-lg-5">
@@ -605,7 +622,7 @@
                 View All <i class="fas fa-arrow-right ms-1"></i>
             </a>
         </div>
-        
+
         <div class="horizontal-scroll-wrapper">
             <div class="horizontal-scroll-container">
                 {% for course in trending_courses|slice:":5" %}
@@ -616,9 +633,9 @@
     </div>
 </section>
 {% endif %}
-{% endcache %}
 
-<!-- Category-wise Course Sections with Cache -->
+
+
 {% for category_data in categories_with_courses %}
 {% include 'components/category_section.html' with category=category_data %}
 {% endfor %}
@@ -631,7 +648,7 @@
             <h2 class="section-title">Why Choose LeQ?</h2>
             <p class="section-subtitle">Learn smarter with India's best audio learning platform</p>
         </div>
-        
+
         <div class="row g-4">
             <div class="col-md-4">
                 <div class="card-custom p-4 h-100 text-center">
@@ -640,14 +657,16 @@
                     </div>
                     <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Learn On The Go</h5>
                     <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                        Listen while commuting, exercising, or doing chores. Turn every moment into a learning opportunity.
+                        Listen while commuting, exercising, or doing chores. Turn every moment into a learning
+                        opportunity.
                     </p>
                 </div>
             </div>
-            
+
             <div class="col-md-4">
                 <div class="card-custom p-4 h-100 text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, var(--accent-color), #D946EF);">
+                    <div class="feature-icon mx-auto"
+                        style="background: linear-gradient(135deg, var(--accent-color), #D946EF);">
                         <i class="fas fa-download"></i>
                     </div>
                     <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Offline Listening</h5>
@@ -656,10 +675,11 @@
                     </p>
                 </div>
             </div>
-            
+
             <div class="col-md-4">
                 <div class="card-custom p-4 h-100 text-center">
-                    <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, var(--secondary-color), #C4B5FD);">
+                    <div class="feature-icon mx-auto"
+                        style="background: linear-gradient(135deg, var(--secondary-color), #C4B5FD);">
                         <i class="fas fa-certificate"></i>
                     </div>
                     <h5 class="fw-bold mb-3" style="color: var(--text-primary);">Earn Certificates</h5>
@@ -668,7 +688,7 @@
                     </p>
                 </div>
             </div>
-            
+
             <div class="col-md-4">
                 <div class="card-custom p-4 h-100 text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #7C3AED, #5B21B6);">
@@ -680,7 +700,7 @@
                     </p>
                 </div>
             </div>
-            
+
             <div class="col-md-4">
                 <div class="card-custom p-4 h-100 text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #6366F1, #8B5CF6);">
@@ -692,7 +712,7 @@
                     </p>
                 </div>
             </div>
-            
+
             <div class="col-md-4">
                 <div class="card-custom p-4 h-100 text-center">
                     <div class="feature-icon mx-auto" style="background: linear-gradient(135deg, #DC2626, #EC4899);">
@@ -710,22 +730,25 @@
 </section>
 
 <!-- CTA Section -->
-<section style="padding: 5rem 0; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); position: relative; overflow: hidden;">
+<section
+    style="padding: 5rem 0; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); position: relative; overflow: hidden;">
     <!-- Decorative background: simplified gradient to avoid inline data-URL quoting issues -->
-    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 25%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.03), transparent 30%); pointer-events: none; opacity: 0.35;"></div>
+    <div
+        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 25%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.03), transparent 30%); pointer-events: none; opacity: 0.35;">
+    </div>
     <div class="container text-center" style="position: relative; z-index: 1;">
         <h2 class="fw-bold mb-3" style="color: white; font-size: 2.5rem;">Ready to Start Your Learning Journey?</h2>
         <p class="lead mb-4" style="color: rgba(255,255,255,0.9); font-size: 1.2rem;">
             Start learning audio courses and transform your skills
         </p>
         {% if not user.is_authenticated %}
-        <a href="{% url 'account_signup' %}" class="btn btn-lg px-5 py-3" 
-           style="background: white; color: var(--primary-color); border-radius: 24px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+        <a href="{% url 'account_signup' %}" class="btn btn-lg px-5 py-3"
+            style="background: white; color: var(--primary-color); border-radius: 24px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
             <i class="fas fa-rocket me-2"></i>Get Started for Free
         </a>
         {% else %}
-        <a href="{% url 'courses:course_list' %}" class="btn btn-lg px-5 py-3" 
-           style="background: white; color: var(--primary-color); border-radius: 24px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+        <a href="{% url 'courses:course_list' %}" class="btn btn-lg px-5 py-3"
+            style="background: white; color: var(--primary-color); border-radius: 24px; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
             <i class="fas fa-book-reader me-2"></i>Browse All Courses
         </a>
         {% endif %}
@@ -737,207 +760,207 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize all horizontal scroll containers
-    const scrollWrappers = document.querySelectorAll('.horizontal-scroll-wrapper');
-    
-    scrollWrappers.forEach(wrapper => {
-        const container = wrapper.querySelector('.horizontal-scroll-container');
-        const leftArrow = wrapper.querySelector('.scroll-arrow-left');
-        const rightArrow = wrapper.querySelector('.scroll-arrow-right');
-        
-        if (!container || !leftArrow || !rightArrow) return;
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize all horizontal scroll containers
+        const scrollWrappers = document.querySelectorAll('.horizontal-scroll-wrapper');
 
-        // Scroll amount (one card width + gap)
-        const scrollAmount = 300;
+        scrollWrappers.forEach(wrapper => {
+            const container = wrapper.querySelector('.horizontal-scroll-container');
+            const leftArrow = wrapper.querySelector('.scroll-arrow-left');
+            const rightArrow = wrapper.querySelector('.scroll-arrow-right');
 
-        // Arrow click handlers
-        leftArrow.addEventListener('click', () => {
-            container.scrollBy({
-                left: -scrollAmount,
-                behavior: 'smooth'
+            if (!container || !leftArrow || !rightArrow) return;
+
+            // Scroll amount (one card width + gap)
+            const scrollAmount = 300;
+
+            // Arrow click handlers
+            leftArrow.addEventListener('click', () => {
+                container.scrollBy({
+                    left: -scrollAmount,
+                    behavior: 'smooth'
+                });
             });
-        });
 
-        rightArrow.addEventListener('click', () => {
-            container.scrollBy({
-                left: scrollAmount,
-                behavior: 'smooth'
+            rightArrow.addEventListener('click', () => {
+                container.scrollBy({
+                    left: scrollAmount,
+                    behavior: 'smooth'
+                });
             });
-        });
 
-        // Update arrow visibility based on scroll position
-        function updateArrows() {
-            const scrollLeft = container.scrollLeft;
-            const maxScroll = container.scrollWidth - container.clientWidth;
+            // Update arrow visibility based on scroll position
+            function updateArrows() {
+                const scrollLeft = container.scrollLeft;
+                const maxScroll = container.scrollWidth - container.clientWidth;
 
-            // Show/hide left arrow
-            if (scrollLeft <= 0) {
-                leftArrow.style.display = 'none';
-            } else {
-                leftArrow.style.display = 'flex';
-            }
+                // Show/hide left arrow
+                if (scrollLeft <= 0) {
+                    leftArrow.style.display = 'none';
+                } else {
+                    leftArrow.style.display = 'flex';
+                }
 
-            // Show/hide right arrow
-            if (scrollLeft >= maxScroll - 5) { // -5 for tolerance
-                rightArrow.style.display = 'none';
-            } else {
-                rightArrow.style.display = 'flex';
-            }
-        }
-
-        // Initial arrow state
-        updateArrows();
-
-        // Update arrows on scroll
-        container.addEventListener('scroll', updateArrows);
-
-        // Update arrows on resize
-        window.addEventListener('resize', updateArrows);
-
-        // Mouse drag scrolling (desktop)
-        let isDown = false;
-        let startX;
-        let scrollLeftStart;
-
-        container.addEventListener('mousedown', (e) => {
-            // Only enable drag if not clicking on a link/button
-            if (e.target.closest('a') || e.target.closest('button')) return;
-            
-            isDown = true;
-            container.style.cursor = 'grabbing';
-            container.style.userSelect = 'none';
-            startX = e.pageX - container.offsetLeft;
-            scrollLeftStart = container.scrollLeft;
-        });
-
-        container.addEventListener('mouseleave', () => {
-            isDown = false;
-            container.style.cursor = 'grab';
-            container.style.userSelect = 'auto';
-        });
-
-        container.addEventListener('mouseup', () => {
-            isDown = false;
-            container.style.cursor = 'grab';
-            container.style.userSelect = 'auto';
-        });
-
-        container.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - container.offsetLeft;
-            const walk = (x - startX) * 2; // Scroll speed multiplier
-            container.scrollLeft = scrollLeftStart - walk;
-        });
-
-        // Set initial cursor style
-        container.style.cursor = 'grab';
-
-        // Prevent default link behavior during drag
-        let dragDistance = 0;
-        container.addEventListener('mousedown', (e) => {
-            dragDistance = 0;
-        });
-
-        container.addEventListener('mousemove', (e) => {
-            if (isDown) {
-                dragDistance += Math.abs(e.movementX);
-            }
-        });
-
-        container.addEventListener('click', (e) => {
-            // If dragged more than 5px, prevent link clicks
-            if (dragDistance > 5) {
-                e.preventDefault();
-                e.stopPropagation();
-                dragDistance = 0;
-            }
-        }, true);
-    });
-
-    // Lazy loading for course images (Intersection Observer)
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                if (img.dataset.src) {
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                    observer.unobserve(img);
+                // Show/hide right arrow
+                if (scrollLeft >= maxScroll - 5) { // -5 for tolerance
+                    rightArrow.style.display = 'none';
+                } else {
+                    rightArrow.style.display = 'flex';
                 }
             }
+
+            // Initial arrow state
+            updateArrows();
+
+            // Update arrows on scroll
+            container.addEventListener('scroll', updateArrows);
+
+            // Update arrows on resize
+            window.addEventListener('resize', updateArrows);
+
+            // Mouse drag scrolling (desktop)
+            let isDown = false;
+            let startX;
+            let scrollLeftStart;
+
+            container.addEventListener('mousedown', (e) => {
+                // Only enable drag if not clicking on a link/button
+                if (e.target.closest('a') || e.target.closest('button')) return;
+
+                isDown = true;
+                container.style.cursor = 'grabbing';
+                container.style.userSelect = 'none';
+                startX = e.pageX - container.offsetLeft;
+                scrollLeftStart = container.scrollLeft;
+            });
+
+            container.addEventListener('mouseleave', () => {
+                isDown = false;
+                container.style.cursor = 'grab';
+                container.style.userSelect = 'auto';
+            });
+
+            container.addEventListener('mouseup', () => {
+                isDown = false;
+                container.style.cursor = 'grab';
+                container.style.userSelect = 'auto';
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - container.offsetLeft;
+                const walk = (x - startX) * 2; // Scroll speed multiplier
+                container.scrollLeft = scrollLeftStart - walk;
+            });
+
+            // Set initial cursor style
+            container.style.cursor = 'grab';
+
+            // Prevent default link behavior during drag
+            let dragDistance = 0;
+            container.addEventListener('mousedown', (e) => {
+                dragDistance = 0;
+            });
+
+            container.addEventListener('mousemove', (e) => {
+                if (isDown) {
+                    dragDistance += Math.abs(e.movementX);
+                }
+            });
+
+            container.addEventListener('click', (e) => {
+                // If dragged more than 5px, prevent link clicks
+                if (dragDistance > 5) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dragDistance = 0;
+                }
+            }, true);
         });
-    }, {
-        rootMargin: '100px' // Start loading 100px before entering viewport
-    });
 
-    // Observe all lazy images
-    document.querySelectorAll('img[data-src]').forEach(img => {
-        imageObserver.observe(img);
-    });
-
-    // Smooth scroll for category filter pills
-    const categoryScroll = document.querySelector('.category-scroll');
-    if (categoryScroll) {
-        categoryScroll.style.cursor = 'grab';
-        
-        let isScrolling = false;
-        let scrollStart;
-        let scrollLeftStart;
-
-        categoryScroll.addEventListener('mousedown', (e) => {
-            if (e.target.closest('a')) return;
-            
-            isScrolling = true;
-            categoryScroll.style.cursor = 'grabbing';
-            scrollStart = e.pageX - categoryScroll.offsetLeft;
-            scrollLeftStart = categoryScroll.scrollLeft;
+        // Lazy loading for course images (Intersection Observer)
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src) {
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    }
+                }
+            });
+        }, {
+            rootMargin: '100px' // Start loading 100px before entering viewport
         });
 
-        categoryScroll.addEventListener('mouseleave', () => {
-            isScrolling = false;
+        // Observe all lazy images
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            imageObserver.observe(img);
+        });
+
+        // Smooth scroll for category filter pills
+        const categoryScroll = document.querySelector('.category-scroll');
+        if (categoryScroll) {
             categoryScroll.style.cursor = 'grab';
-        });
 
-        categoryScroll.addEventListener('mouseup', () => {
-            isScrolling = false;
-            categoryScroll.style.cursor = 'grab';
-        });
+            let isScrolling = false;
+            let scrollStart;
+            let scrollLeftStart;
 
-        categoryScroll.addEventListener('mousemove', (e) => {
-            if (!isScrolling) return;
-            e.preventDefault();
-            const x = e.pageX - categoryScroll.offsetLeft;
-            const walk = (x - scrollStart) * 2;
-            categoryScroll.scrollLeft = scrollLeftStart - walk;
-        });
-    }
+            categoryScroll.addEventListener('mousedown', (e) => {
+                if (e.target.closest('a')) return;
 
-    // Performance optimization: Debounce scroll updates
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
+                isScrolling = true;
+                categoryScroll.style.cursor = 'grabbing';
+                scrollStart = e.pageX - categoryScroll.offsetLeft;
+                scrollLeftStart = categoryScroll.scrollLeft;
+            });
 
-    // Apply debounce to scroll handlers
-    scrollWrappers.forEach(wrapper => {
-        const container = wrapper.querySelector('.horizontal-scroll-container');
-        if (container) {
-            const debouncedUpdate = debounce(() => {
-                wrapper.querySelector('.scroll-arrow-left')?.dispatchEvent(new Event('update'));
-            }, 100);
-            
-            container.addEventListener('scroll', debouncedUpdate);
+            categoryScroll.addEventListener('mouseleave', () => {
+                isScrolling = false;
+                categoryScroll.style.cursor = 'grab';
+            });
+
+            categoryScroll.addEventListener('mouseup', () => {
+                isScrolling = false;
+                categoryScroll.style.cursor = 'grab';
+            });
+
+            categoryScroll.addEventListener('mousemove', (e) => {
+                if (!isScrolling) return;
+                e.preventDefault();
+                const x = e.pageX - categoryScroll.offsetLeft;
+                const walk = (x - scrollStart) * 2;
+                categoryScroll.scrollLeft = scrollLeftStart - walk;
+            });
         }
+
+        // Performance optimization: Debounce scroll updates
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Apply debounce to scroll handlers
+        scrollWrappers.forEach(wrapper => {
+            const container = wrapper.querySelector('.horizontal-scroll-container');
+            if (container) {
+                const debouncedUpdate = debounce(() => {
+                    wrapper.querySelector('.scroll-arrow-left')?.dispatchEvent(new Event('update'));
+                }, 100);
+
+                container.addEventListener('scroll', debouncedUpdate);
+            }
+        });
     });
-});
 </script>
 {% endblock %}

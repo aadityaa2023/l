@@ -909,28 +909,48 @@
             <div class="row">
                 <div class="col-md-4 mb-4">
                     <h5 class="fw-bold mb-3" style="color: var(--primary-color);">
-                        <i class="fas fa-headphones-alt me-2"></i>LeQ
+                        <i class="fas fa-headphones-alt me-2"></i>{{ footer_settings.company_name|default:"LeQ" }}
                     </h5>
                     <p style="font-size: 0.9rem; color: #FFFFFF !important;">
-                        Apne man se ladte raho Learn eQuick se padte raho
+                        {{ footer_settings.company_description|default:"Apne man se ladte raho Learn eQuick se padte raho" }}
                     </p>
                     <div class="social-links mt-3 d-flex gap-3">
-                        <a href="#" class="text-decoration-none"
+                        {% if footer_settings.facebook_url %}
+                        <a href="{{ footer_settings.facebook_url }}" class="text-decoration-none" target="_blank"
                             style="color: var(--text-muted); transition: color 0.3s;">
                             <i class="fab fa-facebook fa-lg"></i>
                         </a>
-                        <a href="#" class="text-decoration-none"
+                        {% endif %}
+                        {% if footer_settings.twitter_url %}
+                        <a href="{{ footer_settings.twitter_url }}" class="text-decoration-none" target="_blank"
                             style="color: var(--text-muted); transition: color 0.3s;">
                             <i class="fab fa-twitter fa-lg"></i>
                         </a>
-                        <a href="#" class="text-decoration-none"
+                        {% endif %}
+                        {% if footer_settings.instagram_url %}
+                        <a href="{{ footer_settings.instagram_url }}" class="text-decoration-none" target="_blank"
                             style="color: var(--text-muted); transition: color 0.3s;">
                             <i class="fab fa-instagram fa-lg"></i>
                         </a>
-                        <a href="#" class="text-decoration-none"
+                        {% endif %}
+                        {% if footer_settings.youtube_url %}
+                        <a href="{{ footer_settings.youtube_url }}" class="text-decoration-none" target="_blank"
                             style="color: var(--text-muted); transition: color 0.3s;">
                             <i class="fab fa-youtube fa-lg"></i>
                         </a>
+                        {% endif %}
+                        {% if footer_settings.linkedin_url %}
+                        <a href="{{ footer_settings.linkedin_url }}" class="text-decoration-none" target="_blank"
+                            style="color: var(--text-muted); transition: color 0.3s;">
+                            <i class="fab fa-linkedin fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if footer_settings.github_url %}
+                        <a href="{{ footer_settings.github_url }}" class="text-decoration-none" target="_blank"
+                            style="color: var(--text-muted); transition: color 0.3s;">
+                            <i class="fab fa-github fa-lg"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="col-md-2 mb-4">
@@ -954,10 +974,22 @@
                 <div class="col-md-2 mb-4">
                     <h6 class="fw-bold mb-3" style="color: var(--text-primary);">Support</h6>
                     <ul class="list-unstyled">
+                        {% if footer_settings.privacy_policy_url %}
+                        <li class="mb-2"><a href="{{ footer_settings.privacy_policy_url }}" class="text-decoration-none"
+                                style="font-size: 0.9rem;">Privacy</a></li>
+                        {% else %}
                         <li class="mb-2"><a href="{% url 'privacy' %}" class="text-decoration-none"
                                 style="font-size: 0.9rem;">Privacy</a></li>
+                        {% endif %}
+
+                        {% if footer_settings.terms_of_service_url %}
+                        <li class="mb-2"><a href="{{ footer_settings.terms_of_service_url }}"
+                                class="text-decoration-none" style="font-size: 0.9rem;">Terms</a></li>
+                        {% else %}
                         <li class="mb-2"><a href="{% url 'terms' %}" class="text-decoration-none"
                                 style="font-size: 0.9rem;">Terms</a></li>
+                        {% endif %}
+
                         <li class="mb-2"><a href="{% url 'refund_policy' %}" class="text-decoration-none"
                                 style="font-size: 0.9rem;">Refund Policy</a></li>
                     </ul>
@@ -970,11 +1002,37 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Newsletter Section -->
+            {% if footer_settings.show_newsletter_signup %}
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="p-4 rounded-3"
+                        style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3);">
+                        <div class="row align-items-center">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <h5 class="fw-bold mb-1">{{ footer_settings.newsletter_heading|default:"Subscribe to our Newsletter" }}</h5>
+                                <p class="mb-0 small text-muted">{{ footer_settings.newsletter_description|default:"Get the latest updates and news." }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <form action="#" method="post" class="d-flex gap-2">
+                                    {% csrf_token %}
+                                    <input type="email" name="email" class="form-control"
+                                        placeholder="Your email address" required>
+                                    <button type="submit" class="btn btn-primary-custom">Subscribe</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <hr style="border-color: var(--border-color); margin: 2rem 0 1.5rem;">
             <div class="row">
                 <div class="col-md-6 text-center text-md-start mb-2">
                     <p class="mb-0" style="font-size: 0.85rem; color: var(--text-muted);">
-                        &copy; 2026 LeQ Audio Learning. All rights reserved.
+                        {{ footer_settings.copyright_text|default:"&copy; 2026 LeQ Audio Learning. All rights reserved." }}
                     </p>
                 </div>
                 <div class="col-md-6 text-center text-md-end">

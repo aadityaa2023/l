@@ -132,6 +132,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.static',
                 'apps.notifications.context_processors.unread_counts',
+                'apps.platformadmin.context_processors.footer_settings',
             ],
         },
     },
@@ -596,7 +597,7 @@ LOGGING = {
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
 
 # Create cache directory if it doesn't exist (for file-based caching)
-os.makedirs(BASE_DIR / 'cache' / 'django_cache', exist_ok=True)
+
 
 # Ensure the MEDIA_ROOT directory exists so uploaded files are saved correctly.
 os.makedirs(MEDIA_ROOT, exist_ok=True)

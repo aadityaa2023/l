@@ -2,7 +2,7 @@
 URL Configuration for Platform Admin
 """
 from django.urls import path
-from apps.platformadmin import views, advanced_views, comprehensive_views
+from apps.platformadmin import views, advanced_views, comprehensive_views, feature_settings_views
 
 app_name = 'platformadmin'
 
@@ -139,5 +139,18 @@ urlpatterns = [
     path('banners/<int:banner_id>/edit/', views.banner_edit, name='banner_edit'),
     path('banners/<int:banner_id>/delete/', views.banner_delete, name='banner_delete'),
     path('banners/<int:banner_id>/toggle-status/', views.banner_toggle_status, name='banner_toggle_status'),
+    
+    # Feature Settings Module
+    path('feature-settings/team-members/', feature_settings_views.team_members_list, name='team_members_list'),
+    path('feature-settings/team-members/create/', feature_settings_views.team_member_create, name='team_member_create'),
+    path('feature-settings/team-members/<int:member_id>/edit/', feature_settings_views.team_member_edit, name='team_member_edit'),
+    path('feature-settings/team-members/<int:member_id>/delete/', feature_settings_views.team_member_delete, name='team_member_delete'),
+    
+    path('feature-settings/footer/', feature_settings_views.footer_settings, name='footer_settings'),
+    
+    path('feature-settings/pages/', feature_settings_views.page_content_list, name='page_content_list'),
+    path('feature-settings/pages/create/', feature_settings_views.page_content_create, name='page_content_create'),
+    path('feature-settings/pages/<int:page_id>/edit/', feature_settings_views.page_content_edit, name='page_content_edit'),
+    path('feature-settings/pages/<int:page_id>/delete/', feature_settings_views.page_content_delete, name='page_content_delete'),
 ]
 

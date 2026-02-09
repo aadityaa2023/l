@@ -1,0 +1,199 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block title %}{% if is_edit %}Edit{% else %}Create{% endif %} Page - Platform Admin{% endblock %}
+
+{% block platformadmin_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <i class="fas fa-file-alt me-2"></i>{% if is_edit %}Edit{% else %}Create{% endif %} Page Content
+    </h2>
+    <a href="{% url 'platformadmin:page_content_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to List
+    </a>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_page_type" class="form-label">{{ form.page_type.label }}</label>
+                            {{ form.page_type }}
+                            {% if form.page_type.errors %}<div class="text-danger small mt-1">{{ form.page_type.errors
+                                }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_status" class="form-label">{{ form.status.label }}</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}
+                            </div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_title" class="form-label">{{ form.title.label }} <span
+                                class="text-danger">*</span></label>
+                        {{ form.title }}
+                        {% if form.title.errors %}<div class="text-danger small mt-1">{{ form.title.errors }}</div>{%
+                        endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_slug" class="form-label">{{ form.slug.label }} <span
+                                class="text-danger">*</span></label>
+                        {{ form.slug }}
+                        <div class="form-text">{{ form.slug.help_text }}</div>
+                        {% if form.slug.errors %}<div class="text-danger small mt-1">{{ form.slug.errors }}</div>{%
+                        endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Hero Section</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="id_hero_title" class="form-label">{{ form.hero_title.label }}</label>
+                        {{ form.hero_title }}
+                        {% if form.hero_title.errors %}<div class="text-danger small mt-1">{{ form.hero_title.errors }}
+                        </div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_hero_subtitle" class="form-label">{{ form.hero_subtitle.label }}</label>
+                        {{ form.hero_subtitle }}
+                        {% if form.hero_subtitle.errors %}<div class="text-danger small mt-1">{{
+                            form.hero_subtitle.errors }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_hero_image" class="form-label">{{ form.hero_image.label }}</label>
+                        {{ form.hero_image }}
+                        {% if form.hero_image.errors %}<div class="text-danger small mt-1">{{ form.hero_image.errors }}
+                        </div>{% endif %}
+                        {% if is_edit and page.hero_image %}
+                        <div class="mt-2">
+                            <img src="{{ page.hero_image.url }}" alt="Hero" class="img-thumbnail"
+                                style="max-width: 300px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Main Content</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="id_content" class="form-label">{{ form.content.label }} <span
+                                class="text-danger">*</span></label>
+                        {{ form.content }}
+                        <div class="form-text">HTML is supported</div>
+                        {% if form.content.errors %}<div class="text-danger small mt-1">{{ form.content.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">SEO Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="id_meta_title" class="form-label">{{ form.meta_title.label }}</label>
+                        {{ form.meta_title }}
+                        {% if form.meta_title.errors %}<div class="text-danger small mt-1">{{ form.meta_title.errors }}
+                        </div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_meta_description" class="form-label">{{ form.meta_description.label }}</label>
+                        {{ form.meta_description }}
+                        {% if form.meta_description.errors %}<div class="text-danger small mt-1">{{
+                            form.meta_description.errors }}</div>{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_meta_keywords" class="form-label">{{ form.meta_keywords.label }}</label>
+                        {{ form.meta_keywords }}
+                        {% if form.meta_keywords.errors %}<div class="text-danger small mt-1">{{
+                            form.meta_keywords.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Display Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.show_in_header }}
+                            <label class="form-check-label" for="id_show_in_header">{{ form.show_in_header.label
+                                }}</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.show_in_footer }}
+                            <label class="form-check-label" for="id_show_in_footer">{{ form.show_in_footer.label
+                                }}</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_display_order" class="form-label">{{ form.display_order.label }}</label>
+                        {{ form.display_order }}
+                        {% if form.display_order.errors %}<div class="text-danger small mt-1">{{
+                            form.display_order.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-info-circle me-2"></i>Tips
+                </div>
+                <div class="card-body">
+                    <h6>Page Types</h6>
+                    <p class="small">Select the appropriate page type. This helps organize your content and may affect
+                        how the page is displayed.</p>
+
+                    <h6 class="mt-3">Slug</h6>
+                    <p class="small">The slug is used in the URL. Use lowercase letters, numbers, and hyphens only.</p>
+
+                    <h6 class="mt-3">SEO</h6>
+                    <p class="small">Fill in meta title and description to improve search engine visibility.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>{% if is_edit %}Update{% else %}Create{% endif %} Page
+                </button>
+                <a href="{% url 'platformadmin:page_content_list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

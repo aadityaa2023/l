@@ -793,4 +793,433 @@ class SendBulkNotificationForm(forms.Form):
     )
 
 
+class TeamMemberForm(forms.Form):
+    """Form for creating and editing team members"""
+    
+    name = forms.CharField(
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter full name'
+        }),
+        label='Full Name'
+    )
+    
+    designation = forms.CharField(
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., CEO, Lead Instructor, etc.'
+        }),
+        label='Designation'
+    )
+    
+    subject = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Subject area or expertise'
+        }),
+        label='Subject/Expertise'
+    )
+    
+    years_of_experience = forms.IntegerField(
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Years of experience'
+        }),
+        label='Years of Experience'
+    )
+    
+    photo = forms.ImageField(
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        }),
+        label='Profile Photo',
+        help_text='Recommended size: 400x400 pixels. Image will be automatically resized.'
+    )
+    
+    bio = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Short biography about the team member'
+        }),
+        label='Biography'
+    )
+    
+    email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'email@example.com'
+        }),
+        label='Email'
+    )
+    
+    phone = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+1 234 567 8900'
+        }),
+        label='Phone'
+    )
+    
+    linkedin_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://linkedin.com/in/username'
+        }),
+        label='LinkedIn URL'
+    )
+    
+    twitter_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://twitter.com/username'
+        }),
+        label='Twitter URL'
+    )
+    
+    facebook_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://facebook.com/username'
+        }),
+        label='Facebook URL'
+    )
+    
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Active (Show on website)'
+    )
+    
+    display_order = forms.IntegerField(
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Lower numbers appear first'
+        }),
+        label='Display Order'
+    )
+
+
+class FooterSettingsForm(forms.Form):
+    """Form for managing footer settings"""
+    
+    company_name = forms.CharField(
+        max_length=200,
+        initial='LeQ',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Company Name'
+        }),
+        label='Company Name'
+    )
+    
+    company_description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Short description about your company'
+        }),
+        label='Company Description'
+    )
+    
+    contact_email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'contact@example.com'
+        }),
+        label='Contact Email'
+    )
+    
+    contact_phone = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '+1 234 567 8900'
+        }),
+        label='Contact Phone'
+    )
+    
+    contact_address = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Company address'
+        }),
+        label='Contact Address'
+    )
+    
+    facebook_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://facebook.com/yourpage'
+        }),
+        label='Facebook URL'
+    )
+    
+    twitter_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://twitter.com/yourhandle'
+        }),
+        label='Twitter URL'
+    )
+    
+    instagram_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://instagram.com/yourhandle'
+        }),
+        label='Instagram URL'
+    )
+    
+    linkedin_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://linkedin.com/company/yourcompany'
+        }),
+        label='LinkedIn URL'
+    )
+    
+    youtube_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://youtube.com/c/yourchannel'
+        }),
+        label='YouTube URL'
+    )
+    
+    github_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://github.com/yourorg'
+        }),
+        label='GitHub URL'
+    )
+    
+    copyright_text = forms.CharField(
+        max_length=200,
+        initial='© 2024 LeQ. All rights reserved.',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '© 2024 Your Company. All rights reserved.'
+        }),
+        label='Copyright Text'
+    )
+    
+    privacy_policy_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': '/privacy-policy/'
+        }),
+        label='Privacy Policy URL'
+    )
+    
+    terms_of_service_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': '/terms-of-service/'
+        }),
+        label='Terms of Service URL'
+    )
+    
+    show_newsletter_signup = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Show Newsletter Signup'
+    )
+    
+    newsletter_heading = forms.CharField(
+        max_length=200,
+        initial='Subscribe to our Newsletter',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Newsletter heading'
+        }),
+        label='Newsletter Heading'
+    )
+    
+    newsletter_description = forms.CharField(
+        required=False,
+        initial='Get the latest updates and news.',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Newsletter description'
+        }),
+        label='Newsletter Description'
+    )
+
+
+class PageContentForm(forms.Form):
+    """Form for managing page content"""
+    
+    PAGE_TYPE_CHOICES = (
+        ('about_us', 'About Us'),
+        ('contact_us', 'Contact Us'),
+        ('privacy_policy', 'Privacy Policy'),
+        ('terms_of_service', 'Terms of Service'),
+        ('faq', 'FAQ'),
+        ('custom', 'Custom Page'),
+    )
+    
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+    )
+    
+    page_type = forms.ChoiceField(
+        choices=PAGE_TYPE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Page Type'
+    )
+    
+    title = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Page Title'
+        }),
+        label='Page Title'
+    )
+    
+    slug = forms.SlugField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'page-slug'
+        }),
+        label='Slug',
+        help_text='URL-friendly version of the title'
+    )
+    
+    hero_title = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Main heading at top of page'
+        }),
+        label='Hero Title'
+    )
+    
+    hero_subtitle = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Subtitle or tagline'
+        }),
+        label='Hero Subtitle'
+    )
+    
+    hero_image = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        }),
+        label='Hero Image'
+    )
+    
+    content = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 10,
+            'placeholder': 'Main page content (HTML supported)'
+        }),
+        label='Main Content'
+    )
+    
+    meta_title = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'SEO meta title'
+        }),
+        label='Meta Title'
+    )
+    
+    meta_description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'SEO meta description'
+        }),
+        label='Meta Description'
+    )
+    
+    meta_keywords = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'keyword1, keyword2, keyword3'
+        }),
+        label='Meta Keywords'
+    )
+    
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Status'
+    )
+    
+    show_in_footer = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Show in Footer'
+    )
+    
+    show_in_header = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Show in Header Menu'
+    )
+    
+    display_order = forms.IntegerField(
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Display order'
+        }),
+        label='Display Order'
+    )
 
