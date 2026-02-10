@@ -265,6 +265,10 @@ class Lesson(models.Model):
     duration_seconds = models.PositiveIntegerField(_('duration (seconds)'), default=0)
     file_size = models.BigIntegerField(_('file size (bytes)'), default=0)
     
+    # YouTube Video Support
+    youtube_video_url = models.URLField(_('YouTube video URL'), blank=True, help_text="YouTube video link for this lesson")
+    youtube_video_id = models.CharField(_('YouTube video ID'), max_length=20, blank=True, help_text="Extracted YouTube video ID")
+    
     # Content
     text_content = models.TextField(_('text content'), blank=True, help_text="For text-based lessons")
     
@@ -325,6 +329,48 @@ class Lesson(models.Model):
         if self.duration_seconds:
             return round(self.duration_seconds / 60, 1)
         return 0
+    
+    @property
+    def has_youtube_video(self):
+        """Check if this lesson has a YouTube video"""
+        return bool(self.youtube_video_url and self.youtube_video_url.strip())
+    
+    @property
+    def youtube_embed_url(self):
+        """Get YouTube embed URL for this lesson"""
+        if self.has_youtube_video:
+            video_id = self.youtube_video_id
+            
+            # Extract video ID if not stored
+            if not video_id and self.youtube_video_url:
+                from apps.common.youtube_utils import extract_youtube_video_id
+                video_id = extract_youtube_video_id(self.youtube_video_url)
+                
+            if video_id:
+                from apps.common.youtube_utils import get_youtube_embed_url
+                return get_youtube_embed_url(
+                    video_id,
+                    autoplay=False,
+                    controls=True,
+                    modestbranding=True
+                )
+        return None
+    
+    @property 
+    def youtube_thumbnail_url(self):
+        """Get YouTube thumbnail URL for this lesson"""
+        if self.has_youtube_video:
+            video_id = self.youtube_video_id
+            
+            # Extract video ID if not stored
+            if not video_id and self.youtube_video_url:
+                from apps.common.youtube_utils import extract_youtube_video_id
+                video_id = extract_youtube_video_id(self.youtube_video_url)
+                
+            if video_id:
+                from apps.common.youtube_utils import get_youtube_thumbnail_url
+                return get_youtube_thumbnail_url(video_id, quality='high')
+        return None
 
 
 class Enrollment(models.Model):

@@ -166,7 +166,7 @@ footer { display: none !important; }
                 <!-- Media Players -->
                 {% if lesson.lesson_type == 'video' or lesson.lesson_type == 'audio' %}
                     <!-- Main Lesson Content - Click to Open Player -->
-                    {% if lesson.audio_file or media_files.exists %}
+                    {% if lesson.audio_file or media_files.exists or lesson.has_youtube_video %}
                     <div class="player-card mb-4" 
                          style="background: #1A1A1A; 
                                 border: 1px solid #2A2A2A; 
@@ -176,10 +176,15 @@ footer { display: none !important; }
                         <div class="p-4">
                         <div class="position-relative overflow-hidden rounded-3 player-preview" 
                              style="cursor: pointer;" 
-                             onclick="window.open('{% if lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}', '_blank')">
+                             onclick="window.open('{% if lesson.has_youtube_video %}{% url 'courses:lesson_video_player' lesson.slug %}{% elif lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}', '_blank')">"
                             <!-- Thumbnail/Cover -->
                             <div class="ratio ratio-16x9" style="background: linear-gradient(135deg, #1F1F1F 0%, #2A2A2A 100%);">
-                                {% if course.thumbnail %}
+                                {% if lesson.has_youtube_video %}
+                                    <img src="{{ lesson.youtube_thumbnail_url }}" 
+                                         alt="{{ lesson.title }}" 
+                                         class="object-fit-cover player-thumbnail"
+                                         style="transition: transform 0.4s ease;">
+                                {% elif course.thumbnail %}
                                     <img src="{{ course.thumbnail.url }}" 
                                          alt="{{ lesson.title }}" 
                                          class="object-fit-cover player-thumbnail"
@@ -209,6 +214,11 @@ footer { display: none !important; }
                                         {% if lesson.duration_minutes %}
                                         <p class="mb-0 mt-2" style="color: #D1D5DB; font-size: 0.9rem;">
                                             <i class="fas fa-clock me-1" style="font-size: 0.85rem;"></i>{{ lesson.duration_minutes }} minutes
+                                        </p>
+                                        {% endif %}
+                                        {% if lesson.has_youtube_video %}
+                                        <p class="mb-0 mt-2" style="color: #FF0000; font-size: 0.85rem;">
+                                            <i class="fab fa-youtube me-1"></i>YouTube Video
                                         </p>
                                         {% endif %}
                                         {% if progress.last_position_seconds %}

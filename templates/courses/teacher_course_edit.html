@@ -167,8 +167,35 @@
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div class="col-lg-4">        <!-- YouTube Video Preview -->
+        {% if course.has_youtube_video %}
         <div class="card shadow-sm mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fab fa-youtube"></i> Course Preview Video</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="ratio ratio-16x9">
+                    <iframe 
+                        src="{{ course.youtube_embed_url }}" 
+                        title="Course Preview Video"
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        allowfullscreen
+                        style="border-radius: 0 0 8px 8px;">
+                    </iframe>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <small class="text-muted">
+                    <i class="fas fa-link me-1"></i> 
+                    <a href="{{ course.intro_video_url }}" target="_blank" class="text-decoration-none">
+                        View on YouTube
+                    </a>
+                </small>
+            </div>
+        </div>
+        {% endif %}
+                <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <h5 class="fw-bold mb-3">Course Stats</h5>
                 <div class="mb-3">
@@ -436,6 +463,20 @@
                         <input type="file" name="media_files" class="form-control" accept="audio/*,video/*" multiple>
                         <small class="text-muted">You can upload multiple audio or video files. Supported formats: MP3, WAV, M4A, MP4, AVI, MOV, MKV, WebM</small>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label for="lesson_youtube_url" class="form-label fw-bold">
+                            <i class="fab fa-youtube text-danger me-1"></i> YouTube Video URL
+                            <span class="text-muted small">(Optional)</span>
+                        </label>
+                        <input type="url" class="form-control lesson-youtube-url" name="lesson_youtube_url" 
+                               placeholder="https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Paste a YouTube video link as an alternative to uploading files
+                        </small>
+                    </div>
+                    
                     <div class="mb-3">
                         <label class="form-label fw-bold">Text Content</label>
                         <textarea name="text_content" class="form-control" rows="5"></textarea>
@@ -490,6 +531,20 @@
                     </div>
                     
                     <!-- Display existing media files -->
+                    {% if lesson.has_youtube_video %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Current YouTube Video</label>
+                        <div class="alert alert-info mb-2">
+                            <i class="fab fa-youtube text-danger me-1"></i> YouTube video is active
+                            <div class="mt-2">
+                                <a href="{{ lesson.youtube_video_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i> View on YouTube
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     {% if lesson.media_files.all %}
                     <div class="mb-3">
                         <label class="form-label fw-bold">Existing Media Files</label>
@@ -517,6 +572,20 @@
                         <label class="form-label fw-bold">Add More Media Files</label>
                         <input type="file" name="media_files" class="form-control" accept="audio/*,video/*" multiple>
                         <small class="text-muted">Add multiple audio or video files</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_lesson_youtube_url_{{ lesson.id }}" class="form-label fw-bold">
+                            <i class="fab fa-youtube text-danger me-1"></i> YouTube Video URL
+                            <span class="text-muted small">(Optional)</span>
+                        </label>
+                        <input type="url" class="form-control lesson-youtube-url" id="edit_lesson_youtube_url_{{ lesson.id }}" name="lesson_youtube_url" 
+                               value="{{ lesson.youtube_video_url }}"
+                               placeholder="https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Paste a YouTube video link as an alternative to uploading files
+                        </small>
                     </div>
                     
                     <div class="mb-3">

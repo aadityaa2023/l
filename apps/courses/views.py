@@ -508,22 +508,26 @@ def lesson_video_player(request, slug):
         )
     
     # Select the best video URL from Lesson.media_files with media_type 'video'
+    # For YouTube videos, we don't need a video_url since the iframe handles it
     video_url = None
-    try:
-        video_media = lesson.media_files.filter(media_type='video').order_by('order').first()
-        if video_media:
-            video_url = video_media.get_media_url
-            print(f"[Video Player] Found video for lesson '{lesson.title}': {video_url}")
-        else:
-            print(f"[Video Player] No video media found for lesson '{lesson.title}' (ID: {lesson.id})")
-            # Check if there are any media files at all
-            all_media = lesson.media_files.all()
-            print(f"[Video Player] Total media files for lesson: {all_media.count()}")
-            for media in all_media:
-                print(f"  - Media ID {media.id}: {media.media_type} - {media.media_file.name if media.media_file else 'No file'}")
-    except Exception as e:
-        print(f"[Video Player] Error getting video URL: {e}")
-        video_url = None
+    if not lesson.has_youtube_video:
+        try:
+            video_media = lesson.media_files.filter(media_type='video').order_by('order').first()
+            if video_media:
+                video_url = video_media.get_media_url
+                print(f"[Video Player] Found video for lesson '{lesson.title}': {video_url}")
+            else:
+                print(f"[Video Player] No video media found for lesson '{lesson.title}' (ID: {lesson.id})")
+                # Check if there are any media files at all
+                all_media = lesson.media_files.all()
+                print(f"[Video Player] Total media files for lesson: {all_media.count()}")
+                for media in all_media:
+                    print(f"  - Media ID {media.id}: {media.media_type} - {media.media_file.name if media.media_file else 'No file'}")
+        except Exception as e:
+            print(f"[Video Player] Error getting video URL: {e}")
+            video_url = None
+    else:
+        print(f"[Video Player] YouTube video for lesson '{lesson.title}': {lesson.youtube_video_url}")
 
     context = {
         'lesson': lesson,
@@ -1248,6 +1252,18 @@ def teacher_lesson_create(request, module_id):
         is_published = request.POST.get('is_published') == 'on'
         text_content = request.POST.get('text_content', '')
         
+        # Handle YouTube video URL
+        youtube_url = request.POST.get('lesson_youtube_url', '').strip()
+        youtube_video_id = ''
+        if youtube_url:
+            from apps.common.youtube_utils import validate_youtube_url, extract_youtube_video_id
+            is_valid, video_id, error_message = validate_youtube_url(youtube_url)
+            if is_valid:
+                youtube_video_id = video_id or extract_youtube_video_id(youtube_url)
+            else:
+                messages.error(request, f'Invalid YouTube URL: {error_message}')
+                return redirect('courses:teacher_course_edit', course_id=module.course.id)
+        
         # Handle multiple media files - create separate lesson for each file
         media_files = request.FILES.getlist('media_files')
         if media_files:
@@ -1277,7 +1293,9 @@ def teacher_lesson_create(request, module_id):
                     order=max_order + index + 1,
                     is_free_preview=is_free_preview,
                     is_published=is_published,
-                    text_content=text_content
+                    text_content=text_content,
+                    youtube_video_url=youtube_url,
+                    youtube_video_id=youtube_video_id
                 )
                 
                 # Attach media file to this lesson
@@ -1308,7 +1326,9 @@ def teacher_lesson_create(request, module_id):
                 order=max_order + 1,
                 is_free_preview=is_free_preview,
                 is_published=is_published,
-                text_content=text_content
+                text_content=text_content,
+                youtube_video_url=youtube_url,
+                youtube_video_id=youtube_video_id
             )
             
             # Handle file upload if provided (legacy single file)
@@ -1354,6 +1374,22 @@ def teacher_lesson_edit(request, lesson_id):
         lesson.is_free_preview = request.POST.get('is_free_preview') == 'on'
         lesson.is_published = request.POST.get('is_published') == 'on'
         lesson.text_content = request.POST.get('text_content', '')
+        
+        # Handle YouTube video URL
+        youtube_url = request.POST.get('lesson_youtube_url', '').strip()
+        if youtube_url:
+            from apps.common.youtube_utils import validate_youtube_url, extract_youtube_video_id
+            is_valid, video_id, error_message = validate_youtube_url(youtube_url)
+            if is_valid:
+                lesson.youtube_video_url = youtube_url
+                lesson.youtube_video_id = video_id or extract_youtube_video_id(youtube_url)
+            else:
+                messages.error(request, f'Invalid YouTube URL: {error_message}')
+                return redirect('courses:teacher_course_edit', course_id=lesson.course.id)
+        else:
+            # Clear YouTube fields if URL is empty
+            lesson.youtube_video_url = ''
+            lesson.youtube_video_id = ''
         
         # Handle file upload if provided (legacy single file)
         if 'audio_file' in request.FILES:

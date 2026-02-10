@@ -1874,6 +1874,18 @@ def admin_lesson_create(request, module_id):
         is_published = request.POST.get('is_published') == 'on'
         text_content = request.POST.get('text_content', '')
         
+        # Handle YouTube video URL
+        youtube_url = request.POST.get('lesson_youtube_url', '').strip()
+        youtube_video_id = ''
+        if youtube_url:
+            from apps.common.youtube_utils import validate_youtube_url, extract_youtube_video_id
+            is_valid, video_id, error_message = validate_youtube_url(youtube_url)
+            if is_valid:
+                youtube_video_id = video_id or extract_youtube_video_id(youtube_url)
+            else:
+                messages.error(request, f'Invalid YouTube URL: {error_message}')
+                return redirect('platformadmin:admin_course_edit', course_id=module.course.id)
+        
         # Handle multiple media files - create separate lesson for each file
         media_files = request.FILES.getlist('media_files')
         if media_files:
@@ -1903,7 +1915,9 @@ def admin_lesson_create(request, module_id):
                     order=max_order + index + 1,
                     is_free_preview=is_free_preview,
                     is_published=is_published,
-                    text_content=text_content
+                    text_content=text_content,
+                    youtube_video_url=youtube_url,
+                    youtube_video_id=youtube_video_id
                 )
                 
                 # Attach media file to this lesson
@@ -1930,7 +1944,9 @@ def admin_lesson_create(request, module_id):
                 order=max_order + 1,
                 is_free_preview=is_free_preview,
                 is_published=is_published,
-                text_content=text_content
+                text_content=text_content,
+                youtube_video_url=youtube_url,
+                youtube_video_id=youtube_video_id
             )
             
             # Handle file upload if provided (legacy single file)
@@ -1985,6 +2001,22 @@ def admin_lesson_edit(request, lesson_id):
         lesson.is_free_preview = request.POST.get('is_free_preview') == 'on'
         lesson.is_published = request.POST.get('is_published') == 'on'
         lesson.text_content = request.POST.get('text_content', '')
+        
+        # Handle YouTube video URL
+        youtube_url = request.POST.get('lesson_youtube_url', '').strip()
+        if youtube_url:
+            from apps.common.youtube_utils import validate_youtube_url, extract_youtube_video_id
+            is_valid, video_id, error_message = validate_youtube_url(youtube_url)
+            if is_valid:
+                lesson.youtube_video_url = youtube_url
+                lesson.youtube_video_id = video_id or extract_youtube_video_id(youtube_url)
+            else:
+                messages.error(request, f'Invalid YouTube URL: {error_message}')
+                return redirect('platformadmin:admin_course_edit', course_id=lesson.course.id)
+        else:
+            # Clear YouTube fields if URL is empty
+            lesson.youtube_video_url = ''
+            lesson.youtube_video_id = ''
         
         # Handle file upload if provided (legacy single file)
         if 'audio_file' in request.FILES:
