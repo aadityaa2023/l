@@ -37,7 +37,6 @@ class Migration(migrations.Migration):
                 'verbose_name': 'team member',
                 'verbose_name_plural': 'team members',
                 'ordering': ['display_order', 'name'],
-                'managed': False,
             },
         ),
         migrations.CreateModel(
