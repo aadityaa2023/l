@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('platformadmin', '0011_5_fix_teammember_table_creation'),
+        ('platformadmin', '0011_alter_teammember_options'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
