@@ -5,4 +5,4 @@ deployment:
     - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py migrate --noinput
     - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py collectstatic --noinput
     - touch /home9/leqaudio/leqaudio/passenger_wsgi.py
-    - echo "Deployment completed successfully."
+    - echo "Deployment completed success"
