@@ -1,4 +1,7 @@
 from apps.platformadmin.models import FooterSettings
+import logging
+
+logger = logging.getLogger(__name__)
 
 def footer_settings(request):
     """
@@ -8,6 +11,8 @@ def footer_settings(request):
     try:
         settings = FooterSettings.get_settings()
         return {'footer_settings': settings}
-    except Exception:
+    except Exception as e:
+        # Log the error for debugging in production
+        logger.warning(f"Failed to load footer settings: {e}")
         # Return empty dict if table doesn't exist or other error
-        return {}
+        return {'footer_settings': None}

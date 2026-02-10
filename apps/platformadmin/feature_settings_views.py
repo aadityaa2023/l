@@ -21,23 +21,30 @@ from apps.platformadmin.utils import ActivityLog
 @platformadmin_required
 def team_members_list(request):
     """List all team members"""
-    team_members = TeamMember.objects.all().order_by('display_order', 'name')
-    
-    # Filter by status if requested
-    status_filter = request.GET.get('status')
-    if status_filter == 'active':
-        team_members = team_members.filter(is_active=True)
-    elif status_filter == 'inactive':
-        team_members = team_members.filter(is_active=False)
-    
-    # Search
-    search_query = request.GET.get('search')
-    if search_query:
-        team_members = team_members.filter(
-            Q(name__icontains=search_query) |
-            Q(designation__icontains=search_query) |
-            Q(subject__icontains=search_query)
-        )
+    try:
+        team_members = TeamMember.objects.all().order_by('display_order', 'name')
+        
+        # Filter by status if requested
+        status_filter = request.GET.get('status')
+        if status_filter == 'active':
+            team_members = team_members.filter(is_active=True)
+        elif status_filter == 'inactive':
+            team_members = team_members.filter(is_active=False)
+        
+        # Search
+        search_query = request.GET.get('search')
+        if search_query:
+            team_members = team_members.filter(
+                Q(name__icontains=search_query) |
+                Q(designation__icontains=search_query) |
+                Q(subject__icontains=search_query)
+            )
+    except Exception as e:
+        # Handle database errors gracefully
+        team_members = []
+        messages.error(request, f'Error loading team members: {str(e)}')
+        status_filter = None
+        search_query = None
     
     context = {
         'team_members': team_members,
