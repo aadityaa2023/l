@@ -406,6 +406,65 @@
         .hidden {
             display: none !important;
         }
+        
+        /* YouTube UI Blocker - Hide title, share, watch later buttons */
+        #youtubePlayerContainer {
+            position: relative;
+        }
+        
+        #youtubePlayerContainer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: transparent;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        #youtubePlayerContainer iframe {
+            pointer-events: auto;
+        }
+
+        #youtubePlayerContainer.no-pointer iframe {
+            pointer-events: none;
+        }
+        
+        /* Block YouTube end screen overlay */
+        .youtube-overlay-blocker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Cover YouTube top/title and right actions bar */
+        .youtube-ui-blocker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: #000;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .youtube-ui-blocker-right {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 160px;
+            height: 64px;
+            background: #000;
+            pointer-events: none;
+            z-index: 4;
+        }
     </style>
 </head>
 <body>
@@ -415,6 +474,10 @@
         <div id="youtubePlayerContainer" style="width: 100%; height: 100%; position: relative; background: #000;">
             <!-- YouTube IFrame API player will be created here -->
             <div id="youtubePlayer" style="width: 100%; height: 100%;"></div>
+
+            <!-- UI blockers to hide YouTube title and actions -->
+            <div class="youtube-ui-blocker"></div>
+            <div class="youtube-ui-blocker-right"></div>
             
             <!-- Manual error fallback -->
             <div id="youtubeError" class="youtube-error" style="display: none; position: absolute; inset: 0; background: #000; color: #fff; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center;">
@@ -876,13 +939,17 @@
                     'autoplay': 0,
                     'controls': 0,           // Hide YouTube controls
                     'modestbranding': 1,     // Minimal branding
-                    'rel': 0,                // No related videos
+                    'rel': 0,                // No related videos from other channels
                     'showinfo': 0,           // Hide video info
                     'iv_load_policy': 3,     // Hide annotations
-                    'fs':0,                 // Disable YouTube fullscreen
+                    'fs': 0,                 // Disable YouTube fullscreen
                     'cc_load_policy': 0,     // No captions by default
                     'disablekb': 1,          // Disable keyboard
-                    'playsinline': 1         // Play inline on mobile
+                    'playsinline': 1,        // Play inline on mobile
+                    'autohide': 1,           // Auto-hide controls
+                    'color': 'white',        // White progress bar (less branded)
+                    'loop': 1,               // Loop video to prevent end screen
+                    'playlist': youtubeVideoId  // Required for loop to work
                 },
                 events: {
                     'onReady': onYouTubePlayerReady,
@@ -930,11 +997,21 @@
                     break;
                     
                 case YT.PlayerState.PAUSED:
-                case YT.PlayerState.ENDED:
                     isPlaying = false;
                     centralPlay.classList.remove('hidden');
                     const pauseIcon = playBtn.querySelector('i');
                     pauseIcon.setAttribute('data-lucide', 'play');
+                    lucide.createIcons();
+                    clearTimeout(controlsTimeout);
+                    break;
+                    
+                case YT.PlayerState.ENDED:
+                    // Video ended - restart to prevent end screen suggestions
+                    youtubePlayer.seekTo(0);
+                    isPlaying = false;
+                    centralPlay.classList.remove('hidden');
+                    const endIcon = playBtn.querySelector('i');
+                    endIcon.setAttribute('data-lucide', 'play');
                     lucide.createIcons();
                     clearTimeout(controlsTimeout);
                     break;
@@ -963,7 +1040,7 @@
                     <h2 style="font-size: 24px; margin-bottom: 12px;">YouTube Video Error</h2>
                     <p style="color: #a1a1aa; margin-bottom: 24px;">Unable to load the video. This may be due to embedding restrictions.</p>
                     <a href="{{ lesson.youtube_video_url }}" target="_blank" rel="noopener noreferrer" 
-                       style="background: #ff0000; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; display: inline-block; font-size: 16px;">
+                       style="background: #ffffff; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; display: inline-block; font-size: 16px;">
                         <i class="fab fa-youtube" style="margin-right: 8px;"></i>Watch on YouTube
                     </a>
                 </div>
@@ -1185,13 +1262,26 @@
         if (isYouTubeVideo) {
             const youtubeContainer = document.getElementById('youtubePlayerContainer');
             if (youtubeContainer) {
+                youtubeContainer.classList.add('no-pointer');
                 youtubeContainer.addEventListener('click', (e) => {
                     // Only toggle if clicking the container itself, not the iframe
                     if (e.target === youtubeContainer || e.target.id === 'youtubePlayer') {
                         togglePlay();
                     }
                 });
+
+                youtubeContainer.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
             }
+
+            document.addEventListener('contextmenu', (e) => {
+                const target = e.target;
+                const isInsidePlayer = youtubeContainer && target instanceof Node && youtubeContainer.contains(target);
+                if (isInsidePlayer) {
+                    e.preventDefault();
+                }
+            });
         }
         
         centralPlay.addEventListener('click', togglePlay);

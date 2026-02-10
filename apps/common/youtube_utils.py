@@ -92,14 +92,19 @@ def get_youtube_embed_url(video_id: str, autoplay: bool = False,
         params.append('controls=0')
     
     # Minimal parameters for IFrame API integration
-    params.append('rel=0')              # Don't show related videos
-    params.append('modestbranding=1')   # Remove YouTube logo
+    params.append('rel=0')              # Don't show related videos from other channels
+    params.append('modestbranding=1')   # Minimal YouTube branding
     params.append('showinfo=0')         # Hide video title and uploader info
     params.append('iv_load_policy=3')   # Hide video annotations
     params.append('fs=0')               # Disable YouTube's fullscreen (we'll use custom)
     params.append('cc_load_policy=0')   # Hide closed captions by default
     params.append('controls=0')         # Hide YouTube controls completely
     params.append('enablejsapi=1')      # Enable JavaScript API for custom controls
+    params.append('autohide=1')         # Auto-hide controls
+    params.append('color=white')        # White progress bar (less branded)
+    params.append('disablekb=1')        # Disable keyboard controls
+    params.append('playsinline=1')      # Play inline on mobile
+    params.append('loop=1')             # Loop video to prevent end screen
     
     param_string = '&'.join(params) if params else ''
     

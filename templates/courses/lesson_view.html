@@ -158,7 +158,11 @@ footer { display: none !important; }
                         {% endif %}
                         <span style="color: #9CA3AF;">
                             <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% elif lesson.lesson_type == 'audio' %}headphones{% else %}book{% endif %} me-1"></i>
-                            {{ lesson.get_lesson_type_display }}
+                            {% if lesson.has_youtube_video %}
+                                Video
+                            {% else %}
+                                {{ lesson.get_lesson_type_display }}
+                            {% endif %}
                         </span>
                     </div>
                 </div>
@@ -216,11 +220,7 @@ footer { display: none !important; }
                                             <i class="fas fa-clock me-1" style="font-size: 0.85rem;"></i>{{ lesson.duration_minutes }} minutes
                                         </p>
                                         {% endif %}
-                                        {% if lesson.has_youtube_video %}
-                                        <p class="mb-0 mt-2" style="color: #FF0000; font-size: 0.85rem;">
-                                            <i class="fab fa-youtube me-1"></i>YouTube Video
-                                        </p>
-                                        {% endif %}
+                                        {# YouTube label removed to avoid showing branding in the player overlay #}
                                         {% if progress.last_position_seconds %}
                                         <p class="mb-0 mt-1" style="color: #A78BFA; font-size: 0.85rem;">
                                             <i class="fas fa-history me-1"></i>Resume from {{ resume_time }}
