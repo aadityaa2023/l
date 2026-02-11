@@ -106,17 +106,11 @@ from django.shortcuts import render, redirect
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib import messages
-from apps.platformadmin.models import TeamMember
 
 
 def about_view(request):
     """Render About Us page"""
-    try:
-        team_members = TeamMember.objects.filter(is_active=True).order_by('display_order', 'name')
-    except Exception:
-        # Handle case where TeamMember table doesn't exist or has an error
-        team_members = []
-    return render(request, 'pages/about.html', {'team_members': team_members})
+    return render(request, 'pages/about.html')
 
 
 def contact_view(request):

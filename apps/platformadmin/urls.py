@@ -141,11 +141,6 @@ urlpatterns = [
     path('banners/<int:banner_id>/toggle-status/', views.banner_toggle_status, name='banner_toggle_status'),
     
     # Feature Settings Module
-    path('feature-settings/team-members/', feature_settings_views.team_members_list, name='team_members_list'),
-    path('feature-settings/team-members/create/', feature_settings_views.team_member_create, name='team_member_create'),
-    path('feature-settings/team-members/<int:member_id>/edit/', feature_settings_views.team_member_edit, name='team_member_edit'),
-    path('feature-settings/team-members/<int:member_id>/delete/', feature_settings_views.team_member_delete, name='team_member_delete'),
-    
     path('feature-settings/footer/', feature_settings_views.footer_settings, name='footer_settings'),
     
     # Page Content management removed from platformadmin routes (feature disabled)

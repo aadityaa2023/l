@@ -514,10 +514,7 @@
 
       <div class="menu-section">
         <div class="menu-section-title">Feature Settings</div>
-        <a href="{% url 'platformadmin:team_members_list' %}"
-          class="menu-item {% if 'team_member' in request.resolver_match.url_name %}active{% endif %}">
-          <i class="fas fa-users-cog"></i> Team Members
-        </a>
+        
         <a href="{% url 'platformadmin:footer_settings' %}"
           class="menu-item {% if request.resolver_match.url_name == 'footer_settings' %}active{% endif %}">
           <i class="fas fa-shoe-prints"></i> Footer Settings

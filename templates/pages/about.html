@@ -102,51 +102,7 @@
             </div>
         </div>
 
-        <!-- Meet Our Team -->
-        <div class="row justify-content-center mb-5">
-            <div class="col-lg-10">
-                <div class="text-center mb-4">
-                    <h3 class="fw-bold text-white">Meet Our Team</h3>
-                    <p class="text-white-50">Dedicated instructors and creators behind LeQ</p>
-                </div>
-                <div class="row g-4">
-                    {% if team_members %}
-                        {% for member in team_members %}
-                        <div class="col-md-4">
-                            <div class="card-custom p-4 text-center h-100 bg-dark text-white" style="border: none;">
-                                <div class="mb-3">
-                                    <div style="width:140px;height:140px;margin:0 auto;overflow:hidden;border-radius:8px;">
-                                        {% if member.photo %}
-                                            <img src="{{ member.photo.url }}" alt="{{ member.name }}" style="width:100%;height:100%;object-fit:cover;display:block;">
-                                        {% else %}
-                                            <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));">
-                                                <i class="fas fa-user fa-2x text-white"></i>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <h6 class="fw-bold mb-1 text-white">{{ member.name }}</h6>
-                                <p class="small text-white-50 mb-1">{{ member.designation }}{% if member.subject %} — {{ member.subject }}{% endif %}</p>
-                                {% if member.years_of_experience %}
-                                <p class="small text-white-50 mb-1">{{ member.years_of_experience }} year{{ member.years_of_experience|pluralize }} experience</p>
-                                {% endif %}
-                                {% if member.bio %}
-                                <p class="small text-white-50 mb-0">{{ member.bio|truncatechars:180|linebreaksbr }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% if forloop.counter|divisibleby:3 %}
-                            <div class="w-100 d-none d-md-block"></div>
-                        {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <div class="col-12 text-center">
-                            <p class="text-white-50">No team members configured yet.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+        
 
         <!-- CTA Section -->
         <div class="row justify-content-center">
