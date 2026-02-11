@@ -44,6 +44,12 @@
                         {{ course.category.name }}
                     </span>
                     {% endif %}
+
+                    {% if course.language %}
+                    <span class="course-language text-muted ms-2">
+                        <i class="fas fa-language me-1"></i> {{ course.language }}
+                    </span>
+                    {% endif %}
                 </div>
 
                 <div class="course-stats">

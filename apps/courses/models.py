@@ -149,7 +149,13 @@ class Course(models.Model):
     
     # Course Details
     level = models.CharField(_('level'), max_length=20, choices=LEVEL_CHOICES, default='beginner')
-    language = models.CharField(_('language'), max_length=50, default='English')
+    LANGUAGE_CHOICES = (
+        ('Hindi', 'Hindi'),
+        ('English', 'English'),
+        ('Hindi + English', 'Hindi + English'),
+        ('Others', 'Others'),
+    )
+    language = models.CharField(_('language'), max_length=50, choices=LANGUAGE_CHOICES, default='English')
     duration_hours = models.DecimalField(_('duration (hours)'), max_digits=5, decimal_places=2, default=0)
     
     # Pricing

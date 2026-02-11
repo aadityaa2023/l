@@ -130,7 +130,12 @@
                         
                         <div class="col-md-6 mb-3">
                             <label for="language" class="form-label">Language</label>
-                            <input type="text" class="form-control" id="language" name="language" value="{{ course.language }}">
+                            <select class="form-select" id="language" name="language">
+                                <option value="Hindi" {% if course.language == 'Hindi' %}selected{% endif %}>Hindi</option>
+                                <option value="English" {% if course.language == 'English' %}selected{% endif %}>English</option>
+                                <option value="Hindi + English" {% if course.language == 'Hindi + English' %}selected{% endif %}>Hindi + English</option>
+                                <option value="Others" {% if course.language == 'Others' %}selected{% endif %}>Others</option>
+                            </select>
                         </div>
                     </div>
                     
