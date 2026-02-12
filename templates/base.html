@@ -1210,9 +1210,10 @@
             }, 100);
             
             // Show loading overlay on navigation
-            function showLoadingOverlay() {
-                loadingOverlay.classList.add('active');
-            }
+            // Disabled: make this a no-op so overlay doesn't appear during normal navigation
+            const showLoadingOverlay = () => {
+                /* no-op to prevent showing global loading overlay on navigation */
+            };
             
             // Handle all navigation links
             document.addEventListener('click', function(e) {
