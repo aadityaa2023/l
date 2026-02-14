@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% if lesson %}{{ lesson.title }}{% else %}Audio Player{% endif %} - LeQ</title>
     
+    <!-- YouTube IFrame API (for YouTube audio support) -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
@@ -59,13 +62,14 @@
 
         .player-container {
             width: 100%;
-            max-width: 600px; /* Increased for desktop potential */
-            height: 100%;
+            max-width: 500px;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 24px;
+            padding: 20px;
             position: relative;
-            margin: auto; /* Center on desktop */
+            margin: 0 auto;
+            justify-content: space-between;
         }
 
         /* --- Header --- */
@@ -103,21 +107,22 @@
 
         /* --- Vinyl Section --- */
         .vinyl-wrapper {
-            flex: 2; /* Take up more space */
+            flex: 1;
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
             width: 100%;
-            /* Container for scaling context */
-            container-type: inline-size;
+            padding: 20px 0;
         }
         
         /* Interactive scaling container for Vinyl + Arm */
         .vinyl-group {
             position: relative;
-            width: min(80vw, 40vh, 320px);
-            aspect-ratio: 1/1;
+            width: min(70vw, 300px);
+            height: min(70vw, 300px);
+            max-width: 300px;
+            max-height: 300px;
         }
 
         .vinyl-record {
@@ -204,28 +209,30 @@
         }
 
         .track-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            padding: 0 20px;
         }
 
         .track-artist {
-            font-size: 16px;
+            font-size: 14px;
             color: var(--text-sub);
             font-weight: 500;
+            padding: 0 20px;
         }
 
         /* --- Progress Arc --- */
         .progress-container {
             position: relative;
-            height: 80px;
+            height: 70px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         .progress-svg {
@@ -264,10 +271,11 @@
         /* --- Controls --- */
         .controls {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
+            gap: 40px;
             padding: 0 10px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .ctrl-btn {
@@ -513,9 +521,17 @@
     <div class="loader hidden" id="loader">
         <div class="spinner"></div>
     </div>
+    
+    <!-- Error/Info Message -->
+    <div id="infoMessage" style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(30, 30, 30, 0.95); color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; display: none; z-index: 1000; max-width: 90%; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"></div>
 
-    <!-- Hidden Audio -->
+    <!-- Hidden Audio Element -->
     <audio id="audioPlayer" preload="metadata"></audio>
+    
+    <!-- Hidden YouTube Player Container (for YouTube audio) -->
+    <div id="youtubePlayerContainer" style="position: absolute; left: -9999px; width: 100px; height: 100px; opacity: 0; pointer-events: none;">
+        <div id="youtubePlayer"></div>
+    </div>
 
     <script>
         lucide.createIcons();
@@ -531,17 +547,90 @@
         const durationEl = document.getElementById('duration');
         const loader = document.getElementById('loader');
         
+        // YouTube player variables
+        let youtubePlayer = null;
+        let youtubeUpdateInterval = null;
+        let isUsingYouTube = false;
+        let isAdPlaying = false;
+        let adCheckInterval = null;
+        let playerReady = false;
+        let hasEmbeddingError = false;
+        let retryCount = 0;
+        const maxRetries = 2;
+        
         const menuBtn = document.getElementById('menuBtn');
         const menuModal = document.getElementById('menuModal');
         const menuOverlay = document.getElementById('menuOverlay');
         const speedOptions = document.querySelectorAll('.menu-option');
+        const infoMessage = document.getElementById('infoMessage');
+        // Disable native browser alert popups on this page
+        window.alert = function() {};
 
-        // Audio Source
+        // Restore or default playback speed (persisted per user in localStorage)
+        let initialSpeed = parseFloat(localStorage.getItem('audioPlayerSpeed')) || 1.0;
+        
+        // Helper function to show info messages
+        // Suppresses specific YouTube loading/ready messages unless `options.force` is true.
+        function showInfo(message, duration = 3000, options = {}) {
+            try {
+                const raw = (message || '').toString();
+                const plain = raw.replace(/<[^>]*>/g, '').trim();
+                const lower = plain.toLowerCase();
+
+                // Suppress non-actionable YouTube status messages requested to hide
+                if (!options.force) {
+                    if (/^loading youtube (audio|content)/i.test(lower) || /youtube audio ready/i.test(lower) || /buffering/i.test(lower)) {
+                        console.debug('[AudioPlayer] suppressed info message:', plain);
+                        return;
+                    }
+                }
+            } catch (e) {
+                // If anything goes wrong with message processing, fall back to showing it
+            }
+
+            infoMessage.innerHTML = message; // Use innerHTML to support HTML links
+            infoMessage.style.display = 'block';
+            if (duration > 0) {
+                setTimeout(() => {
+                    infoMessage.style.display = 'none';
+                }, duration);
+            }
+        }
+
+        // Audio Source Configuration
         const audioUrl = "{{ audio_url|default:''|escapejs }}";
-        if (audioUrl) {
+        const hasYouTubeAudio = {% if has_youtube_audio %}true{% else %}false{% endif %};
+        const youtubeVideoId = "{{ youtube_video_id|default:''|escapejs }}";
+
+        if (hasYouTubeAudio && youtubeVideoId) {
+            console.log('[AudioPlayer] Using YouTube audio:', youtubeVideoId);
+            isUsingYouTube = true;
+            loader.classList.remove('hidden');
+            showInfo('Loading YouTube audio...', 0);
+
+            // Initialize YouTube API player when available
+            if (typeof YT !== 'undefined' && YT.Player) {
+                console.log('[AudioPlayer] YouTube API already loaded, initializing player');
+                initYouTubeAudioPlayer();
+            } else {
+                console.log('[AudioPlayer] Waiting for YouTube API to load...');
+                window.onYouTubeIframeAPIReady = function() {
+                    console.log('[AudioPlayer] YouTube API loaded, initializing player');
+                    initYouTubeAudioPlayer();
+                };
+            }
+        } else if (audioUrl) {
+            console.log('[AudioPlayer] Using regular audio file:', audioUrl);
             audio.src = audioUrl;
+            audio.addEventListener('loadedmetadata', () => {
+                showInfo('Audio loaded successfully', 2000);
+            });
         } else {
-            console.warn("No audio URL found");
+            console.warn('[AudioPlayer] No audio source found');
+            console.log('[AudioPlayer] hasYouTubeAudio:', hasYouTubeAudio);
+            console.log('[AudioPlayer] youtubeVideoId:', youtubeVideoId);
+            console.log('[AudioPlayer] audioUrl:', audioUrl);
+            showInfo('No audio source available', 5000);
         }
 
         // --- SVG Arc Progress Setup ---
@@ -554,59 +643,316 @@
             const offset = pathLength - (pathLength * percent / 100);
             progressPath.style.strokeDashoffset = offset;
         }
+        
+        // --- YouTube Audio Player Initialization ---
+        function initYouTubeAudioPlayer() {
+            console.log('[AudioPlayer] initYouTubeAudioPlayer called');
+            console.log('[AudioPlayer] youtubeVideoId:', youtubeVideoId);
+            loader.classList.remove('hidden');
+            
+            try {
+                youtubePlayer = new YT.Player('youtubePlayer', {
+                    height: '1',
+                    width: '1',
+                    videoId: youtubeVideoId,
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 0,
+                        'disablekb': 1,
+                        'fs': 0,
+                        'modestbranding': 1,
+                        'playsinline': 1,
+                        'rel': 0,
+                        'iv_load_policy': 3
+                    },
+                    events: {
+                        'onReady': onYouTubePlayerReady,
+                        'onStateChange': onYouTubePlayerStateChange,
+                        'onError': onYouTubePlayerError
+                    }
+                });
+                console.log('[AudioPlayer] YouTube Player created successfully');
+            } catch (error) {
+                console.error('[AudioPlayer] Error creating YouTube player:', error);
+                loader.classList.add('hidden');
+                showInfo('Failed to initialize YouTube player', 5000);
+            }
+        }
+        
+        // YouTube Player Event Handlers
+        function onYouTubePlayerReady(event) {
+            console.log('[AudioPlayer] YouTube player ready');
+            playerReady = true;
+            loader.classList.add('hidden');
+            // Apply initial playback speed for YouTube player
+            try {
+                if (youtubePlayer && typeof youtubePlayer.setPlaybackRate === 'function') {
+                    youtubePlayer.setPlaybackRate(initialSpeed);
+                }
+            } catch (e) {
+                console.warn('[AudioPlayer] Could not set initial YouTube playback rate', e);
+            }
+            
+            try {
+                // Start ad detection
+                startAdDetection();
+                
+                // Set duration (might be 0 initially if ads are loading)
+                setTimeout(() => {
+                    const duration = youtubePlayer.getDuration();
+                    if (duration && duration > 0) {
+                        console.log('[AudioPlayer] Video duration:', duration);
+                        durationEl.textContent = formatTime(duration);
+                        showInfo('YouTube audio ready', 2000);
+                    } else {
+                        showInfo('Loading YouTube content...', 0);
+                    }
+                }, 500);
+                
+                // Start update interval
+                youtubeUpdateInterval = setInterval(() => {
+                    if (youtubePlayer && !isAdPlaying) {
+                        const state = youtubePlayer.getPlayerState();
+                        if (state === YT.PlayerState.PLAYING) {
+                            const currentTime = youtubePlayer.getCurrentTime();
+                            const duration = youtubePlayer.getDuration();
+                            
+                            if (duration > 0) {
+                                const percent = (currentTime / duration) * 100;
+                                updateProgressUI(percent);
+                                currentTimeEl.textContent = formatTime(currentTime);
+                            }
+                        }
+                    }
+                }, 100);
+                
+                console.log('[AudioPlayer] YouTube player initialization complete');
+            } catch (error) {
+                console.error('[AudioPlayer] Error in onYouTubePlayerReady:', error);
+            }
+        }
+        
+        // Ad Detection and Handling
+        function startAdDetection() {
+            if (adCheckInterval) clearInterval(adCheckInterval);
+            
+            adCheckInterval = setInterval(() => {
+                if (!youtubePlayer || !playerReady) return;
+                
+                try {
+                    // Check if we can get video data - if not, likely an ad is playing
+                    const duration = youtubePlayer.getDuration();
+                    const currentTime = youtubePlayer.getCurrentTime();
+                    const videoLoadedFraction = youtubePlayer.getVideoLoadedFraction();
+                    
+                    // If duration is 0 or very short, and something is playing, it's likely an ad
+                    const wasAdPlaying = isAdPlaying;
+                    isAdPlaying = (duration === 0 && youtubePlayer.getPlayerState() !== YT.PlayerState.UNSTARTED) || 
+                                 (duration > 0 && duration < 10 && videoLoadedFraction === 0);
+                    
+                    if (isAdPlaying && !wasAdPlaying) {
+                        console.log('[AudioPlayer] Ad detected, pausing UI updates');
+                        showInfo('Ad playing - audio will start after ad', 0);
+                        updatePlayButtonState(false);
+                    } else if (!isAdPlaying && wasAdPlaying) {
+                        console.log('[AudioPlayer] Ad finished, resuming normal playback');
+                        const newDuration = youtubePlayer.getDuration();
+                        if (newDuration > 0) {
+                            durationEl.textContent = formatTime(newDuration);
+                            showInfo('YouTube audio ready', 2000);
+                        }
+                    }
+                } catch (error) {
+                    // Ignore errors during ad detection
+                }
+            }, 500);
+        }
+        
+        function onYouTubePlayerStateChange(event) {
+            console.log('[AudioPlayer] YouTube state changed:', event.data, isAdPlaying ? '(Ad playing)' : '(Content)');
+            
+            // If we have embedding error, ignore state changes
+            if (hasEmbeddingError) {
+                console.log('[AudioPlayer] Ignoring state change due to embedding restriction');
+                return;
+            }
+            
+            // Handle different states with ad awareness
+            if (event.data === YT.PlayerState.PLAYING) {
+                retryCount = 0; // Reset retry count on successful play
+                if (!isAdPlaying) {
+                    playerContainer.classList.add('playing');
+                    updatePlayButtonState(true);
+                    loader.classList.add('hidden');
+                } else {
+                    // Ad is playing - show different UI state
+                    updatePlayButtonState(false);
+                    showInfo('Ad playing - please wait...', 0);
+                }
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                if (!isAdPlaying) {
+                    playerContainer.classList.remove('playing');
+                    updatePlayButtonState(false);
+                }
+            } else if (event.data === YT.PlayerState.BUFFERING) {
+                loader.classList.remove('hidden');
+                if (!isAdPlaying) {
+                    showInfo('Buffering...', 0);
+                }
+            } else if (event.data === YT.PlayerState.ENDED) {
+                playerContainer.classList.remove('playing');
+                updatePlayButtonState(false);
+                if (adCheckInterval) {
+                    clearInterval(adCheckInterval);
+                }
+            } else if (event.data === YT.PlayerState.UNSTARTED) {
+                // Video is loading - but check if we're in a retry loop
+                if (retryCount > maxRetries) {
+                    console.warn('[AudioPlayer] Too many retries, stopping attempts');
+                    hasEmbeddingError = true;
+                    const videoUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+                    showInfo(
+                        `Unable to load video. <a href="${videoUrl}" target="_blank" style="color: #4CAF50; text-decoration: underline;">Try opening in YouTube</a>`,
+                        0
+                    );
+                    return;
+                }
+                showInfo('Loading YouTube content...', 0);
+            }
+        }
+        
+        function onYouTubePlayerError(event) {
+            console.error('[AudioPlayer] YouTube player error:', event.data);
+            const errorMessages = {
+                2: 'Invalid video ID',
+                5: 'HTML5 player error',
+                100: 'Video not found or private',
+                101: 'Video not allowed to be played in embedded players',
+                150: 'Video not allowed to be played in embedded players'
+            };
+            const errorMsg = errorMessages[event.data] || 'Unknown error';
+            console.error('[AudioPlayer] Error details:', errorMsg);
+            
+            // Handle embedding restriction errors (101, 150)
+            if (event.data === 101 || event.data === 150) {
+                hasEmbeddingError = true;
+                
+                // Stop all intervals and detection
+                if (youtubeUpdateInterval) {
+                    clearInterval(youtubeUpdateInterval);
+                    youtubeUpdateInterval = null;
+                }
+                if (adCheckInterval) {
+                    clearInterval(adCheckInterval);
+                    adCheckInterval = null;
+                }
+                
+                loader.classList.add('hidden');
+                playerContainer.classList.remove('playing');
+                updatePlayButtonState(false);
+                
+                // Show helpful message with YouTube link
+                const videoUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+                showInfo(
+                    `This video cannot be embedded. <a href="${videoUrl}" target="_blank" style="color: #4CAF50; text-decoration: underline;">Open in YouTube</a>`,
+                    0
+                );
+                
+                return; // Stop processing
+            }
+            
+            // For other errors, show generic message
+            loader.classList.add('hidden');
+            showInfo('YouTube Error: ' + errorMsg, 8000);
+        }
 
         // --- Event Listeners ---
         
         playPauseBtn.addEventListener('click', togglePlay);
         
-        audio.addEventListener('play', () => {
-            playerContainer.classList.add('playing');
-            updatePlayButtonState(true);
-        });
+        // Regular audio element events (only for non-YouTube)
+        if (!isUsingYouTube) {
+            audio.addEventListener('play', () => {
+                playerContainer.classList.add('playing');
+                updatePlayButtonState(true);
+            });
 
-        audio.addEventListener('pause', () => {
-            playerContainer.classList.remove('playing');
-            updatePlayButtonState(false);
-        });
+            audio.addEventListener('pause', () => {
+                playerContainer.classList.remove('playing');
+                updatePlayButtonState(false);
+            });
 
-        audio.addEventListener('timeupdate', () => {
-            if (!audio.duration) return;
-            const percent = (audio.currentTime / audio.duration) * 100;
-            updateProgressUI(percent);
-            currentTimeEl.textContent = formatTime(audio.currentTime);
-        });
+            audio.addEventListener('timeupdate', () => {
+                if (!audio.duration) return;
+                const percent = (audio.currentTime / audio.duration) * 100;
+                updateProgressUI(percent);
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+            });
 
-        audio.addEventListener('loadedmetadata', () => {
-            durationEl.textContent = formatTime(audio.duration);
-        });
-        
-        audio.addEventListener('waiting', () => loader.classList.remove('hidden'));
-        audio.addEventListener('playing', () => loader.classList.add('hidden'));
+            audio.addEventListener('loadedmetadata', () => {
+                durationEl.textContent = formatTime(audio.duration);
+            });
+            
+            audio.addEventListener('waiting', () => loader.classList.remove('hidden'));
+            audio.addEventListener('playing', () => loader.classList.add('hidden'));
+        }
 
         // Seek Interaction
         progressHitArea.addEventListener('click', (e) => {
-            if (!audio.duration) return;
+            if (isUsingYouTube && isAdPlaying) {
+                showInfo('Cannot seek during ads', 2000);
+                return;
+            }
+            
+            const duration = isUsingYouTube ? youtubePlayer.getDuration() : audio.duration;
+            if (!duration) return;
             
             // Calculate click position relative to the SVG width
-            // Since it's an arc, linear mapping on X axis is a "good enough" approximation 
-            // for UX, though geometrically imperfect it works well for sliders.
             const rect = progressHitArea.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const percent = Math.max(0, Math.min(1, x / rect.width));
             
-            audio.currentTime = percent * audio.duration;
+            if (isUsingYouTube) {
+                youtubePlayer.seekTo(percent * duration, true);
+            } else {
+                audio.currentTime = percent * duration;
+            }
         });
 
         // Controls
         document.getElementById('prevBtn').addEventListener('click', () => {
-            audio.currentTime = Math.max(0, audio.currentTime - 10);
+            if (isUsingYouTube) {
+                if (isAdPlaying) {
+                    showInfo('Cannot seek during ads', 2000);
+                    return;
+                }
+                const currentTime = youtubePlayer.getCurrentTime();
+                youtubePlayer.seekTo(Math.max(0, currentTime - 10), true);
+            } else {
+                audio.currentTime = Math.max(0, audio.currentTime - 10);
+            }
         });
 
         document.getElementById('nextBtn').addEventListener('click', () => {
-            audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+            if (isUsingYouTube) {
+                if (isAdPlaying) {
+                    showInfo('Cannot seek during ads', 2000);
+                    return;
+                }
+                const currentTime = youtubePlayer.getCurrentTime();
+                const duration = youtubePlayer.getDuration();
+                youtubePlayer.seekTo(Math.min(duration, currentTime + 10), true);
+            } else {
+                audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+            }
         });
 
-        // Menu / Speed
+        // Menu
+        // Apply initial speed for non-YouTube audio now. YouTube rate is applied when player is ready.
+        if (!isUsingYouTube && typeof audio !== 'undefined') {
+            audio.playbackRate = initialSpeed;
+        }
+
         menuBtn.addEventListener('click', () => {
             menuModal.classList.add('active');
             menuOverlay.classList.add('active');
@@ -620,7 +966,14 @@
         speedOptions.forEach(opt => {
             opt.addEventListener('click', () => {
                 const speed = parseFloat(opt.dataset.speed);
-                audio.playbackRate = speed;
+                
+                if (isUsingYouTube && youtubePlayer) {
+                    youtubePlayer.setPlaybackRate(speed);
+                } else {
+                    audio.playbackRate = speed;
+                }
+                // Persist chosen speed
+                try { localStorage.setItem('audioPlayerSpeed', String(speed)); } catch (e) { /* ignore */ }
                 
                 // Update UI checkmarks
                 document.querySelectorAll('.speed-check').forEach(el => el.classList.add('hidden'));
@@ -634,11 +987,9 @@
 
         // --- Helpers ---
 
-        // --- Keyboard & Media Session ---
-
-        // Volume (Default 1) - Internal state only, no UI slider
-        let savedVolume = localStorage.getItem('leq_volume');
-        if (savedVolume !== null) {
+        // --- Volume Restoration ---
+        const savedVolume = localStorage.getItem('audioPlayerVolume');
+        if (savedVolume !== null && !isUsingYouTube) {
             audio.volume = parseFloat(savedVolume);
         }
 
@@ -654,10 +1005,49 @@
         }
 
         function togglePlay() {
-            if (audio.paused) {
-                audio.play();
+            if (isUsingYouTube) {
+                if (!youtubePlayer || !playerReady) {
+                    console.error('[AudioPlayer] YouTube player not initialized');
+                    showInfo('Player not ready yet', 2000);
+                    return;
+                }
+                
+                if (hasEmbeddingError) {
+                    const videoUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+                    showInfo(
+                        `Video restricted. <a href="${videoUrl}" target="_blank" style="color: #4CAF50; text-decoration: underline;">Open in YouTube</a>`,
+                        5000
+                    );
+                    return;
+                }
+                
+                if (isAdPlaying) {
+                    showInfo('Please wait for ad to finish', 3000);
+                    return;
+                }
+                
+                try {
+                    const state = youtubePlayer.getPlayerState();
+                    console.log('[AudioPlayer] Current player state:', state);
+                    
+                    if (state === YT.PlayerState.PLAYING) {
+                        console.log('[AudioPlayer] Pausing YouTube video');
+                        youtubePlayer.pauseVideo();
+                    } else {
+                        console.log('[AudioPlayer] Playing YouTube video');
+                        retryCount++;
+                        youtubePlayer.playVideo();
+                    }
+                } catch (error) {
+                    console.error('[AudioPlayer] Error in togglePlay:', error);
+                    showInfo('Playback error occurred', 3000);
+                }
             } else {
-                audio.pause();
+                if (audio.paused) {
+                    audio.play();
+                } else {
+                    audio.pause();
+                }
             }
         }
 
@@ -672,27 +1062,60 @@
                     break;
                 case 'arrowleft':
                 case 'j':
-                    audio.currentTime = Math.max(0, audio.currentTime - 10);
+                    if (isUsingYouTube) {
+                        if (isAdPlaying) {
+                            showInfo('Cannot seek during ads', 2000);
+                            return;
+                        }
+                        const currentTime = youtubePlayer.getCurrentTime();
+                        youtubePlayer.seekTo(Math.max(0, currentTime - 10), true);
+                    } else {
+                        audio.currentTime = Math.max(0, audio.currentTime - 10);
+                    }
                     break;
                 case 'arrowright':
                 case 'l':
-                    audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+                    if (isUsingYouTube) {
+                        if (isAdPlaying) {
+                            showInfo('Cannot seek during ads', 2000);
+                            return;
+                        }
+                        const currentTime = youtubePlayer.getCurrentTime();
+                        const duration = youtubePlayer.getDuration();
+                        youtubePlayer.seekTo(Math.min(duration, currentTime + 10), true);
+                    } else {
+                        audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+                    }
                     break;
                 case 'arrowup':
                     e.preventDefault();
-                    audio.volume = Math.min(1, audio.volume + 0.1);
-                    volumeSlider.value = audio.volume;
+                    if (!isUsingYouTube) {
+                        audio.volume = Math.min(1, audio.volume + 0.1);
+                        localStorage.setItem('leq_volume', audio.volume);
+                    }
                     break;
                 case 'arrowdown':
                     e.preventDefault();
-                    audio.volume = Math.max(0, audio.volume - 0.1);
-                    volumeSlider.value = audio.volume;
+                    if (!isUsingYouTube) {
+                        audio.volume = Math.max(0, audio.volume - 0.1);
+                        localStorage.setItem('leq_volume', audio.volume);
+                    }
                     break;
             }
         });
 
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (youtubeUpdateInterval) {
+                clearInterval(youtubeUpdateInterval);
+            }
+            if (adCheckInterval) {
+                clearInterval(adCheckInterval);
+            }
+        });
+
         // Media Session API
-        if ('mediaSession' in navigator) {
+        if ('mediaSession' in navigator && !isUsingYouTube) {
             audio.addEventListener('play', () => {
                 navigator.mediaSession.playbackState = 'playing';
             });
@@ -743,16 +1166,43 @@
             return `${m}:${s.toString().padStart(2, '0')}`;
         }
 
-        // Active speed check init
-        document.getElementById('check-1.0').classList.remove('hidden');
+        // Active speed check init - show the saved/default speed
+        try {
+            speedOptions.forEach(opt => {
+                const chk = opt.querySelector('.speed-check');
+                if (!chk) return;
+                if (parseFloat(opt.dataset.speed) === initialSpeed) {
+                    chk.classList.remove('hidden');
+                } else {
+                    chk.classList.add('hidden');
+                }
+            });
+        } catch (e) {
+            const el = document.getElementById('check-1.0');
+            if (el) el.classList.remove('hidden');
+        }
 
-        // Progress Tracking (Legacy support)
-        // Keep the progress tracking logic for backend
+        // Progress Tracking
         const lessonId = "{% if lesson %}{{ lesson.id }}{% endif %}";
         function updateProgressTracking() {
-            if (!lessonId || !audio.currentTime) return;
-            const watchTime = Math.floor(audio.currentTime);
-            const duration = Math.floor(audio.duration);
+            if (!lessonId) return;
+            
+            let watchTime, duration, isPaused, playbackRate;
+            
+            if (isUsingYouTube) {
+                if (!youtubePlayer) return;
+                watchTime = Math.floor(youtubePlayer.getCurrentTime());
+                duration = Math.floor(youtubePlayer.getDuration());
+                isPaused = youtubePlayer.getPlayerState() !== YT.PlayerState.PLAYING;
+                playbackRate = youtubePlayer.getPlaybackRate();
+            } else {
+                if (!audio.currentTime) return;
+                watchTime = Math.floor(audio.currentTime);
+                duration = Math.floor(audio.duration);
+                isPaused = audio.paused;
+                playbackRate = audio.playbackRate;
+            }
+            
             const isCompleted = duration > 0 && watchTime >= duration * 0.9;
             const csrfToken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
             
@@ -765,14 +1215,20 @@
                 body: JSON.stringify({ 
                     watchTime, 
                     isCompleted,
-                    playerState: audio.paused ? 4 : 3, // Simple mapping
-                    playbackRate: audio.playbackRate
+                    playerState: isPaused ? 4 : 3,
+                    playbackRate: playbackRate
                 })
             }).catch(err => console.error(err));
         }
 
         setInterval(() => {
-            if (!audio.paused) updateProgressTracking();
+            if (isUsingYouTube) {
+                if (youtubePlayer && youtubePlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+                    updateProgressTracking();
+                }
+            } else {
+                if (!audio.paused) updateProgressTracking();
+            }
         }, 10000);
         
         window.addEventListener('beforeunload', updateProgressTracking);

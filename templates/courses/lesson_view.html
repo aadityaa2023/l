@@ -158,11 +158,7 @@ footer { display: none !important; }
                         {% endif %}
                         <span style="color: #9CA3AF;">
                             <i class="fas fa-{% if lesson.lesson_type == 'video' %}video{% elif lesson.lesson_type == 'audio' %}headphones{% else %}book{% endif %} me-1"></i>
-                            {% if lesson.has_youtube_video %}
-                                Video
-                            {% else %}
-                                {{ lesson.get_lesson_type_display }}
-                            {% endif %}
+                            {{ lesson.get_lesson_type_display }}
                         </span>
                     </div>
                 </div>
@@ -180,7 +176,7 @@ footer { display: none !important; }
                         <div class="p-4">
                         <div class="position-relative overflow-hidden rounded-3 player-preview" 
                              style="cursor: pointer;" 
-                             onclick="window.open('{% if lesson.has_youtube_video %}{% url 'courses:lesson_video_player' lesson.slug %}{% elif lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}', '_blank')">"
+                             onclick="window.open('{% if lesson.has_youtube_video and lesson.lesson_type == 'audio' %}{% url 'courses:lesson_audio_player' lesson.slug %}{% elif lesson.has_youtube_video or lesson.lesson_type == 'video' %}{% url 'courses:lesson_video_player' lesson.slug %}{% else %}{% url 'courses:lesson_audio_player' lesson.slug %}{% endif %}', '_blank')">"
                             <!-- Thumbnail/Cover -->
                             <div class="ratio ratio-16x9" style="background: linear-gradient(135deg, #1F1F1F 0%, #2A2A2A 100%);">
                                 {% if lesson.has_youtube_video %}
@@ -209,10 +205,10 @@ footer { display: none !important; }
                                             <i class="fas fa-play" style="color: #8B5CF6; font-size: 36px; margin-left: 6px;"></i>
                                         </div>
                                         <p class="text-white mt-4 mb-0 fw-bold" style="font-size: 1.1rem; letter-spacing: 0.5px;">
-                                            {% if lesson.lesson_type == 'video' %}
-                                                Open Video Player
-                                            {% else %}
+                                            {% if lesson.lesson_type == 'audio' %}
                                                 Open Audio Player
+                                            {% else %}
+                                                Open Video Player
                                             {% endif %}
                                         </p>
                                         {% if lesson.duration_minutes %}

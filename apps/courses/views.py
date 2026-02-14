@@ -445,9 +445,22 @@ def lesson_audio_player(request, slug):
         )
     
     # Select the best audio URL: prefer Lesson.audio_file, then media_files of type 'audio'
+    # Also check for YouTube URLs when lesson type is audio
     audio_url = None
+    has_youtube_audio = False
+    youtube_video_id = None
+    
     try:
-        if lesson.audio_file:
+        # Check for YouTube URL first when lesson type is audio
+        if lesson.lesson_type == 'audio' and lesson.has_youtube_video:
+            has_youtube_audio = True
+            youtube_video_id = lesson.youtube_video_id
+            # If youtube_video_id is not stored, extract it
+            if not youtube_video_id and lesson.youtube_video_url:
+                from apps.common.youtube_utils import extract_youtube_video_id
+                youtube_video_id = extract_youtube_video_id(lesson.youtube_video_url)
+        # Fallback to regular audio files
+        elif lesson.audio_file:
             audio_url = lesson.get_audio_url
         else:
             audio_media = lesson.media_files.filter(media_type='audio').order_by('order').first()
@@ -462,6 +475,8 @@ def lesson_audio_player(request, slug):
         'enrollment': enrollment,
         'progress': progress,
         'audio_url': audio_url,
+        'has_youtube_audio': has_youtube_audio,
+        'youtube_video_id': youtube_video_id,
     }
 
     return render(request, 'lessons/audioplayer.html', context)
