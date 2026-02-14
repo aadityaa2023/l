@@ -1100,3 +1100,98 @@ class PageContentForm(forms.Form):
         label='Display Order'
     )
 
+
+class TeamMemberForm(forms.Form):
+    """Form for creating and editing team members"""
+    
+    name = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Full Name'
+        }),
+        label='Name'
+    )
+    
+    designation = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Job Title or Role'
+        }),
+        label='Designation'
+    )
+    
+    subject = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Area of Expertise'
+        }),
+        label='Subject/Expertise'
+    )
+    
+    experience = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., 5 years, 10+ years'
+        }),
+        label='Experience'
+    )
+    
+    photo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        }),
+        label='Photo',
+        help_text='Recommended size: 400x400px'
+    )
+    
+    bio = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Short biography or description'
+        }),
+        label='Biography'
+    )
+    
+    linkedin_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://linkedin.com/in/username'
+        }),
+        label='LinkedIn URL'
+    )
+    
+    twitter_url = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://twitter.com/username'
+        }),
+        label='Twitter URL'
+    )
+    
+    is_active = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Display on About Us Page'
+    )
+    
+    display_order = forms.IntegerField(
+        min_value=0,
+        initial=0,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Display order (lower numbers first)'
+        }),
+        label='Display Order'
+    )
+

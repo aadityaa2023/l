@@ -519,6 +519,10 @@
           class="menu-item {% if request.resolver_match.url_name == 'footer_settings' %}active{% endif %}">
           <i class="fas fa-shoe-prints"></i> Footer Settings
         </a>
+        <a href="{% url 'platformadmin:team_member_list' %}"
+          class="menu-item {% if 'team_member' in request.resolver_match.url_name %}active{% endif %}">
+          <i class="fas fa-user-tie"></i> Team Members
+        </a>
         {# Page Content removed from Feature Settings menu #}
       </div>
 

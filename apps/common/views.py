@@ -110,7 +110,16 @@ from django.contrib import messages
 
 def about_view(request):
     """Render About Us page"""
-    return render(request, 'pages/about.html')
+    from apps.platformadmin.models import TeamMember
+    
+    # Get active team members ordered by display_order
+    team_members = TeamMember.objects.filter(is_active=True).order_by('display_order', 'name')
+    
+    context = {
+        'team_members': team_members
+    }
+    
+    return render(request, 'pages/about.html', context)
 
 
 def contact_view(request):

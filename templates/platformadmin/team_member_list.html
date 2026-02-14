@@ -1,0 +1,172 @@
+{% extends 'platformadmin/base.html' %}
+{% load humanize %}
+
+{% block platformadmin_content %}
+<div class="platformadmin-header">
+    <h1>
+        <i class="fas fa-users"></i> Team Member Management
+    </h1>
+    <a href="{% url 'platformadmin:team_member_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Team Member
+    </a>
+</div>
+
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-7">
+                <input type="text" name="search" class="form-control" placeholder="Search by name, designation, or subject..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Team Members Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Team Members ({{ page_obj.paginator.count }})</h5>
+    </div>
+    <div class="card-body">
+        {% if team_members %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Photo</th>
+                        <th>Name</th>
+                        <th>Designation</th>
+                        <th>Subject/Expertise</th>
+                        <th>Experience</th>
+                        <th>Order</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in team_members %}
+                    <tr>
+                        <td>
+                            {% if member.photo %}
+                                <img src="{{ member.photo.url }}" alt="{{ member.name }}" 
+                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%;">
+                            {% else %}
+                                <div style="width: 50px; height: 50px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                    {{ member.name|first|upper }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ member.name }}</strong>
+                            {% if member.bio %}
+                                <br><small class="text-muted">{{ member.bio|truncatewords:10 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ member.designation }}</td>
+                        <td>{{ member.subject }}</td>
+                        <td>{{ member.experience }}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ member.display_order }}</span>
+                        </td>
+                        <td>
+                            {% if member.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <form method="post" action="{% url 'platformadmin:team_member_toggle_status' member.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-{% if member.is_active %}warning{% else %}success{% endif %}" 
+                                            title="{% if member.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                        <i class="fas fa-{% if member.is_active %}pause{% else %}play{% endif %}"></i>
+                                    </button>
+                                </form>
+                                <a href="{% url 'platformadmin:team_member_edit' member.id %}" 
+                                   class="btn btn-outline-secondary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'platformadmin:team_member_delete' member.id %}" 
+                                   class="btn btn-outline-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Team member pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Last</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No team members found. <a href="{% url 'platformadmin:team_member_create' %}">Add your first team member</a>.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.platformadmin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.platformadmin-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

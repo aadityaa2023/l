@@ -143,6 +143,13 @@ urlpatterns = [
     # Feature Settings Module
     path('feature-settings/footer/', feature_settings_views.footer_settings, name='footer_settings'),
     
+    # Team Member Management
+    path('team-members/', views.team_member_list, name='team_member_list'),
+    path('team-members/create/', views.team_member_create, name='team_member_create'),
+    path('team-members/<int:member_id>/edit/', views.team_member_edit, name='team_member_edit'),
+    path('team-members/<int:member_id>/delete/', views.team_member_delete, name='team_member_delete'),
+    path('team-members/<int:member_id>/toggle-status/', views.team_member_toggle_status, name='team_member_toggle_status'),
+    
     # Page Content management removed from platformadmin routes (feature disabled)
 ]
 

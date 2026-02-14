@@ -9,7 +9,7 @@ from apps.platformadmin.models import (
     AdminLog, CourseApproval, DashboardStat, PlatformSetting,
     LoginHistory, CMSPage, FAQ, Announcement, InstructorPayout,
     VideoSettings, CourseAssignment, TeacherCommission, PayoutTransaction,
-    FreeUser
+    FreeUser, TeamMember
 )
 
 User = get_user_model()
@@ -222,6 +222,45 @@ class FreeUserAdmin(admin.ModelAdmin):
             'fields': ('assigned_at', 'updated_at')
         }),
     )
+
+
+@admin.register(TeamMember)
+class TeamMemberAdmin(admin.ModelAdmin):
+    """Admin interface for team members"""
+    list_display = ['name', 'designation', 'subject', 'experience', 'is_active', 'display_order', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['name', 'designation', 'subject', 'bio']
+    readonly_fields = ['created_at', 'updated_at', 'created_by', 'updated_by']
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'designation', 'subject', 'experience')
+        }),
+        ('Photo', {
+            'fields': ('photo',)
+        }),
+        ('Additional Information', {
+            'fields': ('bio',),
+            'classes': ('collapse',)
+        }),
+        ('Social Links', {
+            'fields': ('linkedin_url', 'twitter_url'),
+            'classes': ('collapse',)
+        }),
+        ('Display Settings', {
+            'fields': ('is_active', 'display_order')
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at', 'created_by', 'updated_by'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
 
 
 class PlatformSettingAdmin(admin.ModelAdmin):

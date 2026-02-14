@@ -2392,4 +2392,244 @@ def toggle_free_user_status(request, user_id):
     return redirect('platformadmin:free_users_list')
 
 
+# ============================
+# Team Member Management Views
+# ============================
 
+@platformadmin_required
+def team_member_list(request):
+    """List all team members"""
+    from apps.platformadmin.models import TeamMember
+    
+    search = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    
+    team_members = TeamMember.objects.all()
+    
+    # Apply filters
+    if search:
+        team_members = team_members.filter(
+            Q(name__icontains=search) |
+            Q(designation__icontains=search) |
+            Q(subject__icontains=search)
+        )
+    
+    if status_filter == 'active':
+        team_members = team_members.filter(is_active=True)
+    elif status_filter == 'inactive':
+        team_members = team_members.filter(is_active=False)
+    
+    team_members = team_members.order_by('display_order', 'name')
+    
+    # Pagination
+    paginator = Paginator(team_members, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = get_context_data(request)
+    context.update({
+        'page_obj': page_obj,
+        'team_members': page_obj.object_list,
+        'search': search,
+        'status_filter': status_filter,
+    })
+    
+    return render(request, 'platformadmin/team_member_list.html', context)
+
+
+@platformadmin_required
+def team_member_create(request):
+    """Create new team member"""
+    from apps.platformadmin.models import TeamMember
+    from apps.platformadmin.forms import TeamMemberForm
+    
+    if request.method == 'POST':
+        form = TeamMemberForm(request.POST, request.FILES)
+        if form.is_valid():
+            team_member = TeamMember.objects.create(
+                name=form.cleaned_data['name'],
+                designation=form.cleaned_data['designation'],
+                subject=form.cleaned_data['subject'],
+                experience=form.cleaned_data['experience'],
+                bio=form.cleaned_data.get('bio', ''),
+                linkedin_url=form.cleaned_data.get('linkedin_url', ''),
+                twitter_url=form.cleaned_data.get('twitter_url', ''),
+                is_active=form.cleaned_data.get('is_active', True),
+                display_order=form.cleaned_data.get('display_order', 0),
+                created_by=request.user,
+                updated_by=request.user
+            )
+            
+            # Handle photo upload
+            if 'photo' in request.FILES:
+                team_member.photo = request.FILES['photo']
+                team_member.save()
+            
+            # Log the action
+            AdminLog.objects.create(
+                admin=request.user,
+                action='create',
+                content_type='TeamMember',
+                object_id=str(team_member.id),
+                object_repr=f"{team_member.name} - {team_member.designation}",
+                old_values={},
+                new_values={
+                    'name': team_member.name,
+                    'designation': team_member.designation,
+                    'subject': team_member.subject,
+                    'experience': team_member.experience,
+                }
+            )
+            
+            messages.success(request, f'Team member "{team_member.name}" created successfully!')
+            return redirect('platformadmin:team_member_list')
+    else:
+        form = TeamMemberForm()
+    
+    context = get_context_data(request)
+    context['form'] = form
+    
+    return render(request, 'platformadmin/team_member_form.html', context)
+
+
+@platformadmin_required
+def team_member_edit(request, member_id):
+    """Edit existing team member"""
+    from apps.platformadmin.models import TeamMember
+    from apps.platformadmin.forms import TeamMemberForm
+    
+    team_member = get_object_or_404(TeamMember, id=member_id)
+    
+    if request.method == 'POST':
+        form = TeamMemberForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Store old values for logging
+            old_values = {
+                'name': team_member.name,
+                'designation': team_member.designation,
+                'subject': team_member.subject,
+                'experience': team_member.experience,
+            }
+            
+            # Update fields
+            team_member.name = form.cleaned_data['name']
+            team_member.designation = form.cleaned_data['designation']
+            team_member.subject = form.cleaned_data['subject']
+            team_member.experience = form.cleaned_data['experience']
+            team_member.bio = form.cleaned_data.get('bio', '')
+            team_member.linkedin_url = form.cleaned_data.get('linkedin_url', '')
+            team_member.twitter_url = form.cleaned_data.get('twitter_url', '')
+            team_member.is_active = form.cleaned_data.get('is_active', True)
+            team_member.display_order = form.cleaned_data.get('display_order', 0)
+            team_member.updated_by = request.user
+            
+            # Handle photo upload
+            if 'photo' in request.FILES:
+                team_member.photo = request.FILES['photo']
+            
+            team_member.save()
+            
+            # Log the action
+            AdminLog.objects.create(
+                admin=request.user,
+                action='update',
+                content_type='TeamMember',
+                object_id=str(team_member.id),
+                object_repr=f"{team_member.name} - {team_member.designation}",
+                old_values=old_values,
+                new_values={
+                    'name': team_member.name,
+                    'designation': team_member.designation,
+                    'subject': team_member.subject,
+                    'experience': team_member.experience,
+                }
+            )
+            
+            messages.success(request, f'Team member "{team_member.name}" updated successfully!')
+            return redirect('platformadmin:team_member_list')
+    else:
+        # Pre-populate form with existing data
+        form = TeamMemberForm(initial={
+            'name': team_member.name,
+            'designation': team_member.designation,
+            'subject': team_member.subject,
+            'experience': team_member.experience,
+            'bio': team_member.bio,
+            'linkedin_url': team_member.linkedin_url,
+            'twitter_url': team_member.twitter_url,
+            'is_active': team_member.is_active,
+            'display_order': team_member.display_order,
+        })
+    
+    context = get_context_data(request)
+    context.update({
+        'form': form,
+        'team_member': team_member,
+        'is_edit': True,
+    })
+    
+    return render(request, 'platformadmin/team_member_form.html', context)
+
+
+@platformadmin_required
+def team_member_delete(request, member_id):
+    """Delete team member"""
+    from apps.platformadmin.models import TeamMember
+    
+    team_member = get_object_or_404(TeamMember, id=member_id)
+    
+    if request.method == 'POST':
+        # Log the action
+        AdminLog.objects.create(
+            admin=request.user,
+            action='delete',
+            content_type='TeamMember',
+            object_id=str(team_member.id),
+            object_repr=f"{team_member.name} - {team_member.designation}",
+            old_values={
+                'name': team_member.name,
+                'designation': team_member.designation,
+                'subject': team_member.subject,
+                'experience': team_member.experience,
+            },
+            new_values={}
+        )
+        
+        name = team_member.name
+        team_member.delete()
+        messages.success(request, f'Team member "{name}" deleted successfully!')
+        return redirect('platformadmin:team_member_list')
+    
+    context = get_context_data(request)
+    context['team_member'] = team_member
+    
+    return render(request, 'platformadmin/team_member_delete_confirm.html', context)
+
+
+@platformadmin_required
+@require_http_methods(['POST'])
+def team_member_toggle_status(request, member_id):
+    """Toggle active status of team member"""
+    from apps.platformadmin.models import TeamMember
+    
+    team_member = get_object_or_404(TeamMember, id=member_id)
+    
+    old_status = team_member.is_active
+    team_member.is_active = not team_member.is_active
+    team_member.updated_by = request.user
+    team_member.save()
+    
+    # Log the action
+    AdminLog.objects.create(
+        admin=request.user,
+        action='update',
+        content_type='TeamMember',
+        object_id=str(team_member.id),
+        object_repr=f"{team_member.name} - {team_member.designation}",
+        old_values={'is_active': old_status},
+        new_values={'is_active': team_member.is_active}
+    )
+    
+    status_text = 'activated' if team_member.is_active else 'deactivated'
+    messages.success(request, f'Team member "{team_member.name}" {status_text}!')
+    return redirect('platformadmin:team_member_list')

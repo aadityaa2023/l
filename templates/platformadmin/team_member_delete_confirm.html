@@ -1,0 +1,132 @@
+{% extends 'platformadmin/base.html' %}
+
+{% block platformadmin_content %}
+<div class="platformadmin-header">
+    <h1>
+        <i class="fas fa-trash"></i> Delete Team Member
+    </h1>
+    <a href="{% url 'platformadmin:team_member_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to List
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Delete
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <p class="mb-0">You are about to delete the following team member. This action cannot be undone.</p>
+                </div>
+
+                <div class="team-member-preview mb-4">
+                    <div class="text-center mb-3">
+                        {% if team_member.photo %}
+                            <img src="{{ team_member.photo.url }}" alt="{{ team_member.name }}" 
+                                 style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid #667eea;">
+                        {% else %}
+                            <div style="width: 120px; height: 120px; background: #667eea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 48px; margin: 0 auto;">
+                                {{ team_member.name|first|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="details">
+                        <h5 class="text-center mb-3">{{ team_member.name }}</h5>
+                        
+                        <div class="row mb-2">
+                            <div class="col-5 text-end text-muted">Designation:</div>
+                            <div class="col-7"><strong>{{ team_member.designation }}</strong></div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col-5 text-end text-muted">Subject/Expertise:</div>
+                            <div class="col-7"><strong>{{ team_member.subject }}</strong></div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col-5 text-end text-muted">Experience:</div>
+                            <div class="col-7"><strong>{{ team_member.experience }}</strong></div>
+                        </div>
+                        
+                        {% if team_member.bio %}
+                        <div class="row mb-2">
+                            <div class="col-5 text-end text-muted">Bio:</div>
+                            <div class="col-7">{{ team_member.bio|truncatewords:20 }}</div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row mb-2">
+                            <div class="col-5 text-end text-muted">Status:</div>
+                            <div class="col-7">
+                                {% if team_member.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-2">
+                            <div class="col-5 text-end text-muted">Display Order:</div>
+                            <div class="col-7"><strong>{{ team_member.display_order }}</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Warning</h6>
+                    <ul class="mb-0">
+                        <li>This team member will be permanently removed from the database</li>
+                        <li>They will no longer appear on the About Us page</li>
+                        <li>This action cannot be undone</li>
+                    </ul>
+                </div>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'platformadmin:team_member_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Yes, Delete Team Member
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.platformadmin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.platformadmin-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.team-member-preview {
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}

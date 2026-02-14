@@ -1074,3 +1074,57 @@ class PageContent(models.Model):
     
     def __str__(self):
         return f"{self.get_page_type_display()} - {self.title}"
+
+
+class TeamMember(models.Model):
+    """Manage team members displayed on About Us page"""
+    
+    # Basic information
+    name = models.CharField(_('name'), max_length=150, help_text="Full name of the team member")
+    designation = models.CharField(_('designation'), max_length=150, help_text="Job title or role")
+    subject = models.CharField(_('subject/expertise'), max_length=200, help_text="Area of expertise or subject focus")
+    experience = models.CharField(_('experience'), max_length=100, help_text="Years of experience (e.g., '5 years', '10+ years')")
+    
+    # Photo
+    photo = models.ImageField(
+        _('photo'), 
+        upload_to='team_members/', 
+        help_text="Team member photo (recommended: 400x400px)"
+    )
+    
+    # Additional info
+    bio = models.TextField(_('biography'), blank=True, help_text="Short biography or description")
+    
+    # Social links (optional)
+    linkedin_url = models.URLField(_('LinkedIn URL'), blank=True)
+    twitter_url = models.URLField(_('Twitter URL'), blank=True)
+    
+    # Display settings
+    is_active = models.BooleanField(_('is active'), default=True, help_text="Display on About Us page")
+    display_order = models.PositiveIntegerField(_('display order'), default=0, help_text="Order of appearance (lower numbers first)")
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_team_members'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_team_members'
+    )
+    
+    class Meta:
+        verbose_name = _('team member')
+        verbose_name_plural = _('team members')
+        ordering = ['display_order', 'name']
+    
+    def __str__(self):
+        return f"{self.name} - {self.designation}"
