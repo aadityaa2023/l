@@ -15,16 +15,17 @@
                         
                         <div class="text-center mb-4">
                             {% if user.is_student and user.student_profile.profile_picture %}
-                            <img src="{{ user.student_profile.profile_picture.url }}" class="rounded-circle mb-3" width="120" height="120" alt="Profile">
+                            <img id="profilePreview" src="{{ user.student_profile.profile_picture.url }}" class="rounded-circle mb-3" width="120" height="120" alt="Profile" style="object-fit: cover;">
                             {% elif user.is_teacher and user.teacher_profile.profile_picture %}
-                            <img src="{{ user.teacher_profile.profile_picture.url }}" class="rounded-circle mb-3" width="120" height="120" alt="Profile">
+                            <img id="profilePreview" src="{{ user.teacher_profile.profile_picture.url }}" class="rounded-circle mb-3" width="120" height="120" alt="Profile" style="object-fit: cover;">
                             {% else %}
-                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px; font-size: 3rem;">
+                            <div id="profilePlaceholder" class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px; font-size: 3rem;">
                                 {{ user.first_name.0|default:user.email.0|upper }}
                             </div>
+                            <img id="profilePreview" src="" class="rounded-circle mb-3 d-none" width="120" height="120" alt="Profile" style="object-fit: cover;">
                             {% endif %}
                             <div>
-                                <label for="profile_picture" class="btn btn-sm btn-outline-primary">
+                                <label for="profile_picture" class="btn btn-sm btn-outline-primary" style="cursor: pointer;">
                                     <i class="fas fa-camera me-2"></i>Change Photo
                                 </label>
                                 <input type="file" id="profile_picture" name="profile_picture" class="d-none" accept="image/*">
@@ -70,4 +71,28 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Profile picture preview
+    document.getElementById('profile_picture').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('profilePreview');
+                const placeholder = document.getElementById('profilePlaceholder');
+                
+                preview.src = e.target.result;
+                preview.classList.remove('d-none');
+                
+                if (placeholder) {
+                    placeholder.classList.add('d-none');
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
 {% endblock %}

@@ -9,10 +9,8 @@
             <div class="col-lg-4 mb-4">
                 <div class="card-custom p-4 text-center">
                     <div class="mb-3">
-                        {% if user.is_student and user.student_profile.profile_picture %}
-                        <img src="{{ user.student_profile.profile_picture.url }}" class="rounded-circle" width="120" height="120" alt="Profile">
-                        {% elif user.is_teacher and user.teacher_profile.profile_picture %}
-                        <img src="{{ user.teacher_profile.profile_picture.url }}" class="rounded-circle" width="120" height="120" alt="Profile">
+                        {% if user.get_profile_picture_url %}
+                        <img src="{{ user.get_profile_picture_url }}" class="rounded-circle" width="120" height="120" alt="Profile" style="object-fit: cover;">
                         {% else %}
                         <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px; font-size: 3rem;">
                             {{ user.first_name.0|default:user.email.0|upper }}

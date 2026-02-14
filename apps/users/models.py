@@ -99,6 +99,39 @@ class User(AbstractBaseUser, PermissionsMixin):
             return free_user.has_access() if free_user else False
         except Exception:
             return False
+    
+    def get_profile_picture_url(self):
+        """Get the profile picture URL with cache busting"""
+        try:
+            # Check based on role first
+            if self.is_student or self.role == 'student':
+                profile = self.student_profile
+                if profile and profile.profile_picture:
+                    timestamp = int(profile.updated_at.timestamp())
+                    return f"{profile.profile_picture.url}?v={timestamp}"
+            
+            if self.is_teacher or self.role == 'teacher':
+                profile = self.teacher_profile
+                if profile and profile.profile_picture:
+                    timestamp = int(profile.updated_at.timestamp())
+                    return f"{profile.profile_picture.url}?v={timestamp}"
+            
+            # Fallback: Check both profiles for any other roles (like admin)
+            if hasattr(self, 'student_profile'):
+                profile = self.student_profile
+                if profile and profile.profile_picture:
+                    timestamp = int(profile.updated_at.timestamp())
+                    return f"{profile.profile_picture.url}?v={timestamp}"
+            
+            if hasattr(self, 'teacher_profile'):
+                profile = self.teacher_profile
+                if profile and profile.profile_picture:
+                    timestamp = int(profile.updated_at.timestamp())
+                    return f"{profile.profile_picture.url}?v={timestamp}"
+                    
+        except Exception:
+            pass
+        return None
 
 
 class StudentProfile(models.Model):

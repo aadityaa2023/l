@@ -214,7 +214,8 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'profile_user'
     
     def get_object(self):
-        return self.request.user
+        # Refresh user from database to ensure latest profile picture
+        return User.objects.select_related('student_profile', 'teacher_profile').get(pk=self.request.user.pk)
 
 
 class ProfileUpdateView(LoginRequiredMixin, UpdateView):
@@ -230,6 +231,16 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
     def get_object(self):
         return self.request.user
     
+    def post(self, request, *args, **kwargs):
+        """Override post to handle file uploads properly"""
+        self.object = self.get_object()
+        form = self.get_form()
+        
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+    
     def form_valid(self, form):
         # Save user fields first
         user = form.save()
@@ -237,7 +248,7 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
         # Ensure related profile exists and save profile-specific fields
         # Profile fields may come from POST or FILES (for profile_picture)
         bio = self.request.POST.get('bio', None)
-        profile_pic = self.request.FILES.get('profile_picture') if self.request.method == 'POST' else None
+        profile_pic = self.request.FILES.get('profile_picture', None)
 
         if getattr(self.request.user, 'is_teacher', False):
             teacher_profile, created = TeacherProfile.objects.get_or_create(
@@ -247,6 +258,9 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
             if bio is not None:
                 teacher_profile.bio = bio
             if profile_pic:
+                # Delete old profile picture if it exists
+                if teacher_profile.profile_picture:
+                    teacher_profile.profile_picture.delete(save=False)
                 teacher_profile.profile_picture = profile_pic
             teacher_profile.save()
         else:
@@ -256,6 +270,9 @@ class ProfileUpdateView(LoginRequiredMixin, UpdateView):
             if bio is not None:
                 student_profile.bio = bio
             if profile_pic:
+                # Delete old profile picture if it exists
+                if student_profile.profile_picture:
+                    student_profile.profile_picture.delete(save=False)
                 student_profile.profile_picture = profile_pic
             student_profile.save()
 

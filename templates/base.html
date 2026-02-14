@@ -913,11 +913,8 @@
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown"
                             role="button" data-bs-toggle="dropdown">
                             <div class="avatar-circle me-2">
-                                {% if user.is_student and user.student_profile and user.student_profile.profile_picture %}
-                                <img src="{{ user.student_profile.profile_picture.url }}" alt="Profile"
-                                    class="rounded-circle" width="32" height="32" style="object-fit: cover;">
-                                {% elif user.is_teacher and user.teacher_profile and user.teacher_profile.profile_picture %}
-                                <img src="{{ user.teacher_profile.profile_picture.url }}" alt="Profile"
+                                {% if user.get_profile_picture_url %}
+                                <img src="{{ user.get_profile_picture_url }}" alt="Profile"
                                     class="rounded-circle" width="32" height="32" style="object-fit: cover;">
                                 {% else %}
                                 <div class="rounded-circle d-flex align-items-center justify-content-center"
