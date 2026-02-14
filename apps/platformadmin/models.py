@@ -1077,13 +1077,16 @@ class PageContent(models.Model):
 
 
 class TeamMember(models.Model):
-    """Manage team members displayed on About Us page"""
+    """Manage team members displayed on Teams page"""
     
     # Basic information
     name = models.CharField(_('name'), max_length=150, help_text="Full name of the team member")
     designation = models.CharField(_('designation'), max_length=150, help_text="Job title or role")
     subject = models.CharField(_('subject/expertise'), max_length=200, help_text="Area of expertise or subject focus")
-    experience = models.CharField(_('experience'), max_length=100, help_text="Years of experience (e.g., '5 years', '10+ years')")
+    experience = models.CharField(_('experience'), max_length=100, blank=True, default='', help_text="Years of experience (e.g., '5 years', '10+ years')")
+    # Contact
+    email = models.EmailField(_('email'), blank=True, default='')
+    phone = models.CharField(_('phone'), max_length=20, blank=True, default='')
     
     # Photo
     photo = models.ImageField(
@@ -1100,7 +1103,7 @@ class TeamMember(models.Model):
     twitter_url = models.URLField(_('Twitter URL'), blank=True)
     
     # Display settings
-    is_active = models.BooleanField(_('is active'), default=True, help_text="Display on About Us page")
+    is_active = models.BooleanField(_('is active'), default=True, help_text="Display on Teams page")
     display_order = models.PositiveIntegerField(_('display order'), default=0, help_text="Order of appearance (lower numbers first)")
     
     # Timestamps

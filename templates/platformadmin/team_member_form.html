@@ -125,25 +125,6 @@
                         </div>
                     </div>
 
-                    <!-- Social Links -->
-                    <div class="mb-4">
-                        <h6 class="text-muted mb-3">Social Media (Optional)</h6>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.linkedin_url.id_for_label }}" class="form-label">
-                                <i class="fab fa-linkedin"></i> {{ form.linkedin_url.label }}
-                            </label>
-                            {{ form.linkedin_url }}
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.twitter_url.id_for_label }}" class="form-label">
-                                <i class="fab fa-twitter"></i> {{ form.twitter_url.label }}
-                            </label>
-                            {{ form.twitter_url }}
-                        </div>
-                    </div>
-
                     <!-- Display Settings -->
                     <div class="mb-4">
                         <h6 class="text-muted mb-3">Display Settings</h6>
@@ -155,7 +136,7 @@
                                     {{ form.is_active.label }}
                                 </label>
                             </div>
-                            <small class="form-text text-muted">When active, this team member will be displayed on the About Us page.</small>
+                            <small class="form-text text-muted">When active, this team member will be displayed on the Teams page.</small>
                         </div>
 
                         <div class="mb-3">
@@ -163,7 +144,7 @@
                                 {{ form.display_order.label }}
                             </label>
                             {{ form.display_order }}
-                            <small class="form-text text-muted d-block">Lower numbers appear first. Use this to control the order of team members on the About Us page.</small>
+                            <small class="form-text text-muted d-block">Lower numbers appear first. Use this to control the order of team members on the Teams page.</small>
                         </div>
                     </div>
 

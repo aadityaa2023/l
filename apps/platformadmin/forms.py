@@ -1160,29 +1160,11 @@ class TeamMemberForm(forms.Form):
         label='Biography'
     )
     
-    linkedin_url = forms.URLField(
-        required=False,
-        widget=forms.URLInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'https://linkedin.com/in/username'
-        }),
-        label='LinkedIn URL'
-    )
-    
-    twitter_url = forms.URLField(
-        required=False,
-        widget=forms.URLInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'https://twitter.com/username'
-        }),
-        label='Twitter URL'
-    )
-    
     is_active = forms.BooleanField(
         required=False,
         initial=True,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        label='Display on About Us Page'
+        label='Display on Teams Page'
     )
     
     display_order = forms.IntegerField(

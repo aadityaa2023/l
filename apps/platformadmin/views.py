@@ -2452,8 +2452,6 @@ def team_member_create(request):
                 subject=form.cleaned_data['subject'],
                 experience=form.cleaned_data['experience'],
                 bio=form.cleaned_data.get('bio', ''),
-                linkedin_url=form.cleaned_data.get('linkedin_url', ''),
-                twitter_url=form.cleaned_data.get('twitter_url', ''),
                 is_active=form.cleaned_data.get('is_active', True),
                 display_order=form.cleaned_data.get('display_order', 0),
                 created_by=request.user,
@@ -2517,8 +2515,6 @@ def team_member_edit(request, member_id):
             team_member.subject = form.cleaned_data['subject']
             team_member.experience = form.cleaned_data['experience']
             team_member.bio = form.cleaned_data.get('bio', '')
-            team_member.linkedin_url = form.cleaned_data.get('linkedin_url', '')
-            team_member.twitter_url = form.cleaned_data.get('twitter_url', '')
             team_member.is_active = form.cleaned_data.get('is_active', True)
             team_member.display_order = form.cleaned_data.get('display_order', 0)
             team_member.updated_by = request.user
@@ -2555,8 +2551,6 @@ def team_member_edit(request, member_id):
             'subject': team_member.subject,
             'experience': team_member.experience,
             'bio': team_member.bio,
-            'linkedin_url': team_member.linkedin_url,
-            'twitter_url': team_member.twitter_url,
             'is_active': team_member.is_active,
             'display_order': team_member.display_order,
         })

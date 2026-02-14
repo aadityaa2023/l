@@ -58,6 +58,7 @@ urlpatterns = [
 
     # Static informational pages
     path('about/', common_views.about_view, name='about'),
+    path('teams/', common_views.teams_view, name='teams'),
     path('contact/', common_views.contact_view, name='contact'),
     path('privacy/', common_views.privacy_view, name='privacy'),
     path('terms/', common_views.terms_view, name='terms'),

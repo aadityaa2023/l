@@ -102,76 +102,24 @@
             </div>
         </div>
 
-        <!-- Team Members Section -->
-        {% if team_members %}
-        <div class="row justify-content-center mb-5">
-            <div class="col-lg-10">
-                <div class="text-center mb-5">
-                    <h3 class="fw-bold text-white">Meet Our Team</h3>
-                    <p class="text-white-50">The experts behind LeQ's success</p>
-                </div>
-                <div class="row g-4">
-                    {% for member in team_members %}
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card-custom p-4 text-center bg-dark text-white h-100">
-                            <div class="mb-3">
-                                {% if member.photo %}
-                                <img src="{{ member.photo.url }}" alt="{{ member.name }}" 
-                                     style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid var(--primary-color);">
-                                {% else %}
-                                <div style="width: 120px; height: 120px; margin: 0 auto; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 48px;">
-                                    {{ member.name|first|upper }}
-                                </div>
-                                {% endif %}
-                            </div>
-                            <h5 class="fw-bold mb-1 text-white">{{ member.name }}</h5>
-                            <p class="text-white-50 mb-2" style="font-size: 0.9rem;">{{ member.designation }}</p>
-                            <div class="mb-2">
-                                <span class="badge" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); font-size: 0.75rem;">
-                                    {{ member.subject }}
-                                </span>
-                            </div>
-                            <p class="text-white-50 mb-3" style="font-size: 0.85rem;">
-                                <i class="fas fa-briefcase me-1"></i> {{ member.experience }}
-                            </p>
-                            {% if member.bio %}
-                            <p class="text-white-50" style="font-size: 0.9rem; line-height: 1.6;">{{ member.bio }}</p>
-                            {% endif %}
-                            {% if member.linkedin_url or member.twitter_url %}
-                            <div class="mt-3">
-                                {% if member.linkedin_url %}
-                                <a href="{{ member.linkedin_url }}" target="_blank" class="btn btn-sm me-2" 
-                                   style="background: rgba(102, 126, 234, 0.2); color: var(--primary-color); border: none;">
-                                    <i class="fab fa-linkedin"></i>
-                                </a>
-                                {% endif %}
-                                {% if member.twitter_url %}
-                                <a href="{{ member.twitter_url }}" target="_blank" class="btn btn-sm" 
-                                   style="background: rgba(102, 126, 234, 0.2); color: var(--primary-color); border: none;">
-                                    <i class="fab fa-twitter"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
         <!-- CTA Section -->
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="card-custom p-5 text-center" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
                     <h4 class="fw-bold mb-3 text-white">Get Involved</h4>
                     <p class="text-white opacity-90 mb-4">Whether you're an instructor, learner, or partner, we'd love to hear from you.</p>
-                    <a href="{% url 'contact' %}"
-                       class="btn btn-lg px-5"
-                       style="background:#ffffff !important;color:#111111 !important;font-weight:600;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.12);">
-                        <i class="fas fa-envelope me-2" style="color:inherit !important"></i>Contact Us
-                    </a>
+                    <div>
+                        <a href="{% url 'teams' %}"
+                           class="btn btn-lg px-5 me-3"
+                           style="background:#ffffff !important;color:#111111 !important;font-weight:600;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.12);">
+                            <i class="fas fa-users me-2" style="color:inherit !important"></i>Meet Our Team
+                        </a>
+                        <a href="{% url 'contact' %}"
+                           class="btn btn-lg px-5"
+                           style="background:rgba(255,255,255,0.2) !important;color:#ffffff !important;font-weight:600;border-radius:10px;border:2px solid #ffffff;">
+                            <i class="fas fa-envelope me-2" style="color:inherit !important"></i>Contact Us
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
