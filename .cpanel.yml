@@ -1,0 +1,8 @@
+deployment:
+  tasks:
+    - cd /home9/leqaudio/l
+    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/pip install -r requirements.txt
+    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py migrate --noinput
+    - /home9/leqaudio/virtualenv/leqaudio/3.10/bin/python manage.py collectstatic --noinput
+    - touch /home9/leqaudio/leqaudio/passenger_wsgi.py
+    - echo "Deployment completed successfully."
