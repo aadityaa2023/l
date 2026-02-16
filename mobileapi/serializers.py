@@ -156,15 +156,19 @@ class LessonListSerializer(serializers.ModelSerializer):
         ]
     
     def get_audio_url(self, obj):
-        """Get audio file URL"""
-        # Primary: Lesson.audio_file for audio lessons
+        """Get audio file URL or YouTube URL"""
+        # Priority 1: YouTube URL for audio lessons (supports YouTube playback in mobile app)
+        if obj.lesson_type == 'audio' and hasattr(obj, 'youtube_video_url') and obj.youtube_video_url:
+            return obj.youtube_video_url
+        
+        # Priority 2: Lesson.audio_file for audio lessons
         if obj.lesson_type == 'audio' and obj.audio_file:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.audio_file.url)
             return obj.audio_file.url
 
-        # Fallback: check related LessonMedia entries (media_type='audio')
+        # Priority 3: check related LessonMedia entries (media_type='audio')
         media_qs = getattr(obj, 'media_files', None)
         if media_qs is not None:
             audio_media = media_qs.filter(media_type='audio').order_by('order').first()
@@ -177,15 +181,19 @@ class LessonListSerializer(serializers.ModelSerializer):
         return None
     
     def get_video_url(self, obj):
-        """Get video file URL (uses audio_file field for video lessons)"""
-        # Primary: Lesson.audio_file may hold video for video lessons
+        """Get video file URL or YouTube URL"""
+        # Priority 1: YouTube URL for video lessons (supports YouTube playback in mobile app)
+        if obj.lesson_type == 'video' and hasattr(obj, 'youtube_video_url') and obj.youtube_video_url:
+            return obj.youtube_video_url
+        
+        # Priority 2: Lesson.audio_file may hold video for video lessons
         if obj.lesson_type == 'video' and obj.audio_file:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.audio_file.url)
             return obj.audio_file.url
 
-        # Fallback: check related LessonMedia entries (media_type='video')
+        # Priority 3: check related LessonMedia entries (media_type='video')
         media_qs = getattr(obj, 'media_files', None)
         if media_qs is not None:
             video_media = media_qs.filter(media_type='video').order_by('order').first()
