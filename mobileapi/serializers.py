@@ -42,6 +42,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'date_joined',
             'total_enrollments',
             'total_completed',
+            'is_free_user',
         ]
         read_only_fields = ['id', 'email', 'role', 'date_joined']
     

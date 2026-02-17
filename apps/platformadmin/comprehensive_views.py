@@ -24,7 +24,7 @@ from apps.platformadmin.models import (
 from apps.courses.models import Course, Review, Enrollment
 from apps.payments.models import Payment, Subscription, Coupon, CouponUsage
 from apps.payments.commission_calculator import CommissionCalculator
-from apps.notifications.models import Notification
+from apps.notifications.models import Notification, DeviceToken
 from django.contrib.auth import get_user_model
 from apps.platformadmin.forms import SendBulkNotificationForm
 from apps.platformadmin.notifications import AdminEmailNotifier
@@ -1035,6 +1035,7 @@ def send_bulk_notification(request):
             notifications_created = 0
             emails_sent = 0
             email_failures = 0
+            push_tokens = []
             
             for user in users:
                 try:
@@ -1050,6 +1051,11 @@ def send_bulk_notification(request):
                         bulk_notification=bulk_notification
                     )
                     notifications_created += 1
+
+                    # Collect push tokens
+                    if send_push:
+                        user_tokens = DeviceToken.objects.filter(user=user, is_active=True).values_list('token', flat=True)
+                        push_tokens.extend(user_tokens)
 
                     # Send email if requested
                     if send_email:
@@ -1100,6 +1106,65 @@ def send_bulk_notification(request):
                 except Exception as e:
                     email_failures += 1
                     continue
+
+            # Send Push Notifications
+            push_failures = 0
+            if send_push:
+                print(f"DEBUG: Processing push notifications. Found {len(push_tokens)} raw tokens.")
+            else:
+                print("DEBUG: send_push is False")
+
+            if send_push and push_tokens:
+                try:
+                    import requests
+                    
+                    # Deduplicate tokens
+                    push_tokens = list(set(push_tokens))
+                    print(f"DEBUG: Sending to {len(push_tokens)} unique tokens")
+                    
+                    # Split into chunks of 100 (Expo limit)
+                    def chunk_list(l, n):
+                        for i in range(0, len(l), n):
+                            yield l[i:i + n]
+                            
+                    for chunk in chunk_list(push_tokens, 100):
+                        try:
+                            message_payload = []
+                            for token in chunk:
+                                if not token.startswith('ExponentPushToken') and not token.startswith('ExpoPushToken'):
+                                    print(f"DEBUG: Skipping invalid token format: {token}")
+                                    continue
+                                    
+                                message_payload.append({
+                                    "to": token,
+                                    "title": title,
+                                    "body": message,
+                                    "data": {"url": action_url} if action_url else {},
+                                    "sound": "default",
+                                    "channelId": "default",
+                                })
+                            
+                            if message_payload:
+                                print(f"DEBUG: Sending payload to Expo: {message_payload}")
+                                response = requests.post(
+                                    'https://exp.host/--/api/v2/push/send',
+                                    json=message_payload,
+                                    headers={
+                                        'Accept': 'application/json',
+                                        'Accept-encoding': 'gzip, deflate',
+                                        'Content-Type': 'application/json',
+                                    }
+                                )
+                                print(f"DEBUG: Expo API Response: {response.status_code} - {response.text}")
+                        except Exception as e:
+                            logger.error(f"Failed to send push batch: {str(e)}")
+                            print(f"DEBUG: Batch error: {e}")
+                            push_failures += 1
+                            
+                except Exception as e:
+                    logger.error(f"Failed to send push notifications: {str(e)}")
+                    print(f"DEBUG: General push error: {e}")
+                    push_failures += 1
 
             # Update bulk notification status and counters
             bulk_notification.sent_count = notifications_created

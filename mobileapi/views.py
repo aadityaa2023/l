@@ -21,7 +21,7 @@ from apps.courses.models import (
     Enrollment, LessonProgress, Review
 )
 from apps.common.models import Banner
-from apps.notifications.models import Notification
+from apps.notifications.models import Notification, DeviceToken
 from apps.payments.models import Payment, Subscription
 from apps.analytics.models import ListeningSession
 
@@ -736,7 +736,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(notification)
         return Response(serializer.data)
     
-    @action(detail=False, methods=['post'], url_path='mark-read')
+    @action(detail=False, methods=['post'], url_path='mark-all-read')
     def mark_all_read(self, request):
         """Mark all notifications as read"""
         self.get_queryset().filter(is_read=False).update(
@@ -744,6 +744,34 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
             read_at=timezone.now()
         )
         return Response({'message': 'All notifications marked as read'})
+    
+    @action(detail=False, methods=['post'], url_path='register-device')
+    def register_device(self, request):
+        """Register device token for push notifications"""
+        token = request.data.get('token')
+        platform = request.data.get('platform', 'android')
+        
+        if not token:
+            return Response(
+                {'error': 'Token is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Update or create
+        device_token, created = DeviceToken.objects.update_or_create(
+            token=token,
+            defaults={
+                'user': request.user,
+                'platform': platform,
+                'is_active': True,
+                'last_used_at': timezone.now()
+            }
+        )
+        
+        return Response({
+            'message': 'Device registered successfully',
+            'id': device_token.id
+        })
 
 
 # ============================================================================

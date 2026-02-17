@@ -336,3 +336,32 @@ class EmailLog(models.Model):
     def __str__(self):
         return f"{self.to_email} - {self.subject} ({self.status})"
 
+
+class DeviceToken(models.Model):
+    """Device tokens for push notifications"""
+    
+    PLATFORM_CHOICES = (
+        ('android', 'Android'),
+        ('ios', 'iOS'),
+        ('web', 'Web'),
+    )
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='device_tokens')
+    token = models.CharField(_('token'), max_length=255, unique=True)
+    platform = models.CharField(_('platform'), max_length=20, choices=PLATFORM_CHOICES, default='android')
+    
+    # Metadata
+    is_active = models.BooleanField(_('active'), default=True)
+    last_used_at = models.DateTimeField(_('last used at'), null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
+
+    class Meta:
+        verbose_name = _('device token')
+        verbose_name_plural = _('device tokens')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.platform} ({self.token[:10]}...)"
