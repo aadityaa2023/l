@@ -61,7 +61,6 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="avatar-sm bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
-                                    {{ user.first_name.0|default:user.email.0|upper }}
                                 </div>
                                 <div>
                                     <h6 class="mb-0">{{ user.get_full_name|default:user.email }}</h6>

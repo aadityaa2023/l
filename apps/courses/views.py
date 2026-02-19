@@ -21,6 +21,7 @@ from .models import (
     Category, Course, Module, Lesson, LessonMedia, Enrollment,
     LessonProgress, Note, Review, Announcement
 )
+from django.contrib.auth import get_user_model
 from apps.analytics.models import ListeningSession, TeacherAnalytics
 from apps.payments.models import Payment, CouponUsage
 from apps.payments.commission_calculator import CommissionCalculator
@@ -1622,6 +1623,11 @@ def teacher_students_list(request):
     course_filter = request.GET.get('course')
     if course_filter:
         enrollments = enrollments.filter(course_id=course_filter)
+        # Provide selected course info to template for simplified view
+        try:
+            selected_course = Course.objects.filter(teacher=request.user, id=course_filter).only('id', 'title').first()
+        except Exception:
+            selected_course = None
     
     # Search
     search = request.GET.get('search', '').strip()
@@ -1659,6 +1665,7 @@ def teacher_students_list(request):
         'status_filter': status_filter,
         'course_filter': course_filter,
         'search': search,
+        'selected_course': locals().get('selected_course', None),
     }
     
     return render(request, 'courses/teacher_students.html', context)
@@ -1950,7 +1957,8 @@ def teacher_export_students(request):
     response['Content-Disposition'] = f'attachment; filename="students_{timezone.now().strftime("%Y%m%d")}.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Student Name', 'Email', 'Course', 'Enrolled Date', 'Status', 'Progress %', 'Lessons Completed'])
+    # Exclude Progress and Lessons Completed columns as requested
+    writer.writerow(['Student Name', 'Email', 'Course', 'Enrolled Date', 'Status'])
     
     enrollments = Enrollment.objects.filter(
         course__teacher=request.user
@@ -1963,8 +1971,6 @@ def teacher_export_students(request):
             enrollment.course.title,
             enrollment.enrolled_at.strftime('%Y-%m-%d %H:%M'),
             enrollment.status,
-            f'{enrollment.progress_percentage}%',
-            enrollment.lessons_completed
         ])
     
     return response

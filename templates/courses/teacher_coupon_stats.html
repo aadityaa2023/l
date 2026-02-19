@@ -84,10 +84,8 @@
                     <thead>
                         <tr>
                             <th><i class="fas fa-barcode me-2"></i>Coupon Code</th>
-                            <th><i class="fas fa-book me-2"></i>Course</th>
                             <th><i class="fas fa-tag me-2"></i>Discount</th>
                             <th><i class="fas fa-chart-line me-2"></i>Times Used</th>
-                            <th><i class="fas fa-rupee-sign me-2"></i>Revenue</th>
                             <th><i class="fas fa-info-circle me-2"></i>Status</th>
                         </tr>
                     </thead>
@@ -96,13 +94,6 @@
                         <tr>
                             <td>
                                 <strong class="text-primary">{{ item.coupon.code }}</strong>
-                            </td>
-                            <td>
-                                {% if item.course %}
-                                <span class="text-muted">{{ item.course.title|truncatewords:5 }}</span>
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
                             </td>
                             <td>
                                 {% if item.coupon.discount_type == 'percentage' %}
@@ -114,9 +105,7 @@
                             <td>
                                 <span class="badge badge-custom bg-secondary">{{ item.uses }} uses</span>
                             </td>
-                            <td>
-                                <strong class="text-success">₹{{ item.total_revenue|floatformat:2 }}</strong>
-                            </td>
+                            {# Course and revenue removed per request #}
                             <td>
                                 {% if item.coupon.status == 'active' %}
                                     <span class="badge badge-custom bg-success">

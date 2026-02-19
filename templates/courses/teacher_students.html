@@ -159,7 +159,8 @@
 <div class="card border-0 shadow-sm mt-4">
     <div class="card-header bg-white border-0 py-3">
         <h5 class="mb-0 fw-semibold">
-            <i class="fas fa-list me-2"></i>All Students
+            <i class="fas fa-list me-2"></i>
+            {% if selected_course %}Students enrolled in "{{ selected_course.title }}"{% else %}All Students{% endif %}
         </h5>
     </div>
     <div class="card-body p-0">
@@ -168,11 +169,11 @@
                 <thead>
                     <tr>
                         <th><i class="fas fa-user me-1"></i> Student</th>
+                        {% if not selected_course %}
                         <th><i class="fas fa-book me-1"></i> Course</th>
+                        {% endif %}
                         <th><i class="fas fa-calendar me-1"></i> Enrolled</th>
-                        <th><i class="fas fa-tasks me-1"></i> Progress</th>
                         <th><i class="fas fa-tag me-1"></i> Status</th>
-                        <th><i class="fas fa-cogs me-1"></i> Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -189,41 +190,29 @@
                                 </div>
                             </div>
                         </td>
+                        {% if not selected_course %}
                         <td>
                             <a href="{% url 'courses:course_detail' slug=enrollment.course.slug %}" class="text-decoration-none">
                                 {{ enrollment.course.title|truncatewords:5 }}
                             </a>
                         </td>
+                        {% endif %}
                         <td>
                             <small class="text-muted">{{ enrollment.enrolled_at|date:"M d, Y" }}</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress me-2" style="height: 6px; width: 80px;">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ enrollment.progress_percentage }}%"></div>
-                                </div>
-                                <small class="text-muted">{{ enrollment.progress_percentage|floatformat:0 }}%</small>
-                            </div>
                         </td>
                         <td>
                             <span class="badge {% if enrollment.status == 'active' %}bg-success{% elif enrollment.status == 'completed' %}bg-primary{% else %}bg-secondary{% endif %}">
                                 <i class="fas fa-{% if enrollment.status == 'active' %}check-circle{% elif enrollment.status == 'completed' %}trophy{% else %}times-circle{% endif %} me-1"></i>{{ enrollment.get_status_display }}
                             </span>
                         </td>
-                        <td>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{% url 'courses:teacher_student_detail' enrollment.id %}" class="btn btn-outline-primary" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'notifications:message_compose_to' enrollment.student.id %}" class="btn btn-outline-info" title="Send Message">
-                                    <i class="fas fa-envelope"></i>
-                                </a>
-                            </div>
-                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-5">
+                        {% if selected_course %}
+                        <td colspan="3" class="text-center py-5">
+                        {% else %}
+                        <td colspan="4" class="text-center py-5">
+                        {% endif %}
                             <i class="fas fa-inbox fa-3x text-muted mb-3 opacity-50"></i>
                             <p class="text-muted">No students found</p>
                         </td>

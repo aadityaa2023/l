@@ -24,9 +24,7 @@
                         <th>Student</th>
                         <th>Email</th>
                         <th>Enrolled Date</th>
-                        <th>Progress</th>
                         <th>Status</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,18 +49,9 @@
                         <td>{{ enrollment.student.email }}</td>
                         <td>{{ enrollment.enrolled_at|date:"M d, Y" }}</td>
                         <td>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-success" style="width: {{ enrollment.progress_percentage }}%"></div>
-                            </div>
-                            <small class="text-muted">{{ enrollment.progress_percentage }}%</small>
-                        </td>
-                        <td>
                             <span class="badge bg-{% if enrollment.status == 'active' %}success{% else %}secondary{% endif %}">
                                 {{ enrollment.status|title }}
                             </span>
-                        </td>
-                        <td>
-                            <a href="{% url 'courses:teacher_student_detail' enrollment.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
                         </td>
                     </tr>
                     {% endfor %}

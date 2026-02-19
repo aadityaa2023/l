@@ -147,7 +147,6 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="avatar-sm bg-primary text-white rounded-circle me-3 d-flex align-items-center justify-content-center">
-                                    {{ free_user.user.first_name.0|default:free_user.user.email.0|upper }}
                                 </div>
                                 <div>
                                     <h6 class="mb-0">{{ free_user.user.get_full_name|default:free_user.user.email }}</h6>
