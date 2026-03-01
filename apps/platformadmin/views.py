@@ -20,6 +20,7 @@ from apps.platformadmin.models import AdminLog, CourseApproval, PlatformSetting
 from apps.platformadmin.payment_handlers import RefundHandler, PaymentAnalytics
 from apps.courses.models import Course, Category, Module
 from apps.payments.models import Payment, Refund
+from apps.users.models import TeacherProfile
 
 User = get_user_model()
 
@@ -38,8 +39,9 @@ def dashboard(request):
     context['quick_stats'] = {
         'pending_approvals': CourseApproval.objects.filter(status='pending').count(),
         'unverified_teachers': User.objects.filter(
-            role='teacher',
-            teacher_profile__is_verified=False
+            role='teacher'
+        ).exclude(
+            id__in=TeacherProfile.objects.filter(is_verified=True).values_list('user_id', flat=True)
         ).count(),
         'failed_transactions': Payment.objects.filter(status='failed').count(),
     }
@@ -146,9 +148,22 @@ def user_detail(request, user_id):
                     user.role = new_role
                     messages.success(request, f"User {user.email} role changed to {new_role}.")
             elif action == 'verify_teacher' and user.role == 'teacher':
-                user.teacher_profile.is_verified = True
-                user.teacher_profile.verification_date = timezone.now()
-                user.teacher_profile.save()
+                # Get or create teacher profile
+                teacher_profile, created = TeacherProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'bio': '',
+                        'expertise': 'General Education',
+                        'is_verified': True,
+                        'verification_date': timezone.now(),
+                    }
+                )
+                
+                if not created:
+                    teacher_profile.is_verified = True
+                    teacher_profile.verification_date = timezone.now()
+                    teacher_profile.save()
+                
                 messages.success(request, f"Teacher {user.email} has been verified.")
             
             user.save()
@@ -606,9 +621,13 @@ def teacher_verification(request):
     search = request.GET.get('search', '')
     
     if status_filter == 'verified':
+        # Only show teachers with verified profiles
         teachers = teachers.filter(teacher_profile__is_verified=True)
     elif status_filter == 'unverified':
-        teachers = teachers.filter(teacher_profile__is_verified=False)
+        # Show teachers without profiles OR with unverified profiles
+        teachers = teachers.exclude(
+            id__in=TeacherProfile.objects.filter(is_verified=True).values_list('user_id', flat=True)
+        )
     
     if search:
         teachers = teachers.filter(

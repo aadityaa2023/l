@@ -48,7 +48,7 @@
                 <tr>
                     <td>{{ teacher.email }}</td>
                     <td>{{ teacher.get_full_name|default:"N/A" }}</td>
-                    <td>{{ teacher.teacher_profile.expertise|default:"-" }}</td>
+                    <td>{% if teacher.teacher_profile %}{{ teacher.teacher_profile.expertise|default:"-" }}{% else %}-{% endif %}</td>
                     <td>{{ teacher.courses.count }}</td>
                     <td>
                         {% if teacher.is_active %}
@@ -58,7 +58,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if teacher.teacher_profile.is_verified %}
+                        {% if teacher.teacher_profile and teacher.teacher_profile.is_verified %}
                             <span class="badge bg-success">✓ Verified</span>
                         {% else %}
                             <span class="badge bg-warning">⚠ Unverified</span>
