@@ -1207,15 +1207,77 @@ def admin_course_assign(request, course_id):
         teacher_id = request.POST.get('teacher_id')
         teacher = get_object_or_404(User, id=teacher_id, role='teacher')
         
-        # Check if already assigned
-        existing = CourseAssignment.objects.filter(
-            course=course, 
-            teacher=teacher,
-            status__in=['assigned', 'accepted']
+        # Check if an assignment record already exists for this course+teacher
+        # If it exists (even if revoked), update it instead of creating a new one
+        existing_any = CourseAssignment.objects.filter(
+            course=course,
+            teacher=teacher
         ).first()
-        
-        if existing:
-            messages.warning(request, f'Course already assigned to {teacher.email}')
+
+        if existing_any:
+            # If already actively assigned/accepted, warn the admin
+            if existing_any.status in ['assigned', 'accepted']:
+                messages.warning(request, f'Course already assigned to {teacher.email}')
+            else:
+                # Revoked/rejected or other status: reuse the record and reactivate it
+                from django.utils import timezone
+                commission_percentage_raw = request.POST.get('commission_percentage')
+                commission_percentage = existing_any.commission_percentage
+                if commission_percentage_raw:
+                    try:
+                        commission_percentage = Decimal(commission_percentage_raw)
+                        if commission_percentage < 0 or commission_percentage > 100:
+                            commission_percentage = existing_any.commission_percentage
+                    except Exception:
+                        commission_percentage = existing_any.commission_percentage
+
+                # Capture previous status for logging then update fields
+                prev_status = existing_any.status
+                existing_any.status = 'accepted'
+                existing_any.accepted_at = timezone.now()
+                existing_any.revoked_at = None
+                existing_any.assigned_by = request.user
+                existing_any.can_edit_content = request.POST.get('can_edit_content') == 'on'
+                existing_any.can_delete_content = request.POST.get('can_delete_content') == 'on'
+                existing_any.can_edit_details = request.POST.get('can_edit_details') == 'on'
+                existing_any.can_publish = request.POST.get('can_publish') == 'on'
+                existing_any.commission_percentage = commission_percentage
+                existing_any.assignment_notes = request.POST.get('assignment_notes', existing_any.assignment_notes)
+                existing_any.save()
+
+                # Ensure course.teacher is set
+                if course.teacher != teacher:
+                    course.teacher = teacher
+                    course.save()
+
+                # Send notification to teacher
+                from apps.notifications.models import Notification
+                try:
+                    Notification.objects.create(
+                        user=teacher,
+                        notification_type='course_assignment',
+                        title='Course Assigned',
+                        message=f'You have been assigned to teach "{course.title}". You can now manage course content and students.',
+                        link_url='/courses/teacher/assignments/',
+                        link_text='View Assignment',
+                        course=course,
+                        send_email=True
+                    )
+                except Exception:
+                    pass
+
+                # Log the update
+                AdminLog.objects.create(
+                    admin=request.user,
+                    action='update',
+                    content_type='CourseAssignment',
+                    object_id=str(existing_any.id),
+                    object_repr=f"{course.title} → {teacher.email}",
+                    old_values={'status': prev_status},
+                    new_values={'status': 'accepted', 'commission_percentage': str(existing_any.commission_percentage)},
+                )
+                messages.success(request, 'Teacher reassigned successfully (existing record updated).')
+                return redirect('platformadmin:admin_course_edit', course_id=course.id)
         else:
             # Get commission percentage (optional). If not provided, leave
             # as None so course assignment will use platform default.
