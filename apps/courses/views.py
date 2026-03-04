@@ -84,77 +84,116 @@ class CourseDetailView(DetailView):
         return Course.objects.select_related('teacher', 'category').prefetch_related(
             'modules__lessons',
             'modules__lessons__media_files'
-        )
+        ).filter(status='published')  # Only show published courses to prevent 500 errors
     
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        course = self.get_object()
-        user = self.request.user
+        import logging
+        logger = logging.getLogger(__name__)
         
-        # Check if user is enrolled
-        if user.is_authenticated:
-            is_enrolled = Enrollment.objects.filter(
-                student=user,
-                course=course,
-                status__in=['active', 'completed']
-            ).exists()
-            
-            context['is_enrolled'] = is_enrolled
-        else:
-            context['is_enrolled'] = False
-        
-        # Get reviews
-        context['reviews'] = list(Review.objects.filter(course=course)
-                        .select_related('student')
-                        .order_by('-created_at')[:10])
-        
-        # Get course stats
-        course_stats = _get_course_stats(course)
-        
-        context['total_students'] = course_stats['total_students']
-        context['avg_rating'] = course_stats['avg_rating']
-        
-        # Get related courses
-        context['related_courses'] = list(Course.objects.filter(
-            category=course.category,
-            status='published'
-        ).exclude(id=course.id).annotate(
-            student_count=Count('enrollments')
-        )[:4])
-        
-        # Determine visible lessons for non-enrolled users: only allow free previews + first lesson
-        # Build a set of lesson ids that should be visible without enrollment
-        visible_lesson_ids = set()
         try:
-            # Query modules ordered to find the first lesson in the course
-            first_module = Module.objects.filter(course=course).order_by('order').prefetch_related('lessons').first()
-            if first_module:
-                first_lesson = first_module.lessons.order_by('order').first()
-                if first_lesson:
-                    visible_lesson_ids.add(first_lesson.id)
-        except Exception:
-            # fallback: no first lesson
-            first_lesson = None
+            context = super().get_context_data(**kwargs)
+            course = self.get_object()
+            user = self.request.user
+            
+            # Check if user is enrolled
+            context['is_enrolled'] = False
+            if user.is_authenticated:
+                try:
+                    is_enrolled = Enrollment.objects.filter(
+                        student=user,
+                        course=course,
+                        status__in=['active', 'completed']
+                    ).exists()
+                    context['is_enrolled'] = is_enrolled
+                except Exception as e:
+                    logger.error(f"Error checking enrollment for course {course.slug}: {e}")
+                    context['is_enrolled'] = False
+            
+            # Get reviews with error handling
+            try:
+                context['reviews'] = list(Review.objects.filter(course=course)
+                                .select_related('student')
+                                .order_by('-created_at')[:10])
+            except Exception as e:
+                logger.error(f"Error fetching reviews for course {course.slug}: {e}")
+                context['reviews'] = []
+            
+            # Get course stats with error handling
+            try:
+                course_stats = _get_course_stats(course)
+                context['total_students'] = course_stats['total_students']
+                context['avg_rating'] = course_stats['avg_rating']
+            except Exception as e:
+                logger.error(f"Error fetching stats for course {course.slug}: {e}")
+                context['total_students'] = 0
+                context['avg_rating'] = 0
+            
+            # Get related courses with error handling
+            try:
+                if course.category:
+                    context['related_courses'] = list(Course.objects.filter(
+                        category=course.category,
+                        status='published'
+                    ).exclude(id=course.id).annotate(
+                        student_count=Count('enrollments')
+                    )[:4])
+                else:
+                    context['related_courses'] = []
+            except Exception as e:
+                logger.error(f"Error fetching related courses for course {course.slug}: {e}")
+                context['related_courses'] = []
+            
+            # Determine visible lessons for non-enrolled users: only allow free previews + first lesson
+            # Build a set of lesson ids that should be visible without enrollment
+            visible_lesson_ids = set()
+            try:
+                # Query modules ordered to find the first lesson in the course
+                first_module = Module.objects.filter(course=course).order_by('order').prefetch_related('lessons').first()
+                if first_module:
+                    first_lesson = first_module.lessons.order_by('order').first()
+                    if first_lesson:
+                        visible_lesson_ids.add(first_lesson.id)
+            except Exception as e:
+                logger.error(f"Error finding first lesson for course {course.slug}: {e}")
 
-        # Add any lessons marked as free preview
-        free_preview_ids = Lesson.objects.filter(module__course=course, is_free_preview=True).values_list('id', flat=True)
-        visible_lesson_ids.update(list(free_preview_ids))
+            # Add any lessons marked as free preview
+            try:
+                free_preview_ids = Lesson.objects.filter(module__course=course, is_free_preview=True).values_list('id', flat=True)
+                visible_lesson_ids.update(list(free_preview_ids))
+            except Exception as e:
+                logger.error(f"Error fetching free preview lessons for course {course.slug}: {e}")
 
-        context['visible_lesson_ids'] = visible_lesson_ids
+            context['visible_lesson_ids'] = visible_lesson_ids
 
-        return context
+            return context
+            
+        except Exception as e:
+            logger.error(f"Critical error in CourseDetailView for slug {self.kwargs.get('slug')}: {e}")
+            # Re-raise the exception to let Django handle it properly (404 if course doesn't exist)
+            raise
 
 
 def _get_course_stats(course):
     """Helper function to calculate course statistics"""
-    total_students = Enrollment.objects.filter(
-        course=course,
-        status='active'
-    ).count()
+    import logging
+    logger = logging.getLogger(__name__)
     
-    avg_rating = Review.objects.filter(
-        course=course
-    ).aggregate(avg=Avg('rating'))['avg'] or 0
+    try:
+        total_students = Enrollment.objects.filter(
+            course=course,
+            status='active'
+        ).count()
+    except Exception as e:
+        logger.error(f"Error counting students for course {course.slug}: {e}")
+        total_students = 0
+    
+    try:
+        avg_rating = Review.objects.filter(
+            course=course
+        ).aggregate(avg=Avg('rating'))['avg'] or 0
+    except Exception as e:
+        logger.error(f"Error calculating average rating for course {course.slug}: {e}")
+        avg_rating = 0
     
     return {
         'total_students': total_students,

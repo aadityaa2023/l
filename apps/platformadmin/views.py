@@ -1674,13 +1674,7 @@ def admin_category_create(request):
                 is_active=is_active
             )
             
-            # Log activity
-            AdminLog.objects.create(
-                admin=request.user,
-                action='create_category',
-                description=f'Created category: {category.name}',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
+
             
             messages.success(request, f'Category "{category.name}" created successfully!')
             return redirect('platformadmin:admin_category_management')
@@ -1728,7 +1722,11 @@ def admin_category_edit(request, category_id):
             AdminLog.objects.create(
                 admin=request.user,
                 action='update_category',
-                description=f'Updated category: {category.name}',
+                content_type='Category',
+                object_id=str(category.id),
+                object_repr=category.name,
+                old_values={},
+                new_values={'name': category.name, 'description': category.description},
                 ip_address=request.META.get('REMOTE_ADDR')
             )
             
